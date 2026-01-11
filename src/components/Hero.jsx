@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import './Hero.css';
+import heroImage from '/images/hero-new.png';
 
 function Hero() {
   const stats = [
@@ -9,7 +10,7 @@ function Hero() {
   ];
 
   return (
-    <section className="hero">
+    <section className="hero" style={{ backgroundImage: `url(${heroImage})` }}>
       <div className="hero-overlay"></div>
       <div className="container hero-container">
         <div className="hero-content">

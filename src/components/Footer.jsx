@@ -29,7 +29,7 @@ function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <a href="/" className="footer-logo">
-              <img src="/images/logo-white.svg" alt="SupportWorks Housing" className="footer-logo-img" />
+              <img src={`${import.meta.env.BASE_URL}images/logo-white.svg`} alt="SupportWorks Housing" className="footer-logo-img" />
             </a>
             <p className="footer-tagline">
               Ending homelessness in Virginia through permanent housing and comprehensive support services.

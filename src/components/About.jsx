@@ -27,7 +27,7 @@ function About() {
           </div>
           <div className="about-image">
             <img
-              src="/images/building.jpg"
+              src={`${import.meta.env.BASE_URL}images/building.jpg`}
               alt="Gosnold apartments - SupportWorks Housing"
             />
           </div>
@@ -36,7 +36,7 @@ function About() {
         <div className="about-row about-row-reverse">
           <div className="about-image">
             <img
-              src="/images/teammate.jpg"
+              src={`${import.meta.env.BASE_URL}images/teammate.jpg`}
               alt="SupportWorks Housing team member"
             />
           </div>

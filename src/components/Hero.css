@@ -3,7 +3,6 @@
   min-height: 85vh;
   display: flex;
   align-items: center;
-  background-image: url('/images/hero-new.png');
   background-size: cover;
   background-position: center;
 }

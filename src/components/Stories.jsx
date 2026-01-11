@@ -10,7 +10,7 @@ function Stories() {
       background: 'U.S. Army Veteran',
       quote: "Every day I have hope—that's the best part.",
       summary: 'After 8 years living in his car, Muhammad found stability at The Crossings. Now he\'s rebuilding his health and processing his trauma.',
-      image: '/images/muhammad.jpg',
+      image: `${import.meta.env.BASE_URL}images/muhammad.jpg`,
       fullStory: `Muhammad's journey began as an Iraqi immigrant success story: U.S. Army employee, six-figure income, married with two children and a Virginia home. A deployment injury causing disability and PTSD unraveled this life. His marriage dissolved, and by January 2015, he was living in his car for eight years.
 
 Muhammad slept in Walmart parking lots and on streets, relying on shelter services for basic needs. He drove for rideshare companies to earn money, often traveling to Richmond for airport pickups. His health deteriorated—he missed medical appointments, struggled with medication management, and gained weight from fast food dependence.
@@ -25,7 +25,7 @@ Through advocacy from caseworkers at the Jefferson Area Board for Aging and Albe
       background: 'Resident since 2019',
       quote: "Grace is a gift.",
       summary: 'An MS diagnosis left Joel unable to walk. After losing everything, he found stability at Gosnold and now works full-time at Grace Bible Church.',
-      image: '/images/joel.jpg',
+      image: `${import.meta.env.BASE_URL}images/joel.jpg`,
       fullStory: `Before homelessness, Joel worked at Apple, attended college for software development, and was married—living what he called a good life. In 2016, he woke unable to walk and received a multiple sclerosis diagnosis that doctors warned might never allow walking again.
 
 Unable to work, Joel relied on disability benefits while self-medicating with alcohol. His marriage crumbled under the strain. Evicted on his birthday in March 2018, he moved between shelters and hotels. DJing at nightlife venues worsened his alcohol dependence, resulting in two DUIs and imprisonment. Upon release, he remained homeless.
@@ -40,7 +40,7 @@ He obtained mobility aids, reconnected with his former employer, purchased a car
       background: 'Resident for 4 years',
       quote: "I'm a person that worked real hard and worked all my life.",
       summary: 'Shot while saving five lives, Curtis became partially paralyzed. After 3 years homeless, he found community at Studios at South Richmond.',
-      image: '/images/curtis.jpg',
+      image: `${import.meta.env.BASE_URL}images/curtis.jpg`,
       fullStory: `Curtis worked hard his entire life and helped feed homeless individuals until becoming homeless himself. In 1991 Baltimore, he was shot in the neck while saving five people's lives, resulting in partial paralysis and Brown-Séquard Syndrome.
 
 After a year of therapy to relearn walking, Curtis's slower lifestyle eventually led to homelessness. Family support proved impossible; his disability made typical housing unsuitable—bathrooms upstairs he couldn't access. He refused shelters for three years, living in his car because he "didn't want to take up space that was someone else's."
@@ -55,7 +55,7 @@ Nearly four years at Studios at South Richmond has transformed his life. He prai
       background: 'Resident since 2014',
       quote: "When will it be my time for something good?",
       summary: 'After 10 years on the streets, Mark found housing through SupportWorks. His caseworkers helped him survive cancer treatment.',
-      image: '/images/mark.jpg',
+      image: `${import.meta.env.BASE_URL}images/mark.jpg`,
       fullStory: `Mark endured ten years on the streets, arrested hundreds of times for public intoxication and witnessing numerous friends die from street dangers. "Some nights I'd pray, 'Lord, when will it be my time for something good?'"
 
 A decade of survival on streets exposed Mark to constant danger and instability. He faced repeated arrest and the traumatic loss of friends to street life hazards.

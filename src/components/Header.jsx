@@ -16,7 +16,7 @@ function Header() {
     <header className="header">
       <div className="container header-container">
         <a href="/" className="logo">
-          <img src="/images/logo-ful.png" alt="SupportWorks Housing" className="logo-img" />
+          <img src={`${import.meta.env.BASE_URL}images/logo-ful.png`} alt="SupportWorks Housing" className="logo-img" />
         </a>
 
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
