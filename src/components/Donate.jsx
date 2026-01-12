@@ -2,6 +2,27 @@ import { useState } from 'react';
 import { Heart, Home, Users, Gift, Lock } from 'lucide-react';
 import './Donate.css';
 
+// =============================================================================
+// GIVEBUTTER INTEGRATION PLACEHOLDER
+// =============================================================================
+// To connect this form to Givebutter:
+//
+// Option 1: Direct Link (simplest)
+//   - Create a campaign at givebutter.com
+//   - Replace GIVEBUTTER_CAMPAIGN_URL below with your campaign URL
+//   - Example: https://givebutter.com/supportworkshousing
+//
+// Option 2: Givebutter Embed Widget
+//   - Add this script to index.html: <script src="https://givebutter.com/js/widget.js"></script>
+//   - Replace the donate-card div with: <givebutter-widget id="YOUR_CAMPAIGN_ID"></givebutter-widget>
+//
+// Option 3: Givebutter Popup
+//   - Add script to index.html (same as above)
+//   - Add to button: data-givebutter-checkout="YOUR_CAMPAIGN_ID"
+// =============================================================================
+
+const GIVEBUTTER_CAMPAIGN_URL = null; // Replace with: 'https://givebutter.com/your-campaign'
+
 function Donate() {
   const [selectedAmount, setSelectedAmount] = useState(100);
   const [customAmount, setCustomAmount] = useState('');
@@ -24,6 +45,17 @@ function Donate() {
   const handleCustomChange = (e) => {
     setCustomAmount(e.target.value);
     setSelectedAmount(null);
+  };
+
+  const handleDonate = () => {
+    if (GIVEBUTTER_CAMPAIGN_URL) {
+      // Append amount to Givebutter URL if supported
+      const amount = customAmount || selectedAmount;
+      window.open(`${GIVEBUTTER_CAMPAIGN_URL}?amount=${amount}`, '_blank');
+    } else {
+      // Fallback to existing donation page until Givebutter is configured
+      window.open('https://supportworkshousing.org/donate/', '_blank');
+    }
   };
 
   const displayAmount = customAmount || selectedAmount;
@@ -72,7 +104,7 @@ function Donate() {
             </div>
           </div>
 
-          <button className="donate-btn">
+          <button className="donate-btn" onClick={handleDonate}>
             Donate ${displayAmount}
           </button>
 

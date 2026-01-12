@@ -116,15 +116,34 @@
   color: var(--color-white);
 }
 
+@media (max-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 40px;
+  }
+}
+
 @media (max-width: 768px) {
+  .footer {
+    padding: 48px 0 24px;
+  }
+
   .footer-grid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 32px;
+  }
+
+  .footer-tagline {
+    max-width: none;
   }
 
   .footer-bottom {
     flex-direction: column;
     gap: 16px;
     text-align: center;
+  }
+
+  .footer-legal {
+    gap: 16px;
   }
 }

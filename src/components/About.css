@@ -1,5 +1,6 @@
 .about {
   background-color: var(--color-white);
+  padding-top: 48px;
 }
 
 .about-row {
@@ -59,15 +60,78 @@
   margin-top: 8px;
 }
 
+@media (max-width: 1024px) {
+  .about-row {
+    gap: 40px;
+  }
+
+  .about-image img {
+    height: 320px;
+  }
+}
+
 @media (max-width: 768px) {
   .about-row,
   .about-row-reverse {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 24px;
     direction: ltr;
+    margin-bottom: 48px;
+  }
+
+  /* On mobile, always show content first, then image */
+  .about-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .about-row-reverse {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .about-row-reverse .about-image {
+    order: 2;
+  }
+
+  .about-row-reverse .about-content {
+    order: 1;
+  }
+
+  .about-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+  }
+
+  .about-content p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .about-image {
+    margin-left: -16px;
+    margin-right: -16px;
   }
 
   .about-image img {
-    height: 280px;
+    width: 100vw;
+    height: 220px;
+    border-radius: 0;
+  }
+
+  .about-list {
+    margin-top: 16px;
+  }
+
+  .about-list li {
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+
+  .bullet {
+    width: 6px;
+    height: 6px;
+    margin-top: 7px;
   }
 }

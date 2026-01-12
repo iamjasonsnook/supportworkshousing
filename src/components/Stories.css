@@ -205,9 +205,50 @@ blockquote {
   font-size: 0.875rem;
 }
 
+@media (max-width: 1024px) {
+  .testimonial-card {
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+    padding: 32px;
+  }
+
+  .testimonial-image img {
+    height: 220px;
+  }
+
+  blockquote {
+    font-size: 1.125rem;
+  }
+
+  .stories-stats {
+    gap: 24px;
+  }
+
+  .stories-stat-value {
+    font-size: 2rem;
+  }
+}
+
 @media (max-width: 768px) {
+  .stories {
+    padding: 40px 0;
+  }
+
+  .stories-header {
+    margin-bottom: 24px;
+  }
+
+  .stories-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .stories-header p {
+    font-size: 1rem;
+  }
+
   .testimonial-slider {
     flex-direction: column;
+    gap: 16px;
   }
 
   .slider-btn {
@@ -216,16 +257,101 @@ blockquote {
 
   .testimonial-card {
     grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .testimonial-image {
+    display: flex;
+    justify-content: center;
   }
 
   .testimonial-image img {
-    height: 250px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .quote-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+  }
+
+  .quote-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  blockquote {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .testimonial-author {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .testimonial-author strong {
+    font-size: 0.95rem;
+  }
+
+  .testimonial-author span {
+    font-size: 0.8rem;
+  }
+
+  .testimonial-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .testimonial-summary {
+    font-size: 0.9rem;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .testimonial-full-story {
+    padding: 16px;
+    margin-top: 8px;
+  }
+
+  .testimonial-full-story p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .expand-btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    margin-top: 12px;
+  }
+
+  .slider-dots {
+    margin-bottom: 32px;
+    gap: 10px;
+  }
+
+  .slider-dot {
+    width: 10px;
+    height: 10px;
   }
 
   .stories-stats {
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    gap: 16px;
+  }
+
+  .stories-stat-value {
+    font-size: 1.5rem;
+  }
+
+  .stories-stat-label {
+    font-size: 0.8rem;
   }
 }

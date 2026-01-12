@@ -10,9 +10,10 @@ function Footer() {
   ];
 
   const locations = [
-    { city: 'Charlottesville', phone: '(434) 295-8773' },
-    { city: 'Richmond', phone: '(804) 643-0052' },
-    { city: 'South Hampton Roads', phone: '(757) 625-5350' },
+    { city: 'Charlottesville', phone: '(434) 227-4251' },
+    { city: 'Richmond', phone: '(804) 788-6825' },
+    { city: 'South Hampton Roads', phone: '(757) 275-8544' },
+    { city: 'Fax', phone: '(804) 788-6827' },
   ];
 
   const socialLinks = [

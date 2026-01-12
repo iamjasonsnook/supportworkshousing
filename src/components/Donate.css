@@ -207,20 +207,44 @@
   background-color: var(--color-pink-light);
 }
 
+@media (max-width: 1024px) {
+  .donate-card {
+    max-width: 450px;
+  }
+
+  .impact-section {
+    max-width: 600px;
+  }
+}
+
 @media (max-width: 768px) {
+  .donate-header h2 {
+    font-size: 1.75rem;
+  }
+
   .amount-buttons {
     flex-wrap: wrap;
   }
 
   .amount-btn {
     flex: 0 0 calc(33.333% - 8px);
+    padding: 12px 8px;
+    font-size: 0.9rem;
   }
 
   .impact-items {
     grid-template-columns: 1fr;
   }
 
+  .impact-section h3 {
+    font-size: 1.25rem;
+  }
+
   .giving-buttons {
     flex-direction: column;
+  }
+
+  .giving-btn {
+    width: 100%;
   }
 }
