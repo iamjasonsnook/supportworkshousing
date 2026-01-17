@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: Deploy Production to GitHub Pages
 
 on:
   push:
-    branches: ['main']
+    branches: ['production']
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
+  group: 'pages-production'
   cancel-in-progress: true
 
 jobs:
@@ -29,6 +29,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+        env:
+          VITE_BASE_PATH: '/'
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
@@ -38,7 +40,7 @@ jobs:
 
   deploy:
     environment:
-      name: github-pages
+      name: production
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
