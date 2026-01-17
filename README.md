@@ -1,16 +1,49 @@
-# React + Vite
+# SupportWorks Housing Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React single-page application built with Vite for SupportWorks Housing, a nonprofit organization dedicated to providing housing support services.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install          # Install dependencies
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
 
-## React Compiler
+## Deployment
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project uses separate staging and production branches with automated GitHub Pages deployment:
 
-## Expanding the ESLint configuration
+### Branches
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **`production`** - Production environment (clean, DNS-ready)
+  - Deploys to: `https://iamjasonsnook.github.io/supportworkshousing/`
+  - Base path: `/` (configured for custom domain)
+  - Auto-deploys on push via `.github/workflows/deploy-production.yml`
+
+- **`staging`** - Testing and experimentation
+  - Deploys to: `https://iamjasonsnook.github.io/supportworkshousing/staging/`
+  - Base path: `/supportworkshousing/staging/`
+  - Auto-deploys on push via `.github/workflows/deploy-staging.yml`
+
+### Workflow
+
+1. **Development**: Make changes in feature branches
+2. **Testing**: Merge to `staging` branch to test on staging site
+3. **Production**: When ready, merge `staging` to `production` for live deployment
+
+### Custom Domain Setup
+
+To point your custom domain to production:
+1. Add a CNAME record pointing to `iamjasonsnook.github.io`
+2. Configure custom domain in GitHub repository settings
+3. Production branch is configured with base path `/` for clean URLs
+
+## Tech Stack
+
+- React 19.2.0
+- Vite 7.2.4
+- React Router DOM
+- Lucide React (icons)
