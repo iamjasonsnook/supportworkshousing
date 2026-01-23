@@ -27,7 +27,6 @@ function ConnectionNights({
     // Step 1
     locationId: '',
     timeSlotId: '',
-    alternateDateTime: '',
 
     // Step 2
     isIndividual: false,
@@ -151,7 +150,6 @@ function ConnectionNights({
         day: selectedTimeSlot?.day,
         time: selectedTimeSlot?.time,
       },
-      alternateDateTime: formData.alternateDateTime || null,
       group: {
         isIndividual: formData.isIndividual,
         name: formData.isIndividual ? 'Individual' : formData.groupName,
@@ -251,7 +249,6 @@ function ConnectionNights({
                 setFormData({
                   locationId: '',
                   timeSlotId: '',
-                  alternateDateTime: '',
                   isIndividual: false,
                   groupName: '',
                   contactName: '',
@@ -362,19 +359,6 @@ function ConnectionNights({
                     {errors.timeSlotId && <span className="cn-error">{errors.timeSlotId}</span>}
                   </div>
                 )}
-
-                <div className="cn-form-group">
-                  <label htmlFor="alternateDateTime">
-                    Alternate Date/Time Preference (Optional)
-                  </label>
-                  <textarea
-                    id="alternateDateTime"
-                    rows="2"
-                    placeholder="If none of the above times work, suggest an alternative..."
-                    value={formData.alternateDateTime}
-                    onChange={(e) => updateField('alternateDateTime', e.target.value)}
-                  />
-                </div>
               </div>
             )}
 
@@ -682,12 +666,6 @@ function ConnectionNights({
                       {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.time}
                     </span>
                   </div>
-                  {formData.alternateDateTime && (
-                    <div className="cn-review-item">
-                      <strong>Alternate:</strong>
-                      <span>{formData.alternateDateTime}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="cn-review-section">
