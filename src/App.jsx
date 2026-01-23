@@ -1,6 +1,7 @@
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Impact from './components/Impact';
+import ConnectionNights from './components/ConnectionNights';
 import About from './components/About';
 import Stories from './components/Stories';
 import Donate from './components/Donate';
@@ -14,6 +15,7 @@ function App() {
       <main>
         <Hero />
         <Impact />
+        <ConnectionNights />
         <About />
         <Stories />
         <Donate />
