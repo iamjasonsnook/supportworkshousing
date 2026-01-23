@@ -1,0 +1,207 @@
+.confirmation-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 40px 20px;
+}
+
+.confirmation-container {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  padding: 60px 40px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.confirmation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  animation: fadeInScale 0.5s ease-out;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirmation-title {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.confirmation-title.success {
+  color: #22c55e;
+}
+
+.confirmation-title.error {
+  color: #ef4444;
+}
+
+.confirmation-title.invalid {
+  color: #f59e0b;
+}
+
+.confirmation-title.loading {
+  color: #666;
+}
+
+.confirmation-message {
+  font-size: 1.1rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  animation: fadeIn 0.6s ease-out 0.4s both;
+}
+
+.request-details {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  text-align: left;
+  animation: fadeIn 0.6s ease-out 0.6s both;
+}
+
+.request-details.error {
+  background: #fee;
+  border-left: 4px solid #ef4444;
+}
+
+.request-details h3 {
+  font-size: 1.2rem;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.details-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.detail-value {
+  color: #1a1a1a;
+  font-size: 0.95rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #9B1B5D;
+  color: white;
+}
+
+.confirmation-actions {
+  animation: fadeIn 0.6s ease-out 0.8s both;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 14px 32px;
+  background: #9B1B5D;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #7d1549;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(155, 27, 93, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .confirmation-container {
+    padding: 40px 24px;
+  }
+
+  .confirmation-title {
+    font-size: 1.75rem;
+  }
+
+  .confirmation-message {
+    font-size: 1rem;
+  }
+
+  .details-grid {
+    gap: 8px;
+  }
+
+  .detail-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .detail-label {
+    font-size: 0.85rem;
+  }
+
+  .detail-value {
+    font-size: 0.9rem;
+    padding-left: 0;
+  }
+}
