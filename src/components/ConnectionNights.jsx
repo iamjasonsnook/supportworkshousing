@@ -40,9 +40,9 @@ function ConnectionNights({
     foodPlan: '',
     activityPlan: '',
 
-    // Step 4
-    agreeToRequest: false,
-    agreeToGuidelines: false,
+    // Step 4 - auto-agreed (no checkboxes in UI)
+    agreeToRequest: true,
+    agreeToGuidelines: true,
   });
 
   // Validation errors
@@ -100,10 +100,7 @@ function ConnectionNights({
       if (!formData.activityPlan) newErrors.activityPlan = 'Please select an activity';
     }
 
-    if (step === 4) {
-      if (!formData.agreeToRequest) newErrors.agreeToRequest = 'You must acknowledge this is a request';
-      if (!formData.agreeToGuidelines) newErrors.agreeToGuidelines = 'You must agree to follow guidelines';
-    }
+    // Step 4 validation removed - no checkboxes needed
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -245,8 +242,8 @@ function ConnectionNights({
                   groupSize: '',
                   foodPlan: '',
                   activityPlan: '',
-                  agreeToRequest: false,
-                  agreeToGuidelines: false,
+                  agreeToRequest: true,
+                  agreeToGuidelines: true,
                 });
               }}
             >
@@ -611,6 +608,24 @@ function ConnectionNights({
                         {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.time}
                       </span>
                     </div>
+                    <div className="cn-review-item">
+                      <strong>Food Plan:</strong>
+                      <span>
+                        {formData.foodPlan === 'bring' && 'Bring food'}
+                        {formData.foodPlan === 'cater' && 'Cater/deliver food'}
+                        {formData.foodPlan === 'guidance' && 'Request guidance'}
+                      </span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Activity:</strong>
+                      <span>
+                        {formData.activityPlan === 'board-games' && 'Board games'}
+                        {formData.activityPlan === 'bingo' && 'Bingo'}
+                        {formData.activityPlan === 'trivia' && 'Trivia'}
+                        {formData.activityPlan === 'crafts' && 'Crafts'}
+                        {formData.activityPlan === 'other' && 'Other'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="cn-review-section">
@@ -642,58 +657,6 @@ function ConnectionNights({
                       <span>{formData.groupSize} people</span>
                     </div>
                   </div>
-
-                  <div className="cn-review-section cn-review-section-wide">
-                    <h4>Meal & Activity Plan</h4>
-                    <div className="cn-review-items-row">
-                      <div className="cn-review-item">
-                        <strong>Food Plan:</strong>
-                        <span>
-                          {formData.foodPlan === 'bring' && 'Bring food'}
-                          {formData.foodPlan === 'cater' && 'Cater/deliver food'}
-                          {formData.foodPlan === 'guidance' && 'Request guidance'}
-                        </span>
-                      </div>
-                      <div className="cn-review-item">
-                        <strong>Activity:</strong>
-                        <span>
-                          {formData.activityPlan === 'board-games' && 'Board games'}
-                          {formData.activityPlan === 'bingo' && 'Bingo'}
-                          {formData.activityPlan === 'trivia' && 'Trivia'}
-                          {formData.activityPlan === 'crafts' && 'Crafts'}
-                          {formData.activityPlan === 'other' && 'Other'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="cn-form-group">
-                  <label className={`cn-checkbox ${errors.agreeToRequest ? 'error' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.agreeToRequest}
-                      onChange={(e) => updateField('agreeToRequest', e.target.checked)}
-                    />
-                    <span>
-                      I understand this is a request and is not confirmed until SupportWorks approves.
-                    </span>
-                  </label>
-                  {errors.agreeToRequest && <span className="cn-error">{errors.agreeToRequest}</span>}
-                </div>
-
-                <div className="cn-form-group">
-                  <label className={`cn-checkbox ${errors.agreeToGuidelines ? 'error' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.agreeToGuidelines}
-                      onChange={(e) => updateField('agreeToGuidelines', e.target.checked)}
-                    />
-                    <span>
-                      I agree to follow onsite guidelines provided by SupportWorks.
-                    </span>
-                  </label>
-                  {errors.agreeToGuidelines && <span className="cn-error">{errors.agreeToGuidelines}</span>}
                 </div>
 
                 {submitError && (
