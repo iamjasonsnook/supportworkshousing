@@ -643,25 +643,27 @@ function ConnectionNights({
                     </div>
                   </div>
 
-                  <div className="cn-review-section">
+                  <div className="cn-review-section cn-review-section-wide">
                     <h4>Meal & Activity Plan</h4>
-                    <div className="cn-review-item">
-                      <strong>Food Plan:</strong>
-                      <span>
-                        {formData.foodPlan === 'bring' && 'Bring food'}
-                        {formData.foodPlan === 'cater' && 'Cater/deliver food'}
-                        {formData.foodPlan === 'guidance' && 'Request guidance'}
-                      </span>
-                    </div>
-                    <div className="cn-review-item">
-                      <strong>Activity:</strong>
-                      <span>
-                        {formData.activityPlan === 'board-games' && 'Board games'}
-                        {formData.activityPlan === 'bingo' && 'Bingo'}
-                        {formData.activityPlan === 'trivia' && 'Trivia'}
-                        {formData.activityPlan === 'crafts' && 'Crafts'}
-                        {formData.activityPlan === 'other' && 'Other'}
-                      </span>
+                    <div className="cn-review-items-row">
+                      <div className="cn-review-item">
+                        <strong>Food Plan:</strong>
+                        <span>
+                          {formData.foodPlan === 'bring' && 'Bring food'}
+                          {formData.foodPlan === 'cater' && 'Cater/deliver food'}
+                          {formData.foodPlan === 'guidance' && 'Request guidance'}
+                        </span>
+                      </div>
+                      <div className="cn-review-item">
+                        <strong>Activity:</strong>
+                        <span>
+                          {formData.activityPlan === 'board-games' && 'Board games'}
+                          {formData.activityPlan === 'bingo' && 'Bingo'}
+                          {formData.activityPlan === 'trivia' && 'Trivia'}
+                          {formData.activityPlan === 'crafts' && 'Crafts'}
+                          {formData.activityPlan === 'other' && 'Other'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
