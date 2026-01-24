@@ -38,10 +38,7 @@ function ConnectionNights({
 
     // Step 3
     foodPlan: '',
-    foodDetails: '',
     activityPlan: '',
-    activityDetails: '',
-    propertyNotes: '',
 
     // Step 4
     agreeToRequest: false,
@@ -100,13 +97,7 @@ function ConnectionNights({
 
     if (step === 3) {
       if (!formData.foodPlan) newErrors.foodPlan = 'Please select a food plan';
-      if ((formData.foodPlan === 'bring' || formData.foodPlan === 'cater') && !formData.foodDetails.trim()) {
-        newErrors.foodDetails = 'Please provide details about the food';
-      }
       if (!formData.activityPlan) newErrors.activityPlan = 'Please select an activity';
-      if (formData.activityPlan === 'other' && !formData.activityDetails.trim()) {
-        newErrors.activityDetails = 'Please describe the activity you plan to host';
-      }
     }
 
     if (step === 4) {
@@ -162,10 +153,7 @@ function ConnectionNights({
       },
       event: {
         foodPlan: formData.foodPlan,
-        foodDetails: formData.foodDetails || null,
         activityPlan: formData.activityPlan,
-        activityDetails: formData.activityDetails || null,
-        propertyNotes: formData.propertyNotes || null,
       },
       recipients: {
         missionAdvancement: missionAdvancementEmail,
@@ -256,10 +244,7 @@ function ConnectionNights({
                   contactPhone: '',
                   groupSize: '',
                   foodPlan: '',
-                  foodDetails: '',
                   activityPlan: '',
-                  activityDetails: '',
-                  propertyNotes: '',
                   agreeToRequest: false,
                   agreeToGuidelines: false,
                 });
@@ -537,21 +522,6 @@ function ConnectionNights({
                   {errors.foodPlan && <span className="cn-error">{errors.foodPlan}</span>}
                 </div>
 
-                {(formData.foodPlan === 'bring' || formData.foodPlan === 'cater') && (
-                  <div className="cn-form-group">
-                    <label htmlFor="foodDetails">Food Details</label>
-                    <textarea
-                      id="foodDetails"
-                      rows="3"
-                      placeholder="Describe the meal you're planning (e.g., pizza, sandwiches, etc.) and any delivery notes..."
-                      value={formData.foodDetails}
-                      onChange={(e) => updateField('foodDetails', e.target.value)}
-                      className={errors.foodDetails ? 'error' : ''}
-                    />
-                    {errors.foodDetails && <span className="cn-error">{errors.foodDetails}</span>}
-                  </div>
-                )}
-
                 <div className="cn-form-group">
                   <label>Activity Plan</label>
                   <div className="cn-radio-group">
@@ -607,32 +577,6 @@ function ConnectionNights({
                     </label>
                   </div>
                   {errors.activityPlan && <span className="cn-error">{errors.activityPlan}</span>}
-                </div>
-
-                {formData.activityPlan === 'other' && (
-                  <div className="cn-form-group">
-                    <label htmlFor="activityDetails">Activity Details</label>
-                    <textarea
-                      id="activityDetails"
-                      rows="3"
-                      placeholder="Describe the activity you're planning..."
-                      value={formData.activityDetails}
-                      onChange={(e) => updateField('activityDetails', e.target.value)}
-                      className={errors.activityDetails ? 'error' : ''}
-                    />
-                    {errors.activityDetails && <span className="cn-error">{errors.activityDetails}</span>}
-                  </div>
-                )}
-
-                <div className="cn-form-group">
-                  <label htmlFor="propertyNotes">Notes for Property Staff (Optional)</label>
-                  <textarea
-                    id="propertyNotes"
-                    rows="3"
-                    placeholder="Any special requests or information for the property manager..."
-                    value={formData.propertyNotes}
-                    onChange={(e) => updateField('propertyNotes', e.target.value)}
-                  />
                 </div>
               </div>
             )}
@@ -708,12 +652,6 @@ function ConnectionNights({
                       {formData.foodPlan === 'guidance' && 'Request guidance'}
                     </span>
                   </div>
-                  {formData.foodDetails && (
-                    <div className="cn-review-item">
-                      <strong>Food Details:</strong>
-                      <span>{formData.foodDetails}</span>
-                    </div>
-                  )}
                   <div className="cn-review-item">
                     <strong>Activity:</strong>
                     <span>
@@ -724,18 +662,6 @@ function ConnectionNights({
                       {formData.activityPlan === 'other' && 'Other'}
                     </span>
                   </div>
-                  {formData.activityDetails && (
-                    <div className="cn-review-item">
-                      <strong>Activity Details:</strong>
-                      <span>{formData.activityDetails}</span>
-                    </div>
-                  )}
-                  {formData.propertyNotes && (
-                    <div className="cn-review-item">
-                      <strong>Property Notes:</strong>
-                      <span>{formData.propertyNotes}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="cn-form-group">

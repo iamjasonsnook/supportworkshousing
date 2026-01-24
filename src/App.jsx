@@ -11,12 +11,15 @@ import './App.css';
 function App() {
   const connectionNightsTimeSlots = {
     'clay-house': [
-      { id: 'sat-jan-25', day: 'Saturday, January 25', time: '5:00 PM - 7:00 PM' },
-      { id: 'tue-jan-28', day: 'Tuesday, January 28', time: '6:00 PM - 8:00 PM' },
-      { id: 'thu-jan-30', day: 'Thursday, January 30', time: '6:00 PM - 8:00 PM' },
-      { id: 'sat-feb-1', day: 'Saturday, February 1', time: '5:00 PM - 7:00 PM' },
-      { id: 'tue-feb-4', day: 'Tuesday, February 4', time: '6:00 PM - 8:00 PM' },
-      { id: 'thu-feb-6', day: 'Thursday, February 6', time: '6:00 PM - 8:00 PM' },
+      { id: 'tue-feb-10', day: 'Tuesday, February 10', time: '6:00 PM - 8:00 PM' },
+      { id: 'wed-feb-11', day: 'Wednesday, February 11', time: '6:00 PM - 8:00 PM' },
+      { id: 'thu-feb-12', day: 'Thursday, February 12', time: '6:00 PM - 8:00 PM' },
+      { id: 'tue-feb-17', day: 'Tuesday, February 17', time: '6:00 PM - 8:00 PM' },
+      { id: 'wed-feb-18', day: 'Wednesday, February 18', time: '6:00 PM - 8:00 PM' },
+      { id: 'thu-feb-19', day: 'Thursday, February 19', time: '6:00 PM - 8:00 PM' },
+      { id: 'tue-feb-24', day: 'Tuesday, February 24', time: '6:00 PM - 8:00 PM' },
+      { id: 'wed-feb-25', day: 'Wednesday, February 25', time: '6:00 PM - 8:00 PM' },
+      { id: 'thu-feb-26', day: 'Thursday, February 26', time: '6:00 PM - 8:00 PM' },
     ]
   };
 
