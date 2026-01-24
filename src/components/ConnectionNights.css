@@ -284,17 +284,23 @@
 }
 
 /* Review Sections */
+.cn-review-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .cn-review-section {
-  padding: 12px 14px;
+  padding: 10px 12px;
   background-color: var(--color-gray-50);
   border-radius: var(--radius-sm);
-  margin-bottom: 10px;
 }
 
 .cn-review-section h4 {
   color: var(--color-primary);
-  font-size: 0.95rem;
-  margin-bottom: 10px;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
@@ -302,9 +308,9 @@
 
 .cn-review-item {
   display: grid;
-  grid-template-columns: 150px 1fr;
-  gap: 12px;
-  padding: 8px 0;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-gray-200);
 }
 
@@ -315,12 +321,12 @@
 .cn-review-item strong {
   color: var(--color-text-muted);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .cn-review-item span {
   color: var(--color-text-dark);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 /* Wizard Actions */
@@ -482,6 +488,10 @@
   }
 
   .cn-time-slots {
+    grid-template-columns: 1fr;
+  }
+
+  .cn-review-container {
     grid-template-columns: 1fr;
   }
 
