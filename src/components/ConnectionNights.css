@@ -4,7 +4,7 @@
 
 .cn-header {
   text-align: center;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto 32px;
 }
 
@@ -20,8 +20,9 @@
 
 /* Wizard Container */
 .cn-wizard-container {
-  max-width: 700px;
+  max-width: var(--container-max);
   margin: 0 auto;
+  padding: 0 24px;
 }
 
 /* Progress Bar */
@@ -172,7 +173,7 @@
 /* Radio Group */
 .cn-radio-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
@@ -208,7 +209,7 @@
 /* Time Slots */
 .cn-time-slots {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
