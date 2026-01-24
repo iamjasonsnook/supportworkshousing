@@ -4,8 +4,8 @@
 
 .cn-header {
   text-align: center;
-  max-width: 800px;
-  margin: 0 auto 32px;
+  max-width: 700px;
+  margin: 0 auto 24px;
 }
 
 .cn-header h2 {
@@ -20,14 +20,14 @@
 
 /* Wizard Container */
 .cn-wizard-container {
-  max-width: var(--container-max);
+  max-width: 768px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
 /* Progress Bar */
 .cn-progress {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .cn-progress-text {
@@ -57,7 +57,7 @@
   background-color: var(--color-white);
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 24px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -80,15 +80,15 @@
 .cn-step-header {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 2px solid var(--color-gray-100);
 }
 
 .cn-step-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   background-color: var(--color-pink-icon);
   border-radius: var(--radius-md);
   display: flex;
@@ -109,7 +109,7 @@
 
 /* Form Elements */
 .cn-form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .cn-form-group label {
@@ -129,7 +129,7 @@
 .cn-form-group select,
 .cn-form-group textarea {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 2px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   font-family: inherit;
@@ -167,21 +167,21 @@
 .cn-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* Radio Group */
 .cn-radio-group {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .cn-radio {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 2px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -210,14 +210,14 @@
 .cn-time-slots {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .cn-time-slot {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px;
+  padding: 12px;
   background-color: var(--color-white);
   border: 2px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
@@ -249,8 +249,8 @@
 .cn-checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
   background-color: var(--color-gray-50);
   border: 2px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
@@ -285,16 +285,16 @@
 
 /* Review Sections */
 .cn-review-section {
-  padding: 16px 20px;
+  padding: 14px 16px;
   background-color: var(--color-gray-50);
   border-radius: var(--radius-sm);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .cn-review-section h4 {
   color: var(--color-primary);
   font-size: 1rem;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
@@ -327,8 +327,8 @@
 .cn-wizard-actions {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 2px solid var(--color-gray-100);
 }
 
