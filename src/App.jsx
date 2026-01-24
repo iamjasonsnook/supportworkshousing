@@ -9,18 +9,40 @@ import Footer from './components/Footer';
 import './App.css';
 
 function App() {
+  // Generate dynamic dates starting 2 weeks out, Tue/Wed/Thu only, for 3 weeks
+  const generateConnectionNightsDates = () => {
+    const dates = [];
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + 14); // Start 2 weeks out
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 21); // Cover 3 weeks
+
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dayOfWeek = currentDate.getDay();
+      // 2 = Tuesday, 3 = Wednesday, 4 = Thursday
+      if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4) {
+        const month = currentDate.toLocaleDateString('en-US', { month: 'long' });
+        const day = currentDate.getDate();
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+        dates.push({
+          id: `${dayName.toLowerCase().slice(0, 3)}-${month.toLowerCase().slice(0, 3)}-${day}`,
+          day: `${dayName}, ${month} ${day}`,
+          time: '6:00 PM - 8:00 PM'
+        });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  };
+
   const connectionNightsTimeSlots = {
-    'clay-house': [
-      { id: 'tue-feb-10', day: 'Tuesday, February 10', time: '6:00 PM - 8:00 PM' },
-      { id: 'wed-feb-11', day: 'Wednesday, February 11', time: '6:00 PM - 8:00 PM' },
-      { id: 'thu-feb-12', day: 'Thursday, February 12', time: '6:00 PM - 8:00 PM' },
-      { id: 'tue-feb-17', day: 'Tuesday, February 17', time: '6:00 PM - 8:00 PM' },
-      { id: 'wed-feb-18', day: 'Wednesday, February 18', time: '6:00 PM - 8:00 PM' },
-      { id: 'thu-feb-19', day: 'Thursday, February 19', time: '6:00 PM - 8:00 PM' },
-      { id: 'tue-feb-24', day: 'Tuesday, February 24', time: '6:00 PM - 8:00 PM' },
-      { id: 'wed-feb-25', day: 'Wednesday, February 25', time: '6:00 PM - 8:00 PM' },
-      { id: 'thu-feb-26', day: 'Thursday, February 26', time: '6:00 PM - 8:00 PM' },
-    ]
+    'clay-house': generateConnectionNightsDates()
   };
 
   return (

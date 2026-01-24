@@ -593,74 +593,76 @@ function ConnectionNights({
                   </div>
                 </div>
 
-                <div className="cn-review-section">
-                  <h4>Location & Time</h4>
-                  <div className="cn-review-item">
-                    <strong>Location:</strong>
-                    <span>{selectedLocation?.name}</span>
-                  </div>
-                  <div className="cn-review-item">
-                    <strong>Address:</strong>
-                    <span>{selectedLocation?.address}</span>
-                  </div>
-                  <div className="cn-review-item">
-                    <strong>Time Slot:</strong>
-                    <span>
-                      {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.day}{' '}
-                      {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.time}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="cn-review-section">
-                  <h4>Group Information</h4>
-                  <div className="cn-review-item">
-                    <strong>Type:</strong>
-                    <span>{formData.isIndividual ? 'Individual' : 'Group/Organization'}</span>
-                  </div>
-                  {!formData.isIndividual && (
+                <div className="cn-review-container">
+                  <div className="cn-review-section">
+                    <h4>Location & Time</h4>
                     <div className="cn-review-item">
-                      <strong>Group Name:</strong>
-                      <span>{formData.groupName}</span>
+                      <strong>Location:</strong>
+                      <span>{selectedLocation?.name}</span>
                     </div>
-                  )}
-                  <div className="cn-review-item">
-                    <strong>Contact:</strong>
-                    <span>{formData.contactName}</span>
+                    <div className="cn-review-item">
+                      <strong>Address:</strong>
+                      <span>{selectedLocation?.address}</span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Time Slot:</strong>
+                      <span>
+                        {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.day}{' '}
+                        {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.time}
+                      </span>
+                    </div>
                   </div>
-                  <div className="cn-review-item">
-                    <strong>Email:</strong>
-                    <span>{formData.contactEmail}</span>
-                  </div>
-                  <div className="cn-review-item">
-                    <strong>Phone:</strong>
-                    <span>{formData.contactPhone}</span>
-                  </div>
-                  <div className="cn-review-item">
-                    <strong>Group Size:</strong>
-                    <span>{formData.groupSize} people</span>
-                  </div>
-                </div>
 
-                <div className="cn-review-section">
-                  <h4>Meal & Activity Plan</h4>
-                  <div className="cn-review-item">
-                    <strong>Food Plan:</strong>
-                    <span>
-                      {formData.foodPlan === 'bring' && 'Bring food'}
-                      {formData.foodPlan === 'cater' && 'Cater/deliver food'}
-                      {formData.foodPlan === 'guidance' && 'Request guidance'}
-                    </span>
+                  <div className="cn-review-section">
+                    <h4>Group Information</h4>
+                    <div className="cn-review-item">
+                      <strong>Type:</strong>
+                      <span>{formData.isIndividual ? 'Individual' : 'Group/Organization'}</span>
+                    </div>
+                    {!formData.isIndividual && (
+                      <div className="cn-review-item">
+                        <strong>Group Name:</strong>
+                        <span>{formData.groupName}</span>
+                      </div>
+                    )}
+                    <div className="cn-review-item">
+                      <strong>Contact:</strong>
+                      <span>{formData.contactName}</span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Email:</strong>
+                      <span>{formData.contactEmail}</span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Phone:</strong>
+                      <span>{formData.contactPhone}</span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Group Size:</strong>
+                      <span>{formData.groupSize} people</span>
+                    </div>
                   </div>
-                  <div className="cn-review-item">
-                    <strong>Activity:</strong>
-                    <span>
-                      {formData.activityPlan === 'board-games' && 'Board games'}
-                      {formData.activityPlan === 'bingo' && 'Bingo'}
-                      {formData.activityPlan === 'trivia' && 'Trivia'}
-                      {formData.activityPlan === 'crafts' && 'Crafts'}
-                      {formData.activityPlan === 'other' && 'Other'}
-                    </span>
+
+                  <div className="cn-review-section">
+                    <h4>Meal & Activity Plan</h4>
+                    <div className="cn-review-item">
+                      <strong>Food Plan:</strong>
+                      <span>
+                        {formData.foodPlan === 'bring' && 'Bring food'}
+                        {formData.foodPlan === 'cater' && 'Cater/deliver food'}
+                        {formData.foodPlan === 'guidance' && 'Request guidance'}
+                      </span>
+                    </div>
+                    <div className="cn-review-item">
+                      <strong>Activity:</strong>
+                      <span>
+                        {formData.activityPlan === 'board-games' && 'Board games'}
+                        {formData.activityPlan === 'bingo' && 'Bingo'}
+                        {formData.activityPlan === 'trivia' && 'Trivia'}
+                        {formData.activityPlan === 'crafts' && 'Crafts'}
+                        {formData.activityPlan === 'other' && 'Other'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
