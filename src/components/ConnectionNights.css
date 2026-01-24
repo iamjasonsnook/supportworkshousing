@@ -297,23 +297,6 @@
   border-radius: var(--radius-sm);
 }
 
-.cn-review-section-wide {
-  grid-column: 1 / -1;
-}
-
-.cn-review-items-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.cn-review-items-row .cn-review-item {
-  border-bottom: none;
-  padding: 4px 8px;
-  background-color: var(--color-white);
-  border-radius: 4px;
-}
-
 .cn-review-section h4 {
   color: var(--color-primary);
   font-size: 0.85rem;
@@ -509,10 +492,6 @@
   }
 
   .cn-review-container {
-    grid-template-columns: 1fr;
-  }
-
-  .cn-review-items-row {
     grid-template-columns: 1fr;
   }
 
