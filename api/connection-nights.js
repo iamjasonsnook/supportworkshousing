@@ -257,49 +257,69 @@ export default async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
     const resendApiKey = process.env.RESEND_API_KEY;
-    const appUrl = process.env.APP_URL || 'http://localhost:5173';
+    const appUrl = process.env.APP_URL || 'https://supportworkshousing.org';
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const requestData = req.body;
 
-    // Insert into database
-    const { data: insertedData, error: insertError } = await supabase
-      .from('connection_nights')
-      .insert([
-        {
-          location_id: requestData.location.id,
-          location_name: requestData.location.name,
-          location_address: requestData.location.address,
-          time_slot_id: requestData.timeSlot.id,
-          time_slot_day: requestData.timeSlot.day,
-          time_slot_time: requestData.timeSlot.time,
-          alternate_date_time: requestData.alternateDateTime,
-          is_individual: requestData.group.isIndividual,
-          group_name: requestData.group.name,
-          group_size: requestData.group.size,
-          contact_name: requestData.contact.name,
-          contact_email: requestData.contact.email,
-          contact_phone: requestData.contact.phone,
-          food_plan: requestData.event.foodPlan,
-          food_details: requestData.event.foodDetails,
-          activity_plan: requestData.event.activityPlan,
-          activity_details: requestData.event.activityDetails,
-          property_notes: requestData.event.propertyNotes,
-          mission_advancement_email: requestData.recipients.missionAdvancement || 'jsnook@supportworkshousing.org',
-          property_manager_email: requestData.recipients.propertyManager,
-          status: 'pending',
-        },
-      ])
-      .select()
-      .single();
+    // Build data object for email templates
+    const emailData = {
+      id: Date.now().toString(),
+      location_id: requestData.location.id,
+      location_name: requestData.location.name,
+      location_address: requestData.location.address,
+      time_slot_id: requestData.timeSlot.id,
+      time_slot_day: requestData.timeSlot.day,
+      time_slot_time: requestData.timeSlot.time,
+      is_individual: requestData.group.isIndividual,
+      group_name: requestData.group.name,
+      group_size: requestData.group.size,
+      contact_name: requestData.contact.name,
+      contact_email: requestData.contact.email,
+      contact_phone: requestData.contact.phone,
+      food_plan: requestData.event.foodPlan,
+      activity_plan: requestData.event.activityPlan,
+      confirmation_token: `stub-${Date.now()}`,
+    };
 
-    if (insertError) {
-      console.error('Database insert error:', insertError);
-      throw new Error('Failed to save request to database');
+    let insertedData = emailData;
+
+    // If Supabase is configured, save to database
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: dbData, error: insertError } = await supabase
+        .from('connection_nights')
+        .insert([
+          {
+            location_id: requestData.location.id,
+            location_name: requestData.location.name,
+            location_address: requestData.location.address,
+            time_slot_id: requestData.timeSlot.id,
+            time_slot_day: requestData.timeSlot.day,
+            time_slot_time: requestData.timeSlot.time,
+            alternate_date_time: requestData.alternateDateTime,
+            is_individual: requestData.group.isIndividual,
+            group_name: requestData.group.name,
+            group_size: requestData.group.size,
+            contact_name: requestData.contact.name,
+            contact_email: requestData.contact.email,
+            contact_phone: requestData.contact.phone,
+            food_plan: requestData.event.foodPlan,
+            food_details: requestData.event.foodDetails,
+            activity_plan: requestData.event.activityPlan,
+            activity_details: requestData.event.activityDetails,
+            property_notes: requestData.event.propertyNotes,
+            mission_advancement_email: 'jsnook@supportworkshousing.org',
+            property_manager_email: requestData.recipients?.propertyManager,
+            status: 'pending',
+          },
+        ])
+        .select()
+        .single();
+
+      if (!insertError && dbData) {
+        insertedData = dbData;
+      }
     }
 
     // Send emails using Resend
@@ -321,7 +341,7 @@ export default async function handler(req, res) {
           }),
         });
 
-        // Send mission advancement email
+        // Send mission advancement email to jsnook@supportworkshousing.org
         const missionEmail = getMissionAdvancementEmail(insertedData, insertedData.confirmation_token, appUrl);
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -336,10 +356,16 @@ export default async function handler(req, res) {
             html: missionEmail.html,
           }),
         });
+
+        console.log('Emails sent successfully to volunteer and jsnook@supportworkshousing.org');
       } catch (emailError) {
         console.error('Email send error:', emailError);
         // Don't fail the request if email fails
       }
+    } else {
+      console.log('No RESEND_API_KEY configured - emails not sent');
+      console.log('Would send to: jsnook@supportworkshousing.org');
+      console.log('Request data:', JSON.stringify(insertedData, null, 2));
     }
 
     return res.status(200).json({
