@@ -137,45 +137,45 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Prepare form data for FormSubmit
-    const formDataToSubmit = new FormData();
-
-    // FormSubmit configuration
-    formDataToSubmit.append('_subject', `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`);
-    formDataToSubmit.append('_replyto', formData.contactEmail);
-    formDataToSubmit.append('_template', 'table'); // Use nice table format
-    formDataToSubmit.append('_captcha', 'false'); // Disable captcha for better UX
-
-    // Form fields (FormSubmit will display these in a nice table)
-    formDataToSubmit.append('Location', selectedLocation?.name);
-    formDataToSubmit.append('Address', selectedLocation?.address);
-    formDataToSubmit.append('Date & Time', `${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}`);
-    formDataToSubmit.append('Group Name', formData.groupName);
-    formDataToSubmit.append('Contact Name', formData.contactName);
-    formDataToSubmit.append('Contact Email', formData.contactEmail);
-    formDataToSubmit.append('Contact Phone', formData.contactPhone);
-    formDataToSubmit.append('Group Size', `${formData.groupSize} people`);
-    formDataToSubmit.append('Food Plan', foodPlanText);
-    formDataToSubmit.append('Activity', activityPlanText);
-    formDataToSubmit.append('Submitted', new Date().toLocaleString());
+    // Prepare JSON payload for FormSubmit
+    const payload = {
+      _subject: `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`,
+      _replyto: formData.contactEmail,
+      _template: 'table',
+      _captcha: 'false',
+      Location: selectedLocation?.name,
+      Address: selectedLocation?.address,
+      'Date & Time': `${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}`,
+      'Group Name': formData.groupName,
+      'Contact Name': formData.contactName,
+      'Contact Email': formData.contactEmail,
+      'Contact Phone': formData.contactPhone,
+      'Group Size': `${formData.groupSize} people`,
+      'Food Plan': foodPlanText,
+      Activity: activityPlanText,
+      Submitted: new Date().toLocaleString(),
+    };
 
     try {
       const response = await fetch(`https://formsubmit.co/ajax/${formSubmitEmail}`, {
         method: 'POST',
-        body: formDataToSubmit,
         headers: {
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
+      console.log('FormSubmit response:', result);
 
-      if (!response.ok || result.success === 'false') {
-        throw new Error(result.message || 'Failed to submit request. Please try again.');
+      if (result.success === 'false' || result.success === false) {
+        throw new Error(result.message || 'FormSubmit returned an error. Please try again.');
       }
 
       setIsSubmitted(true);
     } catch (error) {
+      console.error('Form submission error:', error);
       setSubmitError(error.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
