@@ -206,6 +206,70 @@
   color: var(--color-text-dark);
 }
 
+/* Location Tiles */
+.cn-location-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cn-location-tile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.cn-location-tile:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-pink-light);
+}
+
+.cn-location-tile.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-pink-light);
+  box-shadow: 0 0 0 3px rgba(155, 27, 93, 0.15);
+}
+
+.cn-location-tile.error {
+  border-color: #DC2626;
+}
+
+.cn-location-tile-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-pink-icon);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cn-location-tile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cn-location-tile-content strong {
+  color: var(--color-text-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.cn-location-tile-content span {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
 /* Time Slots */
 .cn-time-slots {
   display: grid;
@@ -489,6 +553,24 @@
 
   .cn-time-slots {
     grid-template-columns: 1fr;
+  }
+
+  .cn-location-tile {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .cn-location-tile-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cn-location-tile-content strong {
+    font-size: 1rem;
+  }
+
+  .cn-location-tile-content span {
+    font-size: 0.85rem;
   }
 
   .cn-review-container {
