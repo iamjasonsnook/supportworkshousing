@@ -54,10 +54,7 @@ function App() {
         <About />
         <Stories />
         <Donate />
-        <ConnectionNights
-          timeSlotsByLocation={connectionNightsTimeSlots}
-          formspreeId="YOUR_FORMSPREE_ID" // Replace with your Formspree form ID
-        />
+        <ConnectionNights timeSlotsByLocation={connectionNightsTimeSlots} />
       </main>
       <Footer />
     </>

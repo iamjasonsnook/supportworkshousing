@@ -3,8 +3,8 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  // Formspree form ID - get yours free at https://formspree.io
-  formspreeId = 'YOUR_FORMSPREE_ID',
+  // FormSubmit endpoint - emails go directly to jsnook@supportworkshousing.org
+  formSubmitEmail = 'jsnook@supportworkshousing.org',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -137,42 +137,16 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Prepare form data for Formspree
+    // Prepare form data for FormSubmit
     const formDataToSubmit = new FormData();
 
-    // Subject line for the email
+    // FormSubmit configuration
     formDataToSubmit.append('_subject', `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`);
+    formDataToSubmit.append('_replyto', formData.contactEmail);
+    formDataToSubmit.append('_template', 'table'); // Use nice table format
+    formDataToSubmit.append('_captcha', 'false'); // Disable captcha for better UX
 
-    // Formatted message body
-    const messageBody = `
-CONNECTION NIGHT REQUEST
-========================
-
-ACTIVITY INFORMATION
---------------------
-Location: ${selectedLocation?.name}
-Address: ${selectedLocation?.address}
-Date & Time: ${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}
-Food Plan: ${foodPlanText}
-Activity: ${activityPlanText}
-
-GROUP INFORMATION
------------------
-Group Name: ${formData.groupName}
-Contact Name: ${formData.contactName}
-Email: ${formData.contactEmail}
-Phone: ${formData.contactPhone}
-Group Size: ${formData.groupSize} people
-
-Submitted: ${new Date().toLocaleString()}
-
----
-To approve or deny this request, please reply to this email or contact the group directly.
-    `.trim();
-
-    formDataToSubmit.append('message', messageBody);
-
-    // Include individual fields for Formspree's data capture
+    // Form fields (FormSubmit will display these in a nice table)
     formDataToSubmit.append('Location', selectedLocation?.name);
     formDataToSubmit.append('Address', selectedLocation?.address);
     formDataToSubmit.append('Date & Time', `${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}`);
@@ -180,15 +154,13 @@ To approve or deny this request, please reply to this email or contact the group
     formDataToSubmit.append('Contact Name', formData.contactName);
     formDataToSubmit.append('Contact Email', formData.contactEmail);
     formDataToSubmit.append('Contact Phone', formData.contactPhone);
-    formDataToSubmit.append('Group Size', formData.groupSize);
+    formDataToSubmit.append('Group Size', `${formData.groupSize} people`);
     formDataToSubmit.append('Food Plan', foodPlanText);
     formDataToSubmit.append('Activity', activityPlanText);
-
-    // Reply-to should be the submitter's email
-    formDataToSubmit.append('_replyto', formData.contactEmail);
+    formDataToSubmit.append('Submitted', new Date().toLocaleString());
 
     try {
-      const response = await fetch(`https://formspree.io/f/${formspreeId}`, {
+      const response = await fetch(`https://formsubmit.co/ajax/${formSubmitEmail}`, {
         method: 'POST',
         body: formDataToSubmit,
         headers: {
@@ -196,12 +168,10 @@ To approve or deny this request, please reply to this email or contact the group
         }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (errorData.errors) {
-          throw new Error(errorData.errors.map(e => e.message).join(', '));
-        }
-        throw new Error('Failed to submit request. Please try again.');
+      const result = await response.json();
+
+      if (!response.ok || result.success === 'false') {
+        throw new Error(result.message || 'Failed to submit request. Please try again.');
       }
 
       setIsSubmitted(true);
