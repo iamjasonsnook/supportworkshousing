@@ -484,16 +484,6 @@ function ConnectionNights({
                       />
                       <span>Cater/deliver food</span>
                     </label>
-                    <label className="cn-radio">
-                      <input
-                        type="radio"
-                        name="foodPlan"
-                        value="guidance"
-                        checked={formData.foodPlan === 'guidance'}
-                        onChange={(e) => updateField('foodPlan', e.target.value)}
-                      />
-                      <span>Request guidance</span>
-                    </label>
                   </div>
                   {errors.foodPlan && <span className="cn-error">{errors.foodPlan}</span>}
                 </div>
@@ -592,7 +582,6 @@ function ConnectionNights({
                       <span>
                         {formData.foodPlan === 'bring' && 'Bring food'}
                         {formData.foodPlan === 'cater' && 'Cater/deliver food'}
-                        {formData.foodPlan === 'guidance' && 'Request guidance'}
                       </span>
                     </div>
                     <div className="cn-review-item">
