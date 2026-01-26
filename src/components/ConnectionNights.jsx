@@ -561,7 +561,7 @@ function ConnectionNights({
 
                 <div className="cn-review-container">
                   <div className="cn-review-section">
-                    <h4>Location & Time</h4>
+                    <h4>Activity Information</h4>
                     <div className="cn-review-item">
                       <strong>Location:</strong>
                       <span>{selectedLocation?.name}</span>
