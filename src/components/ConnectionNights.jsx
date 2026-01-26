@@ -90,7 +90,7 @@ function ConnectionNights({
       } else if (formData.groupSize < 1 || formData.groupSize > 50) {
         newErrors.groupSize = 'Group size must be between 1 and 50';
       }
-      if (!formData.isIndividual && !formData.groupName.trim()) {
+      if (!formData.groupName.trim()) {
         newErrors.groupName = 'Group/Organization name is required';
       }
     }
@@ -362,46 +362,20 @@ function ConnectionNights({
                 </div>
 
                 <div className="cn-form-group">
-                  <label>Are you volunteering as an individual or group?</label>
-                  <div className="cn-radio-group">
-                    <label className="cn-radio">
-                      <input
-                        type="radio"
-                        name="volunteerType"
-                        checked={!formData.isIndividual}
-                        onChange={() => updateField('isIndividual', false)}
-                      />
-                      <span>Group/Organization</span>
-                    </label>
-                    <label className="cn-radio">
-                      <input
-                        type="radio"
-                        name="volunteerType"
-                        checked={formData.isIndividual}
-                        onChange={() => updateField('isIndividual', true)}
-                      />
-                      <span>Individual</span>
-                    </label>
-                  </div>
+                  <label htmlFor="groupName">
+                    <Users size={18} />
+                    Group/Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    id="groupName"
+                    placeholder="Enter your group or organization name"
+                    value={formData.groupName}
+                    onChange={(e) => updateField('groupName', e.target.value)}
+                    className={errors.groupName ? 'error' : ''}
+                  />
+                  {errors.groupName && <span className="cn-error">{errors.groupName}</span>}
                 </div>
-
-                {!formData.isIndividual && (
-                  <div className="cn-form-group">
-                    <label htmlFor="groupName">
-                      <Users size={18} />
-                      Group/Organization Name
-                    </label>
-                    <input
-                      type="text"
-                      id="groupName"
-                      placeholder="Enter your group or organization name"
-                      value={formData.groupName}
-                      onChange={(e) => updateField('groupName', e.target.value)}
-                      className={errors.groupName ? 'error' : ''}
-                    />
-                    {errors.groupName && <span className="cn-error">{errors.groupName}</span>}
-                  </div>
-                )}
 
                 <div className="cn-form-row">
                   <div className="cn-form-group">
@@ -636,15 +610,9 @@ function ConnectionNights({
                   <div className="cn-review-section">
                     <h4>Group Information</h4>
                     <div className="cn-review-item">
-                      <strong>Type:</strong>
-                      <span>{formData.isIndividual ? 'Individual' : 'Group/Organization'}</span>
+                      <strong>Group Name:</strong>
+                      <span>{formData.groupName}</span>
                     </div>
-                    {!formData.isIndividual && (
-                      <div className="cn-review-item">
-                        <strong>Group Name:</strong>
-                        <span>{formData.groupName}</span>
-                      </div>
-                    )}
                     <div className="cn-review-item">
                       <strong>Contact:</strong>
                       <span>{formData.contactName}</span>
