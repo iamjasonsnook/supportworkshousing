@@ -296,26 +296,31 @@ function ConnectionNights({
                 </div>
 
                 <div className="cn-form-group">
-                  <label htmlFor="location">
+                  <label>
                     <MapPin size={18} />
-                    Location
+                    Select Location
                   </label>
-                  <select
-                    id="location"
-                    value={formData.locationId}
-                    onChange={(e) => {
-                      updateField('locationId', e.target.value);
-                      updateField('timeSlotId', ''); // Reset time slot when location changes
-                    }}
-                    className={errors.locationId ? 'error' : ''}
-                  >
-                    <option value="">Select a location...</option>
+                  <div className="cn-location-tiles">
                     {locations.map(location => (
-                      <option key={location.id} value={location.id}>
-                        {location.name} - {location.address}
-                      </option>
+                      <button
+                        key={location.id}
+                        type="button"
+                        className={`cn-location-tile ${formData.locationId === location.id ? 'selected' : ''} ${errors.locationId ? 'error' : ''}`}
+                        onClick={() => {
+                          updateField('locationId', location.id);
+                          updateField('timeSlotId', ''); // Reset time slot when location changes
+                        }}
+                      >
+                        <div className="cn-location-tile-icon">
+                          <MapPin size={24} color="#9B1B5D" />
+                        </div>
+                        <div className="cn-location-tile-content">
+                          <strong>{location.name}</strong>
+                          <span>{location.address}</span>
+                        </div>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                   {errors.locationId && <span className="cn-error">{errors.locationId}</span>}
                 </div>
 
