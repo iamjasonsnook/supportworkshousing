@@ -4,7 +4,7 @@ import './ConnectionNights.css';
 
 function ConnectionNights({
   // Web3Forms access key - get yours at https://web3forms.com
-  web3FormsAccessKey = 'YOUR_ACCESS_KEY_HERE',
+  web3FormsAccessKey = '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
