@@ -3,7 +3,8 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  recipientEmail = 'jsnook@supportworkshousing.org',
+  // Web3Forms access key - get yours at https://web3forms.com
+  web3FormsAccessKey = 'YOUR_ACCESS_KEY_HERE',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -136,43 +137,49 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Build email content
-    const subject = `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`;
+    // Build Web3Forms payload
+    const payload = {
+      access_key: web3FormsAccessKey,
+      subject: `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`,
+      from_name: 'SupportWorks Housing Website',
+      replyto: formData.contactEmail,
+      // Form fields
+      Location: selectedLocation?.name,
+      Address: selectedLocation?.address,
+      'Date & Time': `${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}`,
+      'Food Plan': foodPlanText,
+      Activity: activityPlanText,
+      'Group Name': formData.groupName,
+      'Contact Name': formData.contactName,
+      'Contact Email': formData.contactEmail,
+      'Contact Phone': formData.contactPhone,
+      'Group Size': `${formData.groupSize} people`,
+      Submitted: new Date().toLocaleString(),
+    };
 
-    const body = `CONNECTION NIGHT REQUEST
-========================
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-ACTIVITY INFORMATION
---------------------
-Location: ${selectedLocation?.name}
-Address: ${selectedLocation?.address}
-Date & Time: ${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}
-Food Plan: ${foodPlanText}
-Activity: ${activityPlanText}
+      const result = await response.json();
 
-GROUP INFORMATION
------------------
-Group Name: ${formData.groupName}
-Contact Name: ${formData.contactName}
-Email: ${formData.contactEmail}
-Phone: ${formData.contactPhone}
-Group Size: ${formData.groupSize} people
-
-Submitted: ${new Date().toLocaleString()}
-
----
-To approve this request, reply to the contact email above.`;
-
-    // Create mailto link and open it
-    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailtoLink;
-
-    // Show success after a brief delay (email client will open)
-    setTimeout(() => {
-      setIsSubmitted(true);
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        throw new Error(result.message || 'Failed to submit. Please try again.');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitError(error.message || 'An error occurred. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   if (isSubmitted) {
