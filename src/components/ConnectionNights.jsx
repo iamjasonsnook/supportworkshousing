@@ -186,71 +186,66 @@ function ConnectionNights({
     return (
       <section id="connection-nights" className="connection-nights section">
         <div className="container">
-          <div className="cn-success">
-            <div className="cn-success-icon">
-              <CheckCircle size={48} color="#9B1B5D" />
-            </div>
-            <h2>Request Submitted Successfully!</h2>
-            <p>Thank you for volunteering to host a Connection Night. We've received your request and will review it shortly.</p>
+          <div className="cn-header">
+            <h2>Host a Connection Night</h2>
+            <p>
+              Help create meaningful connections through shared meals and activities.
+              Sign up your volunteer group to host an evening of community at one of our properties.
+            </p>
+          </div>
 
-            <div className="cn-success-card">
-              <h3>What happens next?</h3>
-              <ol>
-                <li>You'll receive a confirmation email with your request details</li>
-                <li>Our Mission Advancement team will review your request</li>
-                <li>Once approved, you and the property manager will receive confirmation</li>
-                <li>Three days before the event, everyone will receive a reminder</li>
-              </ol>
-            </div>
+          <div className="cn-wizard-container">
+            <div className="cn-wizard-card">
+              <div className="cn-step">
+                <div className="cn-step-header">
+                  <div className="cn-step-icon">
+                    <CheckCircle size={24} color="#9B1B5D" />
+                  </div>
+                  <div>
+                    <h3>Request Submitted!</h3>
+                    <p>Thank you for volunteering to host a Connection Night</p>
+                  </div>
+                </div>
 
-            <div className="cn-success-summary">
-              <h3>Your Request Summary</h3>
-              <div className="cn-summary-grid">
-                <div className="cn-summary-item">
-                  <strong>Location:</strong>
-                  <span>{locations.find(loc => loc.id === formData.locationId)?.name}</span>
-                </div>
-                <div className="cn-summary-item">
-                  <strong>Time Slot:</strong>
-                  <span>
-                    {timeSlotsByLocation[formData.locationId]?.find(slot => slot.id === formData.timeSlotId)?.day}{' '}
-                    {timeSlotsByLocation[formData.locationId]?.find(slot => slot.id === formData.timeSlotId)?.time}
-                  </span>
-                </div>
-                <div className="cn-summary-item">
-                  <strong>Contact:</strong>
-                  <span>{formData.contactName} ({formData.contactEmail})</span>
-                </div>
-                <div className="cn-summary-item">
-                  <strong>Group Size:</strong>
-                  <span>{formData.groupSize} people</span>
+                <div className="cn-next-steps">
+                  <h4>What happens next?</h4>
+                  <ol>
+                    <li>Check your email for a confirmation with your request details</li>
+                    <li>Our Mission Advancement team will review your request</li>
+                    <li>Once approved, you'll receive a confirmation email</li>
+                    <li>Three days before the event, you'll receive a reminder</li>
+                  </ol>
                 </div>
               </div>
-            </div>
 
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setIsSubmitted(false);
-                setCurrentStep(1);
-                setFormData({
-                  locationId: '',
-                  timeSlotId: '',
-                  isIndividual: false,
-                  groupName: '',
-                  contactName: '',
-                  contactEmail: '',
-                  contactPhone: '',
-                  groupSize: '',
-                  foodPlan: '',
-                  activityPlan: '',
-                  agreeToRequest: true,
-                  agreeToGuidelines: true,
-                });
-              }}
-            >
-              Submit Another Request
-            </button>
+              <div className="cn-wizard-actions">
+                <div style={{ flex: 1 }} />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    setCurrentStep(1);
+                    setFormData({
+                      locationId: '',
+                      timeSlotId: '',
+                      isIndividual: false,
+                      groupName: '',
+                      contactName: '',
+                      contactEmail: '',
+                      contactPhone: '',
+                      groupSize: '',
+                      foodPlan: '',
+                      activityPlan: '',
+                      agreeToRequest: true,
+                      agreeToGuidelines: true,
+                    });
+                  }}
+                >
+                  Submit Another Request
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -652,3 +652,33 @@
     font-size: 0.9rem;
   }
 }
+
+/* Success/Confirmation State */
+.cn-next-steps {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-md);
+}
+
+.cn-next-steps h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.cn-next-steps ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.cn-next-steps li {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.cn-next-steps li:last-child {
+  margin-bottom: 0;
+}
