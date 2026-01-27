@@ -3,8 +3,8 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  // Web3Forms access key - get yours at https://web3forms.com
-  web3FormsAccessKey = '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
+  // API endpoint - uses Vercel serverless function in production
+  apiEndpoint = '/api/send-email',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -137,33 +137,24 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Build Web3Forms payload with clean field layout
+    // Build payload for Resend API
     const payload = {
-      access_key: web3FormsAccessKey,
-      subject: `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`,
-      from_name: 'SupportWorks Housing',
-      replyto: formData.contactEmail,
-      // Organized fields for clean display
-      'Group Name': formData.groupName,
-      'Date & Time': `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      'Location': selectedLocation?.name,
-      'Contact Name': formData.contactName,
-      'Contact Email': formData.contactEmail,
-      'Contact Phone': formData.contactPhone,
-      'Group Size': `${formData.groupSize} people`,
-      'Food Plan': foodPlanText,
-      'Activity': activityPlanText,
-      '---': '---',
-      'To Approve': `Reply to ${formData.contactEmail} with subject "Approved: Connection Night ${selectedTimeSlot?.day}"`,
-      'To Deny': `Reply to ${formData.contactEmail} with subject "Unable to Accommodate"`,
+      groupName: formData.groupName,
+      dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      location: selectedLocation?.name,
+      contactName: formData.contactName,
+      contactEmail: formData.contactEmail,
+      contactPhone: formData.contactPhone,
+      groupSize: formData.groupSize,
+      foodPlan: foodPlanText,
+      activity: activityPlanText,
     };
 
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -173,7 +164,7 @@ function ConnectionNights({
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
+        throw new Error(result.error || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       console.error('Form submission error:', error);
