@@ -3,8 +3,7 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  // FormSubmit endpoint - emails go directly to jsnook@supportworkshousing.org
-  formSubmitEmail = 'jsnook@supportworkshousing.org',
+  recipientEmail = 'jsnook@supportworkshousing.org',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -137,49 +136,43 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Prepare JSON payload for FormSubmit
-    const payload = {
-      _subject: `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`,
-      _replyto: formData.contactEmail,
-      _template: 'table',
-      _captcha: 'false',
-      Location: selectedLocation?.name,
-      Address: selectedLocation?.address,
-      'Date & Time': `${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}`,
-      'Group Name': formData.groupName,
-      'Contact Name': formData.contactName,
-      'Contact Email': formData.contactEmail,
-      'Contact Phone': formData.contactPhone,
-      'Group Size': `${formData.groupSize} people`,
-      'Food Plan': foodPlanText,
-      Activity: activityPlanText,
-      Submitted: new Date().toLocaleString(),
-    };
+    // Build email content
+    const subject = `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`;
 
-    try {
-      const response = await fetch(`https://formsubmit.co/ajax/${formSubmitEmail}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+    const body = `CONNECTION NIGHT REQUEST
+========================
 
-      const result = await response.json();
-      console.log('FormSubmit response:', result);
+ACTIVITY INFORMATION
+--------------------
+Location: ${selectedLocation?.name}
+Address: ${selectedLocation?.address}
+Date & Time: ${selectedTimeSlot?.day} at ${selectedTimeSlot?.time}
+Food Plan: ${foodPlanText}
+Activity: ${activityPlanText}
 
-      if (result.success === 'false' || result.success === false) {
-        throw new Error(result.message || 'FormSubmit returned an error. Please try again.');
-      }
+GROUP INFORMATION
+-----------------
+Group Name: ${formData.groupName}
+Contact Name: ${formData.contactName}
+Email: ${formData.contactEmail}
+Phone: ${formData.contactPhone}
+Group Size: ${formData.groupSize} people
 
+Submitted: ${new Date().toLocaleString()}
+
+---
+To approve this request, reply to the contact email above.`;
+
+    // Create mailto link and open it
+    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailtoLink;
+
+    // Show success after a brief delay (email client will open)
+    setTimeout(() => {
       setIsSubmitted(true);
-    } catch (error) {
-      console.error('Form submission error:', error);
-      setSubmitError(error.message || 'An error occurred. Please try again.');
-    } finally {
       setIsSubmitting(false);
-    }
+    }, 500);
   };
 
   if (isSubmitted) {
