@@ -3,8 +3,8 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  // Web3Forms access key - get yours at https://web3forms.com
-  web3FormsAccessKey = '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
+  // API endpoint - uses Vercel serverless function in production
+  apiEndpoint = '/api/send-email',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -137,69 +137,24 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Build branded HTML email
-    const htmlEmail = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto;">
-        <div style="background-color: #9B1B5D; padding: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 20px;">Connection Night Request</h1>
-        </div>
-        <div style="padding: 24px; background-color: #f9f9f9;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <tr>
-              <td style="padding: 8px 0; color: #666; width: 120px;">Group</td>
-              <td style="padding: 8px 0; font-weight: 600;">${formData.groupName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Date & Time</td>
-              <td style="padding: 8px 0;">${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Location</td>
-              <td style="padding: 8px 0;">${selectedLocation?.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Contact</td>
-              <td style="padding: 8px 0;">${formData.contactName}<br/><a href="mailto:${formData.contactEmail}" style="color: #9B1B5D;">${formData.contactEmail}</a><br/>${formData.contactPhone}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Group Size</td>
-              <td style="padding: 8px 0;">${formData.groupSize} people</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Food Plan</td>
-              <td style="padding: 8px 0;">${foodPlanText}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666;">Activity</td>
-              <td style="padding: 8px 0;">${activityPlanText}</td>
-            </tr>
-          </table>
-          <div style="margin-top: 24px; text-align: center;">
-            <a href="mailto:${formData.contactEmail}?subject=Approved: Connection Night ${selectedTimeSlot?.day}" style="display: inline-block; background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 12px;">Approve</a>
-            <a href="mailto:${formData.contactEmail}?subject=Unable to Accommodate: Connection Night ${selectedTimeSlot?.day}" style="display: inline-block; background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Deny</a>
-          </div>
-        </div>
-        <div style="padding: 16px; text-align: center; font-size: 12px; color: #999;">
-          SupportWorks Housing &bull; ${new Date().toLocaleDateString()}
-        </div>
-      </div>
-    `;
-
-    // Build Web3Forms payload
+    // Build payload for Resend API
     const payload = {
-      access_key: web3FormsAccessKey,
-      subject: `Connection Night Request: ${formData.groupName} - ${selectedTimeSlot?.day}`,
-      from_name: 'SupportWorks Housing',
-      replyto: formData.contactEmail,
-      message: htmlEmail,
+      groupName: formData.groupName,
+      dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      location: selectedLocation?.name,
+      contactName: formData.contactName,
+      contactEmail: formData.contactEmail,
+      contactPhone: formData.contactPhone,
+      groupSize: formData.groupSize,
+      foodPlan: foodPlanText,
+      activity: activityPlanText,
     };
 
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -209,7 +164,7 @@ function ConnectionNights({
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
+        throw new Error(result.error || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       console.error('Form submission error:', error);
