@@ -8,6 +8,17 @@
   margin: 0 auto 20px;
 }
 
+.cn-header-icon {
+  width: 64px;
+  height: 64px;
+  background-color: var(--color-pink-icon);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
 .cn-header h2 {
   margin-bottom: 8px;
 }
@@ -307,6 +318,46 @@
 .cn-time-slot span {
   color: var(--color-text-muted);
   font-size: 0.875rem;
+}
+
+/* More Dates tile */
+.cn-time-slot.cn-more-dates {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: row;
+  gap: 8px;
+  background-color: var(--color-gray-50);
+  border-style: dashed;
+}
+
+.cn-time-slot.cn-more-dates:hover {
+  background-color: var(--color-pink-light);
+  border-style: solid;
+}
+
+.cn-time-slot.cn-more-dates strong {
+  color: var(--color-primary);
+}
+
+/* Back to earlier dates link */
+.cn-back-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.cn-back-dates:hover {
+  opacity: 0.8;
 }
 
 /* Checkbox */

@@ -24,8 +24,8 @@
 
   /* Spacing */
   --container-max: 1200px;
-  --section-padding: 80px;
-  --section-padding-mobile: 48px;
+  --section-padding: 60px;
+  --section-padding-mobile: 40px;
 
   /* Border Radius */
   --radius-sm: 8px;

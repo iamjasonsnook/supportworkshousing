@@ -9,15 +9,15 @@ import Footer from './components/Footer';
 import './App.css';
 
 function App() {
-  // Generate dynamic dates starting 2 weeks out, Tue/Wed/Thu only, for 3 weeks
+  // Generate dynamic dates starting 2 weeks out, Tue/Wed/Thu only, up to 2 months out
   const generateConnectionNightsDates = () => {
     const dates = [];
     const today = new Date();
     const startDate = new Date(today);
     startDate.setDate(today.getDate() + 14); // Start 2 weeks out
 
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 21); // Cover 3 weeks
+    const endDate = new Date(today);
+    endDate.setMonth(today.getMonth() + 2); // Up to 2 months from today
 
     const currentDate = new Date(startDate);
 

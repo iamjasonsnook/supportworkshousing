@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash } from 'lucide-react';
+import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils } from 'lucide-react';
 import './ConnectionNights.css';
 
 function ConnectionNights({
@@ -16,6 +16,7 @@ function ConnectionNights({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [datePage, setDatePage] = useState(0); // 0 = first 5 dates, 1 = next 5, etc.
 
   // Form data
   const [formData, setFormData] = useState({
@@ -118,9 +119,8 @@ function ConnectionNights({
     setSubmitError(null);
 
     const selectedLocation = locations.find(loc => loc.id === formData.locationId);
-    const selectedTimeSlot = timeSlotsByLocation[formData.locationId]?.find(
-      slot => slot.id === formData.timeSlotId
-    );
+    const locationSlots = timeSlotsByLocation[formData.locationId] || [];
+    const selectedTimeSlot = locationSlots.find(slot => slot.id === formData.timeSlotId);
 
     // Format food plan display text
     const foodPlanText = formData.foodPlan === 'bring' ? 'Bring food' : 'Cater/deliver food';
@@ -248,10 +248,18 @@ function ConnectionNights({
   const selectedLocation = locations.find(loc => loc.id === formData.locationId);
   const availableTimeSlots = formData.locationId ? timeSlotsByLocation[formData.locationId] || [] : [];
 
+  // Paginate the time slots (5 per page + "More Dates" tile)
+  const startIdx = datePage * 5;
+  const visibleSlots = availableTimeSlots.slice(startIdx, startIdx + 5);
+  const hasMoreDates = availableTimeSlots.length > startIdx + 5;
+
   return (
     <section id="connection-nights" className="connection-nights section">
       <div className="container">
         <div className="cn-header">
+          <div className="cn-header-icon">
+            <Utensils size={32} color="#9B1B5D" />
+          </div>
           <h2>Host a Connection Night</h2>
           <p>
             Help create meaningful connections through shared meals and activities.
@@ -299,6 +307,7 @@ function ConnectionNights({
                         onClick={() => {
                           updateField('locationId', location.id);
                           updateField('timeSlotId', ''); // Reset time slot when location changes
+                          setDatePage(0); // Reset to first page of dates
                         }}
                       >
                         <div className="cn-location-tile-icon">
@@ -321,7 +330,7 @@ function ConnectionNights({
                       Available Time Slots
                     </label>
                     <div className="cn-time-slots">
-                      {availableTimeSlots.map(slot => (
+                      {visibleSlots.map(slot => (
                         <button
                           key={slot.id}
                           type="button"
@@ -332,7 +341,27 @@ function ConnectionNights({
                           <span>{slot.time}</span>
                         </button>
                       ))}
+                      {hasMoreDates && (
+                        <button
+                          type="button"
+                          className="cn-time-slot cn-more-dates"
+                          onClick={() => setDatePage(prev => prev + 1)}
+                        >
+                          <strong>More Dates</strong>
+                          <ChevronRight size={20} />
+                        </button>
+                      )}
                     </div>
+                    {datePage > 0 && (
+                      <button
+                        type="button"
+                        className="cn-back-dates"
+                        onClick={() => setDatePage(prev => prev - 1)}
+                      >
+                        <ArrowLeft size={16} />
+                        Back to earlier dates
+                      </button>
+                    )}
                     {errors.timeSlotId && <span className="cn-error">{errors.timeSlotId}</span>}
                   </div>
                 )}
@@ -561,10 +590,12 @@ function ConnectionNights({
                       <span>{selectedLocation?.address}</span>
                     </div>
                     <div className="cn-review-item">
-                      <strong>Time Slot:</strong>
+                      <strong>Date & Time:</strong>
                       <span>
-                        {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.day}{' '}
-                        {availableTimeSlots.find(slot => slot.id === formData.timeSlotId)?.time}
+                        {(() => {
+                          const selected = availableTimeSlots.find(slot => slot.id === formData.timeSlotId);
+                          return selected ? `${selected.day}, ${selected.time}` : '';
+                        })()}
                       </span>
                     </div>
                     <div className="cn-review-item">

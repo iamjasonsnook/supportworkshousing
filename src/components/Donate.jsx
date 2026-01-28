@@ -2,25 +2,6 @@ import { useState } from 'react';
 import { Heart, Home, Users, Gift, Lock } from 'lucide-react';
 import './Donate.css';
 
-// =============================================================================
-// GIVEBUTTER INTEGRATION PLACEHOLDER
-// =============================================================================
-// To connect this form to Givebutter:
-//
-// Option 1: Direct Link (simplest)
-//   - Create a campaign at givebutter.com
-//   - Replace GIVEBUTTER_CAMPAIGN_URL below with your campaign URL
-//   - Example: https://givebutter.com/supportworkshousing
-//
-// Option 2: Givebutter Embed Widget
-//   - Add this script to index.html: <script src="https://givebutter.com/js/widget.js"></script>
-//   - Replace the donate-card div with: <givebutter-widget id="YOUR_CAMPAIGN_ID"></givebutter-widget>
-//
-// Option 3: Givebutter Popup
-//   - Add script to index.html (same as above)
-//   - Add to button: data-givebutter-checkout="YOUR_CAMPAIGN_ID"
-// =============================================================================
-
 const GIVEBUTTER_CAMPAIGN_URL = null; // Replace with: 'https://givebutter.com/your-campaign'
 
 function Donate() {
@@ -30,12 +11,28 @@ function Donate() {
   const amounts = [25, 50, 100, 250, 500];
 
   const impactItems = [
-    { icon: Home, amount: '$50', description: 'Provides welcome home essentials for a new resident' },
-    { icon: Users, amount: '$100', description: 'Funds a month of case management support services' },
-    { icon: Gift, amount: '$250', description: 'Supplies job training resources and interview preparation' },
+    { icon: Home, amount: 50, description: 'Provides welcome home essentials for a new resident' },
+    { icon: Users, amount: 100, description: 'Funds a month of case management support services' },
+    { icon: Gift, amount: 250, description: 'Supplies job training resources and interview preparation' },
   ];
 
-  const givingOptions = ['Monthly Giving', 'Corporate Partnerships', 'Planned Giving'];
+  const givingOptions = [
+    {
+      label: 'Monthly Giving',
+      subject: 'Inquiry about Monthly Giving',
+      body: 'Hello,\n\nI am interested in learning more about monthly giving opportunities at SupportWorks Housing. Could you please provide me with more information about how I can become a recurring donor?\n\nThank you!'
+    },
+    {
+      label: 'Corporate Partnerships',
+      subject: 'Inquiry about Corporate Partnerships',
+      body: 'Hello,\n\nI am interested in learning more about corporate partnership opportunities with SupportWorks Housing. Could you please provide information about how my organization can get involved?\n\nThank you!'
+    },
+    {
+      label: 'Planned Giving',
+      subject: 'Inquiry about Planned Giving',
+      body: 'Hello,\n\nI am interested in learning more about planned giving options at SupportWorks Housing. Could you please provide information about legacy gifts and estate planning opportunities?\n\nThank you!'
+    },
+  ];
 
   const handleAmountClick = (amount) => {
     setSelectedAmount(amount);
@@ -47,13 +44,21 @@ function Donate() {
     setSelectedAmount(null);
   };
 
+  const handleImpactClick = (amount) => {
+    setSelectedAmount(amount);
+    setCustomAmount('');
+  };
+
+  const handleGivingOptionClick = (option) => {
+    const mailtoUrl = `mailto:jsnook@supportworkshousing.org?subject=${encodeURIComponent(option.subject)}&body=${encodeURIComponent(option.body)}`;
+    window.location.href = mailtoUrl;
+  };
+
   const handleDonate = () => {
     if (GIVEBUTTER_CAMPAIGN_URL) {
-      // Append amount to Givebutter URL if supported
       const amount = customAmount || selectedAmount;
       window.open(`${GIVEBUTTER_CAMPAIGN_URL}?amount=${amount}`, '_blank');
     } else {
-      // Fallback to existing donation page until Givebutter is configured
       window.open('https://supportworkshousing.org/donate/', '_blank');
     }
   };
@@ -74,67 +79,78 @@ function Donate() {
           </p>
         </div>
 
-        <div className="donate-card">
-          <div className="amount-section">
-            <label className="amount-label">Select an amount:</label>
-            <div className="amount-buttons">
-              {amounts.map((amount) => (
+        <div className="donate-container">
+          <div className="donate-card">
+            <div className="amount-section">
+              <label className="amount-label">Select an amount:</label>
+              <div className="amount-buttons">
+                {amounts.map((amount) => (
+                  <button
+                    key={amount}
+                    className={`amount-btn ${selectedAmount === amount ? 'selected' : ''}`}
+                    onClick={() => handleAmountClick(amount)}
+                  >
+                    ${amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="custom-amount">
+              <label className="amount-label">Or enter a custom amount:</label>
+              <div className="custom-input-wrapper">
+                <span className="currency">$</span>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={customAmount}
+                  onChange={handleCustomChange}
+                  className="custom-input"
+                />
+              </div>
+            </div>
+
+            <button className="donate-btn" onClick={handleDonate}>
+              Donate ${displayAmount}
+            </button>
+
+            <div className="donate-secure">
+              <Lock size={14} />
+              <span>Secure payment processing • Tax-deductible donation</span>
+            </div>
+          </div>
+
+          <div className="impact-section">
+            <div className="impact-items">
+              {impactItems.map((item) => (
                 <button
-                  key={amount}
-                  className={`amount-btn ${selectedAmount === amount ? 'selected' : ''}`}
-                  onClick={() => handleAmountClick(amount)}
+                  key={item.amount}
+                  className={`impact-item ${selectedAmount === item.amount ? 'selected' : ''}`}
+                  onClick={() => handleImpactClick(item.amount)}
                 >
-                  ${amount}
+                  <div className="impact-item-icon">
+                    <item.icon size={18} color="#9B1B5D" />
+                  </div>
+                  <div className="impact-item-content">
+                    <span className="impact-amount">${item.amount}</span>
+                    <p>{item.description}</p>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="custom-amount">
-            <label className="amount-label">Or enter a custom amount:</label>
-            <div className="custom-input-wrapper">
-              <span className="currency">$</span>
-              <input
-                type="number"
-                placeholder="Enter amount"
-                value={customAmount}
-                onChange={handleCustomChange}
-                className="custom-input"
-              />
-            </div>
-          </div>
-
-          <button className="donate-btn" onClick={handleDonate}>
-            Donate ${displayAmount}
-          </button>
-
-          <div className="donate-secure">
-            <Lock size={14} />
-            <span>Secure payment processing • Tax-deductible donation</span>
-          </div>
-        </div>
-
-        <div className="impact-section">
-          <h3>Your Impact</h3>
-          <div className="impact-items">
-            {impactItems.map((item) => (
-              <div key={item.amount} className="impact-item">
-                <div className="impact-item-icon">
-                  <item.icon size={20} color="#9B1B5D" />
-                </div>
-                <span className="impact-amount">{item.amount}</span>
-                <p>{item.description}</p>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="giving-options">
-          <p>Want to explore other ways to support our mission?</p>
+          <p>More ways to support our mission:</p>
           <div className="giving-buttons">
             {givingOptions.map((option) => (
-              <button key={option} className="giving-btn">
-                {option}
+              <button
+                key={option.label}
+                className="giving-btn"
+                onClick={() => handleGivingOptionClick(option)}
+              >
+                {option.label}
               </button>
             ))}
           </div>
