@@ -159,6 +159,14 @@ function ConnectionNights({
         body: JSON.stringify(payload)
       });
 
+      // Handle non-JSON error responses (e.g., server error pages)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server error. Please try again later.');
+      }
+
       const result = await response.json();
 
       if (result.success) {
