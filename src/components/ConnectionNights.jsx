@@ -3,8 +3,6 @@ import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, P
 import './ConnectionNights.css';
 
 function ConnectionNights({
-  // API endpoint - uses Vercel serverless function in production
-  apiEndpoint = '/api/send-email',
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
   timeSlotsByLocation = {
     'clay-house': [
@@ -137,21 +135,24 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
-    // Build payload for Resend API
+    // Build payload for Web3Forms
     const payload = {
-      groupName: formData.groupName,
-      dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      location: selectedLocation?.name,
-      contactName: formData.contactName,
-      contactEmail: formData.contactEmail,
-      contactPhone: formData.contactPhone,
-      groupSize: formData.groupSize,
-      foodPlan: foodPlanText,
-      activity: activityPlanText,
+      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
+      subject: `Connection Night Request: ${formData.groupName}`,
+      from_name: 'SupportWorks Housing Website',
+      'Group Name': formData.groupName,
+      'Date & Time': `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
+      'Contact Name': formData.contactName,
+      'Contact Email': formData.contactEmail,
+      'Contact Phone': formData.contactPhone,
+      'Group Size': `${formData.groupSize} people`,
+      'Food Plan': foodPlanText,
+      'Activity': activityPlanText,
     };
 
     try {
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +165,7 @@ function ConnectionNights({
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.error || 'Failed to submit. Please try again.');
+        throw new Error(result.message || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       console.error('Form submission error:', error);
