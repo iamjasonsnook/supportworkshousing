@@ -267,17 +267,7 @@
   }
 
   .impact-section {
-    order: -1;
-  }
-
-  .impact-items {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .impact-item {
-    flex: 1 1 calc(50% - 6px);
-    min-width: 200px;
+    display: none;
   }
 
   .giving-options {

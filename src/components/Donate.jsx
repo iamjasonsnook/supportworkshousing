@@ -23,6 +23,11 @@ function Donate() {
       body: 'Hello,\n\nI am interested in learning more about monthly giving opportunities at SupportWorks Housing. Could you please provide me with more information about how I can become a recurring donor?\n\nThank you!'
     },
     {
+      label: 'Stock Gifts',
+      subject: 'Inquiry about Stock Gifts',
+      body: 'Hello,\n\nI am interested in learning more about donating stock or securities to SupportWorks Housing. Could you please provide information about how to make a stock gift?\n\nThank you!'
+    },
+    {
       label: 'Corporate Partnerships',
       subject: 'Inquiry about Corporate Partnerships',
       body: 'Hello,\n\nI am interested in learning more about corporate partnership opportunities with SupportWorks Housing. Could you please provide information about how my organization can get involved?\n\nThank you!'
