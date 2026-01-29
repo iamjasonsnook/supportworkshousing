@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Home, Users, Gift, Lock } from 'lucide-react';
+import { Heart, Lock } from 'lucide-react';
 import './Donate.css';
 
 const GIVEBUTTER_CAMPAIGN_URL = null; // Replace with: 'https://givebutter.com/your-campaign'
@@ -9,12 +9,6 @@ function Donate() {
   const [customAmount, setCustomAmount] = useState('');
 
   const amounts = [25, 50, 100, 250, 500];
-
-  const impactItems = [
-    { icon: Home, amount: 50, description: 'Provides welcome home essentials for a new resident' },
-    { icon: Users, amount: 100, description: 'Funds a month of case management support services' },
-    { icon: Gift, amount: 250, description: 'Supplies job training resources and interview preparation' },
-  ];
 
   const givingOptions = [
     {
@@ -47,11 +41,6 @@ function Donate() {
   const handleCustomChange = (e) => {
     setCustomAmount(e.target.value);
     setSelectedAmount(null);
-  };
-
-  const handleImpactClick = (amount) => {
-    setSelectedAmount(amount);
-    setCustomAmount('');
   };
 
   const handleGivingOptionClick = (option) => {
@@ -122,26 +111,6 @@ function Donate() {
             <div className="donate-secure">
               <Lock size={14} />
               <span>Secure payment processing • Tax-deductible donation</span>
-            </div>
-          </div>
-
-          <div className="impact-section">
-            <div className="impact-items">
-              {impactItems.map((item) => (
-                <button
-                  key={item.amount}
-                  className={`impact-item ${selectedAmount === item.amount ? 'selected' : ''}`}
-                  onClick={() => handleImpactClick(item.amount)}
-                >
-                  <div className="impact-item-icon">
-                    <item.icon size={18} color="#9B1B5D" />
-                  </div>
-                  <div className="impact-item-content">
-                    <span className="impact-amount">${item.amount}</span>
-                    <p>{item.description}</p>
-                  </div>
-                </button>
-              ))}
             </div>
           </div>
         </div>
