@@ -4,7 +4,7 @@
 
 .donate-header {
   text-align: center;
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto 24px;
 }
 
@@ -29,7 +29,7 @@
 
 /* Donate container */
 .donate-container {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto 16px;
   padding: 0 24px;
 }
@@ -140,7 +140,7 @@
 
 /* Giving Options */
 .giving-options {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 20px 24px;
   background-color: var(--color-gray-50);
