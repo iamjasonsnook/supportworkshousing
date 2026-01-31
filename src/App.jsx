@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Impact from './components/Impact';
@@ -6,9 +7,10 @@ import About from './components/About';
 import Stories from './components/Stories';
 import Donate from './components/Donate';
 import Footer from './components/Footer';
+import Admin from './components/Admin';
 import './App.css';
 
-function App() {
+function HomePage() {
   // Generate dynamic dates starting 2 weeks out, Tue/Wed/Thu only, up to 2 months out
   const generateConnectionNightsDates = () => {
     const dates = [];
@@ -58,6 +60,20 @@ function App() {
       </main>
       <Footer />
     </>
+  );
+}
+
+function App() {
+  // Match the base path from vite.config.js
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+  return (
+    <BrowserRouter basename={basename}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
