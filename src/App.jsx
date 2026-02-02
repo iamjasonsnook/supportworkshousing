@@ -15,14 +15,16 @@ function HomePage() {
   const location = useLocation();
 
   useEffect(() => {
-    // Map paths to section IDs
-    const scrollTargets = {
-      '/donate': 'donate',
-      '/volunteer': 'connection-nights',
-    };
+    // Handle hash-based scrolling (e.g., /#donate, /#volunteer)
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      // Map friendly names to section IDs
+      const hashTargets = {
+        'donate': 'donate',
+        'volunteer': 'connection-nights',
+      };
+      const targetId = hashTargets[hash] || hash;
 
-    const targetId = scrollTargets[location.pathname];
-    if (targetId) {
       // Small delay to ensure the page has rendered
       setTimeout(() => {
         const element = document.getElementById(targetId);
@@ -92,8 +94,6 @@ function App() {
     <BrowserRouter basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/donate" element={<HomePage />} />
-        <Route path="/volunteer" element={<HomePage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
