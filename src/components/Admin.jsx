@@ -372,10 +372,16 @@ function Admin() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
+    // Helper to get Monday-based day index (Monday=0, Sunday=6)
+    const getMondayBasedDay = (date) => {
+      const day = date.getDay();
+      return day === 0 ? 6 : day - 1;
+    };
+
     if (calendarView === 'month') {
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
-      const startPadding = firstDay.getDay();
+      const startPadding = getMondayBasedDay(firstDay);
       const days = [];
 
       // Previous month padding
@@ -397,9 +403,11 @@ function Admin() {
 
       return days;
     } else {
-      // Week view
+      // Week view - start on Monday
       const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+      const dayOfWeek = currentDate.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      startOfWeek.setDate(currentDate.getDate() + mondayOffset);
       const days = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(startOfWeek);
@@ -657,7 +665,7 @@ function Admin() {
 
           <div className="calendar-grid">
             <div className="calendar-weekdays">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                 <div key={day} className="calendar-weekday">{day}</div>
               ))}
             </div>
