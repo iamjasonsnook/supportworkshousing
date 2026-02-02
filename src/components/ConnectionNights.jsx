@@ -184,12 +184,13 @@ function ConnectionNights({
       </div>
     `;
 
-    // Build payload for Web3Forms
+    // Build payload for Web3Forms with custom HTML
     const payload = {
       access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
       subject: `Connection Night Request: ${formData.groupName}`,
       from_name: 'SupportWorks Housing Website',
       message: emailHtml,
+      replyto: formData.contactEmail,
     };
 
     try {
