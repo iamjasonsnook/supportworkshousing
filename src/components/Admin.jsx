@@ -25,6 +25,9 @@ function Admin() {
   const [volunteerSearch, setVolunteerSearch] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '', organization: '' });
+  const [statsTimeframe, setStatsTimeframe] = useState('all'); // 'all', 'year', 'quarter', 'month'
   const [stats, setStats] = useState(null);
 
   // Check for existing session
@@ -139,6 +142,12 @@ function Admin() {
       if (data.volunteer) {
         setVolunteerDetail(data.volunteer);
         setNotesText(data.volunteer.notes || '');
+        setProfileForm({
+          name: data.volunteer.name || '',
+          email: data.volunteer.email || '',
+          phone: data.volunteer.phone || '',
+          organization: data.volunteer.organization || '',
+        });
       }
     } catch (err) {
       console.error('Failed to fetch volunteer detail:', err);
@@ -200,6 +209,31 @@ function Admin() {
     setSelectedVolunteer(null);
     setVolunteerDetail(null);
     setEditingNotes(false);
+    setEditingProfile(false);
+  };
+
+  const saveVolunteerProfile = async () => {
+    if (!volunteerDetail) return;
+
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/volunteers/${volunteerDetail.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileForm),
+      });
+
+      if (response.ok) {
+        setVolunteerDetail({ ...volunteerDetail, ...profileForm });
+        setEditingProfile(false);
+        fetchVolunteers(); // Refresh the list
+      }
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+    }
   };
 
   const handleViewEventFromVolunteer = (eventId) => {
@@ -412,6 +446,46 @@ function Admin() {
     return filtered;
   }, [events, filter, selectedDate]);
 
+  // Calculate stats based on timeframe
+  const calculatedStats = useMemo(() => {
+    if (!events.length) return null;
+
+    const now = new Date();
+    let startDate = null;
+
+    if (statsTimeframe === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (statsTimeframe === 'quarter') {
+      const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+      startDate = new Date(now.getFullYear(), quarterStart, 1);
+    } else if (statsTimeframe === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    const filteredEvents = startDate
+      ? events.filter(e => {
+          const eventDate = e.completed_at ? new Date(e.completed_at) : new Date(e.created_at);
+          return eventDate >= startDate;
+        })
+      : events;
+
+    const completedEvents = filteredEvents.filter(e => e.status === 'completed').length;
+    const pendingEvents = filteredEvents.filter(e => e.status === 'pending').length;
+    const totalVolunteerHours = filteredEvents
+      .filter(e => e.status === 'completed')
+      .reduce((sum, e) => sum + (e.group_size * 2), 0);
+
+    // Count unique volunteers in the timeframe
+    const uniqueVolunteerIds = new Set(filteredEvents.map(e => e.volunteer_id));
+
+    return {
+      totalVolunteers: statsTimeframe === 'all' ? volunteers.length : uniqueVolunteerIds.size,
+      completedEvents,
+      pendingEvents,
+      totalVolunteerHours,
+    };
+  }, [events, volunteers, statsTimeframe]);
+
   // Filter volunteers based on type and search query
   const displayedVolunteers = useMemo(() => {
     let filtered = volunteers;
@@ -488,23 +562,36 @@ function Admin() {
       </header>
 
       {/* Stats Bar */}
-      {stats && (
+      {calculatedStats && (
         <div className="admin-stats-bar">
-          <div className="stat-item">
-            <span className="stat-value">{stats.totalVolunteers}</span>
-            <span className="stat-label">Volunteers</span>
+          <div className="stats-timeframe">
+            <select
+              value={statsTimeframe}
+              onChange={(e) => setStatsTimeframe(e.target.value)}
+            >
+              <option value="all">All Time</option>
+              <option value="year">This Year</option>
+              <option value="quarter">This Quarter</option>
+              <option value="month">This Month</option>
+            </select>
           </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.completedEvents}</span>
-            <span className="stat-label">Events Completed</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.pendingEvents}</span>
-            <span className="stat-label">Pending</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">{stats.totalVolunteerHours}</span>
-            <span className="stat-label">Volunteer Hours</span>
+          <div className="stats-metrics">
+            <div className="stat-item">
+              <span className="stat-value">{calculatedStats.totalVolunteers}</span>
+              <span className="stat-label">Volunteers</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{calculatedStats.completedEvents}</span>
+              <span className="stat-label">Events<br />Completed</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{calculatedStats.pendingEvents}</span>
+              <span className="stat-label">Events<br />Pending</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{calculatedStats.totalVolunteerHours}</span>
+              <span className="stat-label">Volunteer<br />Hours</span>
+            </div>
           </div>
         </div>
       )}
@@ -865,29 +952,93 @@ function Admin() {
                 {volunteerDetail.type === 'organization' ? <Building size={40} /> : <User size={40} />}
               </div>
               <div className="volunteer-detail-info">
-                <h2>{volunteerDetail.type === 'organization' ? volunteerDetail.organization : volunteerDetail.name}</h2>
-                {volunteerDetail.type === 'organization' && (
-                  <p className="volunteer-detail-contact">Contact: {volunteerDetail.name}</p>
+                {editingProfile ? (
+                  <div className="profile-edit-form">
+                    {volunteerDetail.type === 'organization' && (
+                      <div className="profile-field">
+                        <label>Organization</label>
+                        <input
+                          type="text"
+                          value={profileForm.organization}
+                          onChange={(e) => setProfileForm({ ...profileForm, organization: e.target.value })}
+                        />
+                      </div>
+                    )}
+                    <div className="profile-field">
+                      <label>Contact Name</label>
+                      <input
+                        type="text"
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="profile-field">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        value={profileForm.email}
+                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="profile-field">
+                      <label>Phone</label>
+                      <input
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      />
+                    </div>
+                    <div className="profile-edit-actions">
+                      <button className="save-profile-btn" onClick={saveVolunteerProfile}>
+                        <Save size={16} /> Save
+                      </button>
+                      <button className="cancel-profile-btn" onClick={() => {
+                        setEditingProfile(false);
+                        setProfileForm({
+                          name: volunteerDetail.name || '',
+                          email: volunteerDetail.email || '',
+                          phone: volunteerDetail.phone || '',
+                          organization: volunteerDetail.organization || '',
+                        });
+                      }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="volunteer-detail-title">
+                      <h2>{volunteerDetail.type === 'organization' ? volunteerDetail.organization : volunteerDetail.name}</h2>
+                      <button className="edit-profile-btn" onClick={() => setEditingProfile(true)}>
+                        <Edit3 size={16} /> Edit
+                      </button>
+                    </div>
+                    {volunteerDetail.type === 'organization' && (
+                      <p className="volunteer-detail-contact">Contact: {volunteerDetail.name}</p>
+                    )}
+                    <div className="volunteer-detail-meta">
+                      <span><Mail size={14} /> <a href={`mailto:${volunteerDetail.email}`}>{volunteerDetail.email}</a></span>
+                      <span><Phone size={14} /> <a href={`tel:${volunteerDetail.phone}`}>{volunteerDetail.phone}</a></span>
+                    </div>
+                  </>
                 )}
-                <div className="volunteer-detail-meta">
-                  <span><Mail size={14} /> <a href={`mailto:${volunteerDetail.email}`}>{volunteerDetail.email}</a></span>
-                  <span><Phone size={14} /> <a href={`tel:${volunteerDetail.phone}`}>{volunteerDetail.phone}</a></span>
-                </div>
               </div>
-              <div className="volunteer-detail-stats">
-                <div className="detail-stat">
-                  <span className="detail-stat-value">{volunteerDetail.events?.length || 0}</span>
-                  <span className="detail-stat-label">Total Events</span>
+              {!editingProfile && (
+                <div className="volunteer-detail-stats">
+                  <div className="detail-stat">
+                    <span className="detail-stat-value">{volunteerDetail.events?.length || 0}</span>
+                    <span className="detail-stat-label">Total Events</span>
+                  </div>
+                  <div className="detail-stat">
+                    <span className="detail-stat-value">{volunteerDetail.events?.filter(e => e.status === 'completed').length || 0}</span>
+                    <span className="detail-stat-label">Completed</span>
+                  </div>
+                  <div className="detail-stat">
+                    <span className="detail-stat-value">{volunteerDetail.events?.filter(e => ['pending', 'approved'].includes(e.status)).length || 0}</span>
+                    <span className="detail-stat-label">Upcoming</span>
+                  </div>
                 </div>
-                <div className="detail-stat">
-                  <span className="detail-stat-value">{volunteerDetail.events?.filter(e => e.status === 'completed').length || 0}</span>
-                  <span className="detail-stat-label">Completed</span>
-                </div>
-                <div className="detail-stat">
-                  <span className="detail-stat-value">{volunteerDetail.events?.filter(e => ['pending', 'approved'].includes(e.status)).length || 0}</span>
-                  <span className="detail-stat-label">Upcoming</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Notes Section */}

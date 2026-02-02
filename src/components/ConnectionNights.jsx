@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils } from 'lucide-react';
 import './ConnectionNights.css';
+
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
 function ConnectionNights({
   locations = [{ id: 'clay-house', name: 'New Clay House', address: '707 N Harrison St, Richmond, VA 23220' }],
@@ -17,6 +19,23 @@ function ConnectionNights({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [datePage, setDatePage] = useState(0); // 0 = first 5 dates, 1 = next 5, etc.
+  const [bookedDates, setBookedDates] = useState([]);
+
+  // Fetch booked dates on mount
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/booked-dates`);
+        if (response.ok) {
+          const data = await response.json();
+          setBookedDates(data.bookedDates || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch booked dates:', err);
+      }
+    };
+    fetchBookedDates();
+  }, []);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -246,7 +265,10 @@ function ConnectionNights({
   }
 
   const selectedLocation = locations.find(loc => loc.id === formData.locationId);
-  const availableTimeSlots = formData.locationId ? timeSlotsByLocation[formData.locationId] || [] : [];
+  const allTimeSlots = formData.locationId ? timeSlotsByLocation[formData.locationId] || [] : [];
+
+  // Filter out booked dates (pending or approved events)
+  const availableTimeSlots = allTimeSlots.filter(slot => !bookedDates.includes(slot.day));
 
   // Paginate the time slots (5 per page + "More Dates" tile)
   const startIdx = datePage * 5;

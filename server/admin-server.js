@@ -328,6 +328,21 @@ const authMiddleware = (req, res, next) => {
   next();
 };
 
+// Public endpoint - get booked dates (no auth required)
+// Returns dates that have pending or approved events
+app.get('/api/booked-dates', (req, res) => {
+  try {
+    const bookedDates = mockEvents
+      .filter(e => e.status === 'pending' || e.status === 'approved')
+      .map(e => e.time_slot_day);
+
+    res.json({ bookedDates });
+  } catch (error) {
+    console.error('Error fetching booked dates:', error);
+    res.status(500).json({ error: 'Failed to fetch booked dates' });
+  }
+});
+
 // Login endpoint
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
@@ -485,10 +500,10 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Update volunteer notes
+// Update volunteer profile
 app.patch('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { notes } = req.body;
+  const { notes, name, email, phone, organization } = req.body;
 
   try {
     const volunteer = mockVolunteers.find(v => v.id === id);
@@ -496,7 +511,13 @@ app.patch('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Volunteer not found' });
     }
 
-    volunteer.notes = notes;
+    // Update fields if provided
+    if (notes !== undefined) volunteer.notes = notes;
+    if (name !== undefined) volunteer.name = name;
+    if (email !== undefined) volunteer.email = email;
+    if (phone !== undefined) volunteer.phone = phone;
+    if (organization !== undefined) volunteer.organization = organization;
+
     res.json({ success: true, volunteer });
   } catch (error) {
     console.error('Error updating volunteer:', error);
