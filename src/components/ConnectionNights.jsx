@@ -154,20 +154,42 @@ function ConnectionNights({
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
+    // Build custom HTML email with purple branding
+    const logoUrl = 'https://iamjasonsnook.github.io/supportworkshousing/images/logo-ful.png';
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #9B1B5D; padding: 20px; text-align: center;">
+          <img src="${logoUrl}" alt="SupportWorks Housing" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+          <h1 style="color: white; margin: 0; font-size: 24px;">Connection Night Request</h1>
+        </div>
+        <div style="padding: 20px; background-color: #f9f9f9;">
+          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px;">Group Information</h2>
+          <p><strong>Group Name:</strong> ${formData.groupName}</p>
+          <p><strong>Contact Name:</strong> ${formData.contactName}</p>
+          <p><strong>Email:</strong> ${formData.contactEmail}</p>
+          <p><strong>Phone:</strong> ${formData.contactPhone}</p>
+          <p><strong>Group Size:</strong> ${formData.groupSize} people</p>
+
+          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px; margin-top: 30px;">Event Details</h2>
+          <p><strong>Date & Time:</strong> ${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}</p>
+          <p><strong>Location:</strong> ${selectedLocation?.name}</p>
+          <p><strong>Address:</strong> ${selectedLocation?.address}</p>
+          <p><strong>Food Plan:</strong> ${foodPlanText}</p>
+          <p><strong>Activity:</strong> ${activityPlanText}</p>
+        </div>
+        <div style="background-color: #9B1B5D; padding: 15px; text-align: center;">
+          <p style="color: white; margin: 0; font-size: 12px;">SupportWorks Housing - Connection Nights</p>
+        </div>
+      </div>
+    `;
+
     // Build payload for Web3Forms
     const payload = {
       access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
       subject: `Connection Night Request: ${formData.groupName}`,
       from_name: 'SupportWorks Housing Website',
-      'Group Name': formData.groupName,
-      'Date & Time': `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
-      'Contact Name': formData.contactName,
-      'Contact Email': formData.contactEmail,
-      'Contact Phone': formData.contactPhone,
-      'Group Size': `${formData.groupSize} people`,
-      'Food Plan': foodPlanText,
-      'Activity': activityPlanText,
+      message: emailHtml,
     };
 
     try {

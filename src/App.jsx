@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Impact from './components/Impact';
@@ -11,6 +12,26 @@ import Admin from './components/Admin';
 import './App.css';
 
 function HomePage() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Map paths to section IDs
+    const scrollTargets = {
+      '/donate': 'donate',
+      '/volunteer': 'connection-nights',
+    };
+
+    const targetId = scrollTargets[location.pathname];
+    if (targetId) {
+      // Small delay to ensure the page has rendered
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location]);
   // Generate dynamic dates starting 2 weeks out, Tue/Wed/Thu only, up to 2 months out
   const generateConnectionNightsDates = () => {
     const dates = [];
@@ -71,6 +92,8 @@ function App() {
     <BrowserRouter basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/donate" element={<HomePage />} />
+        <Route path="/volunteer" element={<HomePage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
