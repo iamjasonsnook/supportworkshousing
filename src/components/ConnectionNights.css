@@ -1,5 +1,6 @@
 .connection-nights {
   background-color: var(--color-white);
+  scroll-margin-top: 80px;
 }
 
 .cn-header {
