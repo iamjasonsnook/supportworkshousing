@@ -9,7 +9,7 @@ function Header() {
     { label: 'What We Do', href: '#what-we-do' },
     { label: 'Our Impact', href: '#impact' },
     { label: 'Stories', href: '#stories' },
-    { label: 'Get Involved', href: '#donate' },
+    { label: 'Get Involved', href: '#get-involved' },
   ];
 
   return (

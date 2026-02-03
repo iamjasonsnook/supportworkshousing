@@ -487,6 +487,10 @@
   border-radius: var(--radius-sm);
 }
 
+.gi-review-section:last-child {
+  grid-column: 1 / -1;
+}
+
 .gi-review-section h4 {
   color: var(--color-primary);
   font-size: 0.85rem;
