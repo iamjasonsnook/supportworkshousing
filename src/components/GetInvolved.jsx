@@ -277,44 +277,22 @@ function GetInvolved({
     };
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
-    const logoUrl = 'https://iamjasonsnook.github.io/supportworkshousing/images/logo-ful.png';
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #9B1B5D; padding: 20px; text-align: center;">
-          <img src="${logoUrl}" alt="SupportWorks Housing" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
-          <h1 style="color: white; margin: 0; font-size: 24px;">Connection Night Request</h1>
-        </div>
-        <div style="padding: 20px; background-color: #f9f9f9;">
-          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px;">Group Information</h2>
-          <p><strong>Group Name:</strong> ${cnFormData.groupName}</p>
-          <p><strong>Contact Name:</strong> ${cnFormData.contactName}</p>
-          <p><strong>Email:</strong> ${cnFormData.contactEmail}</p>
-          <p><strong>Phone:</strong> ${cnFormData.contactPhone}</p>
-          <p><strong>Group Size:</strong> ${cnFormData.groupSize} people</p>
-
-          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px; margin-top: 30px;">Event Details</h2>
-          <p><strong>Date & Time:</strong> ${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}</p>
-          <p><strong>Location:</strong> ${selectedLocation?.name}</p>
-          <p><strong>Address:</strong> ${selectedLocation?.address}</p>
-          <p><strong>Food Plan:</strong> ${foodPlanText}</p>
-          <p><strong>Activity:</strong> ${activityPlanText}</p>
-        </div>
-        <div style="background-color: #9B1B5D; padding: 15px; text-align: center;">
-          <p style="color: white; margin: 0; font-size: 12px;">SupportWorks Housing - Connection Nights</p>
-        </div>
-      </div>
-    `;
-
     const payload = {
-      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
-      subject: `Connection Night Request: ${cnFormData.groupName}`,
-      from_name: 'SupportWorks Housing Website',
-      message: emailHtml,
-      replyto: cnFormData.contactEmail,
+      type: 'connection-night',
+      groupName: cnFormData.groupName,
+      dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      location: selectedLocation?.name,
+      address: selectedLocation?.address,
+      contactName: cnFormData.contactName,
+      contactEmail: cnFormData.contactEmail,
+      contactPhone: cnFormData.contactPhone,
+      groupSize: cnFormData.groupSize,
+      foodPlan: foodPlanText,
+      activity: activityPlanText,
     };
 
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -324,7 +302,7 @@ function GetInvolved({
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
+        throw new Error(result.error || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       setSubmitError(error.message || 'An error occurred. Please try again.');
@@ -343,54 +321,8 @@ function GetInvolved({
     const selectedLocation = locations.find(loc => loc.id === sdFormData.locationId);
     const selectedDate = fridayDates.find(d => d.id === sdFormData.dropOffDate);
 
-    const itemsList = sdFormData.selectedItems.length > 0
-      ? sdFormData.selectedItems.join(', ')
-      : 'None selected';
-
-    const otherItemsText = sdFormData.otherItems.trim()
-      ? sdFormData.otherItems
-      : 'None';
-
-    const logoUrl = 'https://iamjasonsnook.github.io/supportworkshousing/images/logo-ful.png';
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #9B1B5D; padding: 20px; text-align: center;">
-          <img src="${logoUrl}" alt="SupportWorks Housing" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
-          <h1 style="color: white; margin: 0; font-size: 24px;">Supply Drive Drop-Off</h1>
-        </div>
-        <div style="padding: 20px; background-color: #f9f9f9;">
-          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px;">Contact Information</h2>
-          <p><strong>Name:</strong> ${sdFormData.contactName}</p>
-          <p><strong>Email:</strong> ${sdFormData.contactEmail}</p>
-          <p><strong>Phone:</strong> ${sdFormData.contactPhone}</p>
-
-          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px; margin-top: 30px;">Drop-Off Details</h2>
-          <p><strong>Date:</strong> ${selectedDate?.day}</p>
-          <p><strong>Time:</strong> ${selectedDate?.time}</p>
-          <p><strong>Location:</strong> ${selectedLocation?.name}</p>
-          <p><strong>Address:</strong> ${selectedLocation?.address}</p>
-
-          <h2 style="color: #9B1B5D; border-bottom: 2px solid #9B1B5D; padding-bottom: 10px; margin-top: 30px;">Items to Donate</h2>
-          <p><strong>Selected Items:</strong> ${itemsList}</p>
-          <p><strong>Other Items:</strong> ${otherItemsText}</p>
-        </div>
-        <div style="background-color: #9B1B5D; padding: 15px; text-align: center;">
-          <p style="color: white; margin: 0; font-size: 12px;">SupportWorks Housing - Supply Drives</p>
-        </div>
-      </div>
-    `;
-
-    const payload = {
-      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
-      subject: `Supply Drive Drop-Off: ${sdFormData.contactName}`,
-      from_name: 'SupportWorks Housing Website',
-      message: emailHtml,
-      replyto: sdFormData.contactEmail,
-    };
-
     try {
-      // Also submit to our API for admin tracking
-      const token = localStorage.getItem('admin_session');
+      // Submit to our API for admin tracking
       await fetch(`${API_BASE}/api/supply-drives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -408,18 +340,28 @@ function GetInvolved({
         })
       });
 
-      // Send email via Web3Forms
-      const response = await fetch('https://api.web3forms.com/submit', {
+      // Send confirmation email via Resend
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          type: 'supply-drive',
+          contactName: sdFormData.contactName,
+          contactEmail: sdFormData.contactEmail,
+          contactPhone: sdFormData.contactPhone,
+          location: selectedLocation?.name,
+          address: selectedLocation?.address,
+          dateTime: `${selectedDate?.day}, ${selectedDate?.time}`,
+          items: sdFormData.selectedItems,
+          otherItems: sdFormData.otherItems,
+        })
       });
 
       const result = await response.json();
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
+        throw new Error(result.error || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       setSubmitError(error.message || 'An error occurred. Please try again.');
@@ -1019,7 +961,7 @@ function GetInvolved({
                         <div className="gi-review-item"><strong>Phone:</strong> <span>{sdFormData.contactPhone}</span></div>
                       </div>
 
-                      <div className="gi-review-section">
+                      <div className="gi-review-section gi-review-full-width">
                         <h4>Items to Donate</h4>
                         {sdFormData.selectedItems.length > 0 && (
                           <div className="gi-review-items-list">

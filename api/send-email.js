@@ -1,6 +1,6 @@
 // Vercel Serverless Function for sending emails via Resend
 export default async function handler(req, res) {
-  // CORS headers - set these first
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -9,7 +9,6 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -22,20 +21,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const {
-      groupName,
-      dateTime,
-      location,
-      contactName,
-      contactEmail,
-      contactPhone,
-      groupSize,
-      foodPlan,
-      activity,
-    } = req.body;
+    const { type } = req.body;
 
-    // Build branded HTML email
-    const htmlContent = `
+    let htmlContent, subject, replyTo;
+
+    if (type === 'supply-drive') {
+      const { contactName, contactEmail, contactPhone, location, address, dateTime, items, otherItems } = req.body;
+
+      replyTo = contactEmail;
+      subject = `Supply Drive Drop-Off: ${contactName} - ${dateTime}`;
+
+      const itemsList = items.map(item => `<li style="padding: 4px 0;">${item}</li>`).join('');
+
+      htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -44,12 +42,62 @@ export default async function handler(req, res) {
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
   <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header -->
+    <div style="background-color: #9B1B5D; padding: 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Supply Drive Drop-Off</h1>
+    </div>
+    <div style="padding: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px; width: 110px;">Contact</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">
+            <strong>${contactName}</strong><br>
+            <a href="mailto:${contactEmail}" style="color: #9B1B5D;">${contactEmail}</a><br>
+            ${contactPhone}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Date & Time</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">${dateTime}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Location</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">${location}<br><span style="color: #666;">${address}</span></td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">Items</td>
+          <td style="padding: 12px 0; font-size: 14px;">
+            <ul style="margin: 0; padding-left: 20px;">${itemsList}</ul>
+            ${otherItems ? `<p style="margin-top: 8px; color: #666;"><em>Other: ${otherItems}</em></p>` : ''}
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div style="padding: 16px; text-align: center; background-color: #f9f9f9; border-top: 1px solid #eee;">
+      <p style="margin: 0; font-size: 12px; color: #999;">SupportWorks Housing &bull; Supply Drives</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    } else {
+      // Connection Night (default)
+      const { groupName, dateTime, location, address, contactName, contactEmail, contactPhone, groupSize, foodPlan, activity } = req.body;
+
+      replyTo = contactEmail;
+      subject = `Connection Night Request: ${groupName} - ${dateTime}`;
+
+      htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff;">
     <div style="background-color: #9B1B5D; padding: 24px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Connection Night Request</h1>
     </div>
-
-    <!-- Content -->
     <div style="padding: 24px;">
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
@@ -62,7 +110,7 @@ export default async function handler(req, res) {
         </tr>
         <tr>
           <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Location</td>
-          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">${location}</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">${location}<br><span style="color: #666;">${address}</span></td>
         </tr>
         <tr>
           <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Contact</td>
@@ -85,29 +133,14 @@ export default async function handler(req, res) {
           <td style="padding: 12px 0; font-size: 14px;">${activity}</td>
         </tr>
       </table>
-
-      <!-- Action Buttons -->
-      <div style="margin-top: 28px; text-align: center;">
-        <a href="mailto:${contactEmail}?subject=${encodeURIComponent(`Approved: Connection Night - ${dateTime}`)}&body=${encodeURIComponent(`Hi ${contactName},\n\nGreat news! Your Connection Night request has been approved.\n\nDetails:\n- Date & Time: ${dateTime}\n- Location: ${location}\n\nWe look forward to seeing you!\n\nBest,\nSupportWorks Housing`)}"
-           style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin-right: 12px;">
-          Approve
-        </a>
-        <a href="mailto:${contactEmail}?subject=${encodeURIComponent(`Update: Connection Night Request - ${dateTime}`)}&body=${encodeURIComponent(`Hi ${contactName},\n\nThank you for your interest in hosting a Connection Night. Unfortunately, we are unable to accommodate your request for ${dateTime}.\n\nPlease feel free to submit another request for a different date.\n\nBest,\nSupportWorks Housing`)}"
-           style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
-          Deny
-        </a>
-      </div>
     </div>
-
-    <!-- Footer -->
     <div style="padding: 16px; text-align: center; background-color: #f9f9f9; border-top: 1px solid #eee;">
-      <p style="margin: 0; font-size: 12px; color: #999;">
-        SupportWorks Housing &bull; ${new Date().toLocaleDateString()}
-      </p>
+      <p style="margin: 0; font-size: 12px; color: #999;">SupportWorks Housing &bull; Connection Nights</p>
     </div>
   </div>
 </body>
 </html>`;
+    }
 
     // Send via Resend
     const response = await fetch('https://api.resend.com/emails', {
@@ -119,8 +152,8 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: 'SupportWorks Housing <onboarding@resend.dev>',
         to: RECIPIENT_EMAIL,
-        reply_to: contactEmail,
-        subject: `Connection Night Request: ${groupName} - ${dateTime}`,
+        reply_to: replyTo,
+        subject: subject,
         html: htmlContent,
       }),
     });
@@ -135,9 +168,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, id: result.id });
   } catch (error) {
     console.error('Server error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      details: error.message || String(error)
-    });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
