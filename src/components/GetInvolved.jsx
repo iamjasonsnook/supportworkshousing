@@ -278,21 +278,24 @@ function GetInvolved({
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
     const payload = {
-      type: 'connection-night',
-      groupName: cnFormData.groupName,
-      dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      location: selectedLocation?.name,
-      address: selectedLocation?.address,
-      contactName: cnFormData.contactName,
-      contactEmail: cnFormData.contactEmail,
-      contactPhone: cnFormData.contactPhone,
-      groupSize: cnFormData.groupSize,
-      foodPlan: foodPlanText,
-      activity: activityPlanText,
+      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
+      subject: `Connection Night Request: ${cnFormData.groupName}`,
+      from_name: 'SupportWorks Housing Website',
+      replyto: cnFormData.contactEmail,
+      // Plain text format for Web3Forms
+      'Group Name': cnFormData.groupName,
+      'Contact Name': cnFormData.contactName,
+      'Email': cnFormData.contactEmail,
+      'Phone': cnFormData.contactPhone,
+      'Group Size': `${cnFormData.groupSize} people`,
+      'Date & Time': `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
+      'Food Plan': foodPlanText,
+      'Activity': activityPlanText,
     };
 
     try {
-      const response = await fetch('/api/send-email', {
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -302,7 +305,7 @@ function GetInvolved({
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.error || 'Failed to submit. Please try again.');
+        throw new Error(result.message || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       setSubmitError(error.message || 'An error occurred. Please try again.');
@@ -320,6 +323,26 @@ function GetInvolved({
 
     const selectedLocation = locations.find(loc => loc.id === sdFormData.locationId);
     const selectedDate = fridayDates.find(d => d.id === sdFormData.dropOffDate);
+
+    const itemsList = sdFormData.selectedItems.length > 0
+      ? sdFormData.selectedItems.join(', ')
+      : 'None selected';
+
+    const payload = {
+      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
+      subject: `Supply Drive Drop-Off: ${sdFormData.contactName}`,
+      from_name: 'SupportWorks Housing Website',
+      replyto: sdFormData.contactEmail,
+      // Plain text format for Web3Forms
+      'Contact Name': sdFormData.contactName,
+      'Email': sdFormData.contactEmail,
+      'Phone': sdFormData.contactPhone,
+      'Drop-Off Date': selectedDate?.day,
+      'Drop-Off Time': selectedDate?.time,
+      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
+      'Items to Donate': itemsList,
+      'Other Items': sdFormData.otherItems || 'None',
+    };
 
     try {
       // Submit to our API for admin tracking
@@ -340,28 +363,18 @@ function GetInvolved({
         })
       });
 
-      // Send confirmation email via Resend
-      const response = await fetch('/api/send-email', {
+      // Send email via Web3Forms
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'supply-drive',
-          contactName: sdFormData.contactName,
-          contactEmail: sdFormData.contactEmail,
-          contactPhone: sdFormData.contactPhone,
-          location: selectedLocation?.name,
-          address: selectedLocation?.address,
-          dateTime: `${selectedDate?.day}, ${selectedDate?.time}`,
-          items: sdFormData.selectedItems,
-          otherItems: sdFormData.otherItems,
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
       if (result.success) {
         setIsSubmitted(true);
       } else {
-        throw new Error(result.error || 'Failed to submit. Please try again.');
+        throw new Error(result.message || 'Failed to submit. Please try again.');
       }
     } catch (error) {
       setSubmitError(error.message || 'An error occurred. Please try again.');
