@@ -724,22 +724,32 @@ app.post('/api/admin/supply-drives/:id/complete', authMiddleware, async (req, re
 // Get all volunteers
 app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
   try {
-    // Enrich volunteers with event counts
+    // Enrich volunteers with event counts (including supply drives)
     const enrichedVolunteers = mockVolunteers.map(volunteer => {
+      // Connection Night events
       const volunteerEvents = mockEvents.filter(e => e.volunteer_id === volunteer.id);
       const completedEvents = volunteerEvents.filter(e => e.status === 'completed');
       const upcomingEvents = volunteerEvents.filter(e => ['pending', 'approved'].includes(e.status));
 
+      // Supply Drive events
+      const volunteerSupplyDrives = mockSupplyDrives.filter(e => e.volunteer_id === volunteer.id);
+      const completedSupplyDrives = volunteerSupplyDrives.filter(e => e.status === 'completed');
+      const upcomingSupplyDrives = volunteerSupplyDrives.filter(e => ['pending', 'approved'].includes(e.status));
+
+      // Combine counts
+      const allCompleted = [...completedEvents, ...completedSupplyDrives];
+      const allUpcoming = [...upcomingEvents, ...upcomingSupplyDrives];
+
       return {
         ...volunteer,
-        total_events: volunteerEvents.length,
-        completed_events: completedEvents.length,
-        upcoming_events: upcomingEvents.length,
-        last_event: completedEvents.length > 0
-          ? completedEvents.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))[0]
+        total_events: volunteerEvents.length + volunteerSupplyDrives.length,
+        completed_events: allCompleted.length,
+        upcoming_events: allUpcoming.length,
+        last_event: allCompleted.length > 0
+          ? allCompleted.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))[0]
           : null,
-        next_event: upcomingEvents.length > 0
-          ? upcomingEvents.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]
+        next_event: allUpcoming.length > 0
+          ? allUpcoming.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]
           : null,
       };
     });
@@ -761,14 +771,26 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Volunteer not found' });
     }
 
+    // Get Connection Night events
     const volunteerEvents = mockEvents
       .filter(e => e.volunteer_id === id)
+      .map(e => ({ ...e, event_type: 'connection-night' }))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Get Supply Drive events
+    const volunteerSupplyDrives = mockSupplyDrives
+      .filter(e => e.volunteer_id === id)
+      .map(e => ({ ...e, event_type: 'supply-drive' }))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Combine and sort all events
+    const allEvents = [...volunteerEvents, ...volunteerSupplyDrives]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     res.json({
       volunteer: {
         ...volunteer,
-        events: volunteerEvents,
+        events: allEvents,
       },
     });
   } catch (error) {

@@ -1474,3 +1474,12 @@
 .supply-drive-card {
   border-left: 3px solid #7C3AED;
 }
+
+/* Supply drive in volunteer event history */
+.volunteer-event-item.supply-drive {
+  border-left: 3px solid #7C3AED;
+}
+
+.volunteer-event-item.supply-drive svg {
+  color: #7C3AED;
+}

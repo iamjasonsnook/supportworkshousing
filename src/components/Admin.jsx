@@ -522,8 +522,24 @@ function Admin() {
   }, [events, supplyDrives, filter, selectedDate]);
 
   // Calculate stats based on timeframe
+  // Estimated values for supply drive items (for in-kind donation records)
+  const itemValues = {
+    // Cleaning Supplies (~$5-8 each)
+    'All-purpose cleaner': 6, 'Dish soap': 4, 'Laundry detergent': 12,
+    'Disinfecting wipes': 5, 'Trash bags': 8, 'Paper towels': 8, 'Sponges': 3,
+    // Toiletries (~$3-8 each)
+    'Toilet paper': 10, 'Shampoo': 6, 'Conditioner': 6, 'Body wash/soap': 5,
+    'Toothpaste': 4, 'Toothbrushes': 3, 'Deodorant': 5, 'Feminine hygiene products': 8,
+    // Linens (~$15-30 each)
+    'Bath towels': 12, 'Washcloths': 5, 'Twin sheets': 25, 'Pillows': 15, 'Blankets': 20,
+    // Non-Perishable Food (~$2-5 each)
+    'Canned vegetables': 2, 'Canned soup': 3, 'Pasta': 2, 'Rice': 4,
+    'Peanut butter': 5, 'Cereal': 5, 'Canned tuna/chicken': 3, 'Cooking oil': 6,
+  };
+  const defaultItemValue = 8; // Default value for unlisted items
+
   const calculatedStats = useMemo(() => {
-    if (!events.length) return null;
+    if (!events.length && !supplyDrives.length) return null;
 
     const now = new Date();
     let startDate = null;
@@ -544,22 +560,45 @@ function Admin() {
         })
       : events;
 
+    const filteredSupplyDrives = startDate
+      ? supplyDrives.filter(e => {
+          const eventDate = e.completed_at ? new Date(e.completed_at) : new Date(e.created_at);
+          return eventDate >= startDate;
+        })
+      : supplyDrives;
+
     const completedEvents = filteredEvents.filter(e => e.status === 'completed').length;
-    const pendingEvents = filteredEvents.filter(e => e.status === 'pending').length;
+    const pendingEvents = filteredEvents.filter(e => e.status === 'pending').length
+      + filteredSupplyDrives.filter(e => e.status === 'pending').length;
     const totalVolunteerHours = filteredEvents
       .filter(e => e.status === 'completed')
       .reduce((sum, e) => sum + (e.group_size * 2), 0);
 
+    // Calculate in-kind donation value from completed supply drives
+    const inKindValue = filteredSupplyDrives
+      .filter(e => e.status === 'completed')
+      .reduce((sum, drive) => {
+        const driveValue = (drive.items || []).reduce((itemSum, item) => {
+          return itemSum + (itemValues[item] || defaultItemValue);
+        }, 0);
+        return sum + driveValue;
+      }, 0);
+
     // Count unique volunteers in the timeframe
-    const uniqueVolunteerIds = new Set(filteredEvents.map(e => e.volunteer_id));
+    const allVolunteerIds = [
+      ...filteredEvents.map(e => e.volunteer_id),
+      ...filteredSupplyDrives.map(e => e.volunteer_id),
+    ];
+    const uniqueVolunteerIds = new Set(allVolunteerIds.filter(Boolean));
 
     return {
       totalVolunteers: statsTimeframe === 'all' ? volunteers.length : uniqueVolunteerIds.size,
-      completedEvents,
+      completedEvents: completedEvents + filteredSupplyDrives.filter(e => e.status === 'completed').length,
       pendingEvents,
       totalVolunteerHours,
+      inKindValue,
     };
-  }, [events, volunteers, statsTimeframe]);
+  }, [events, supplyDrives, volunteers, statsTimeframe]);
 
   // Filter volunteers based on type and search query
   const displayedVolunteers = useMemo(() => {
@@ -666,6 +705,10 @@ function Admin() {
             <div className="stat-item">
               <span className="stat-value">{calculatedStats.totalVolunteerHours}</span>
               <span className="stat-label">Volunteer<br />Hours</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">${calculatedStats.inKindValue?.toLocaleString() || 0}</span>
+              <span className="stat-label">In-Kind<br />Value</span>
             </div>
           </div>
         </div>
@@ -1176,23 +1219,35 @@ function Admin() {
               <h3>Event History</h3>
               {volunteerDetail.events && volunteerDetail.events.length > 0 ? (
                 <div className="volunteer-events-list">
-                  {volunteerDetail.events.map(event => (
-                    <div
-                      key={event.id}
-                      className={`volunteer-event-item ${event.status}`}
-                      onClick={() => handleViewEventFromVolunteer(event.id)}
-                    >
-                      <div className="volunteer-event-date">
-                        <Calendar size={16} />
-                        <span>{event.time_slot_day}</span>
+                  {volunteerDetail.events.map(event => {
+                    const isSupplyDrive = event.event_type === 'supply-drive';
+                    return (
+                      <div
+                        key={event.id}
+                        className={`volunteer-event-item ${event.status} ${isSupplyDrive ? 'supply-drive' : ''}`}
+                        onClick={() => handleViewEventFromVolunteer(event.id)}
+                      >
+                        <div className="volunteer-event-date">
+                          {isSupplyDrive ? <Package size={16} /> : <Calendar size={16} />}
+                          <span>{isSupplyDrive ? event.drop_off_date : event.time_slot_day}</span>
+                        </div>
+                        <div className="volunteer-event-details">
+                          {isSupplyDrive ? (
+                            <>
+                              <span className="volunteer-event-activity">Supply Drive</span>
+                              <span className="volunteer-event-size">{event.items?.length || 0} items</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="volunteer-event-activity">{event.activity_plan}</span>
+                              <span className="volunteer-event-size">{event.group_size} people</span>
+                            </>
+                          )}
+                        </div>
+                        {getStatusBadge(event.status)}
                       </div>
-                      <div className="volunteer-event-details">
-                        <span className="volunteer-event-activity">{event.activity_plan}</span>
-                        <span className="volunteer-event-size">{event.group_size} people</span>
-                      </div>
-                      {getStatusBadge(event.status)}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="no-events">No events recorded.</p>
