@@ -319,6 +319,171 @@ const mockEvents = [
   { id: '15', volunteer_id: 'v15', group_name: 'Dominion Energy Volunteers', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', time_slot_day: 'Thursday, March 20', time_slot_time: '6:00 PM - 8:00 PM', contact_name: 'Michael Brown', contact_email: 'mbrown@dominionenergy.com', contact_phone: '(804) 555-3456', group_size: 30, food_plan: 'cater', activity_plan: 'Board games', status: 'approved', created_at: '2026-01-14T09:00:00Z' },
 ];
 
+// Supply Drive submissions
+const mockSupplyDrives = [
+  {
+    id: 'sd1',
+    volunteer_id: 'v8',
+    event_type: 'supply-drive',
+    contact_name: 'Jennifer Lee',
+    contact_email: 'jennifer.lee@capitalone.com',
+    contact_phone: '(804) 555-6789',
+    organization: 'Capital One Cares Team',
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, February 7',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['All-purpose cleaner', 'Dish soap', 'Paper towels', 'Toilet paper', 'Shampoo', 'Body wash/soap'],
+    notes: 'We have about 50 care packages to drop off.',
+    status: 'completed',
+    created_at: '2026-01-20T10:00:00Z',
+    completed_at: '2026-02-07T14:00:00Z',
+  },
+  {
+    id: 'sd2',
+    volunteer_id: 'v10',
+    event_type: 'supply-drive',
+    contact_name: 'Nancy White',
+    contact_email: 'nwhite@midlothianwc.org',
+    contact_phone: '(804) 555-8901',
+    organization: "Midlothian Women's Club",
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, February 14',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Bath towels', 'Washcloths', 'Twin sheets', 'Pillows', 'Blankets'],
+    notes: 'Collected linens from our annual drive.',
+    status: 'approved',
+    created_at: '2026-02-01T11:00:00Z',
+  },
+  {
+    id: 'sd3',
+    volunteer_id: 'v16',
+    event_type: 'supply-drive',
+    contact_name: 'Rachel Kim',
+    contact_email: 'rachel.kim@gmail.com',
+    contact_phone: '(804) 555-4567',
+    organization: null,
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, February 21',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Peanut butter', 'Cereal'],
+    notes: 'Personal donation - cleaning out my pantry of extras.',
+    status: 'pending',
+    created_at: '2026-02-02T09:00:00Z',
+  },
+  // January 2026 Supply Drives (completed)
+  {
+    id: 'sd4',
+    volunteer_id: 'v1',
+    event_type: 'supply-drive',
+    contact_name: 'Sarah Johnson',
+    contact_email: 'sarah@gracecc.org',
+    contact_phone: '(804) 555-1234',
+    organization: 'Grace Community Church',
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, January 3',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Toilet paper', 'Paper towels', 'Trash bags', 'Laundry detergent', 'Dish soap'],
+    notes: 'New year cleaning supply drive from our congregation.',
+    status: 'completed',
+    created_at: '2025-12-20T10:00:00Z',
+    completed_at: '2026-01-03T14:00:00Z',
+  },
+  {
+    id: 'sd5',
+    volunteer_id: 'v15',
+    event_type: 'supply-drive',
+    contact_name: 'Michael Brown',
+    contact_email: 'mbrown@dominionenergy.com',
+    contact_phone: '(804) 555-3456',
+    organization: 'Dominion Energy Volunteers',
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, January 10',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Bath towels', 'Washcloths', 'Twin sheets', 'Pillows', 'Blankets'],
+    notes: 'Corporate donation drive - linens collection.',
+    status: 'completed',
+    created_at: '2025-12-28T14:00:00Z',
+    completed_at: '2026-01-10T15:30:00Z',
+  },
+  {
+    id: 'sd6',
+    volunteer_id: 'v7',
+    event_type: 'supply-drive',
+    contact_name: 'Maria Santos',
+    contact_email: 'msantos@stmarysrva.org',
+    contact_phone: '(804) 555-5678',
+    organization: "St. Mary's Catholic Church",
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, January 17',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Peanut butter', 'Cereal'],
+    notes: 'Parish food drive collection.',
+    status: 'completed',
+    created_at: '2026-01-05T10:00:00Z',
+    completed_at: '2026-01-17T11:00:00Z',
+  },
+  {
+    id: 'sd7',
+    volunteer_id: 'v17',
+    event_type: 'supply-drive',
+    contact_name: 'James Wilson',
+    contact_email: 'jwilson.volunteer@yahoo.com',
+    contact_phone: '(804) 555-5678',
+    organization: null,
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, January 24',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Toothpaste', 'Toothbrushes', 'Deodorant', 'Shampoo', 'Conditioner', 'Body wash/soap'],
+    notes: 'Personal toiletry donation.',
+    status: 'completed',
+    created_at: '2026-01-12T11:00:00Z',
+    completed_at: '2026-01-24T10:30:00Z',
+  },
+  {
+    id: 'sd8',
+    volunteer_id: 'v5',
+    event_type: 'supply-drive',
+    contact_name: 'Lisa Martinez',
+    contact_email: 'lmartinez@henrico.k12.va.us',
+    contact_phone: '(804) 555-3456',
+    organization: 'Henrico High School Key Club',
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, January 31',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['All-purpose cleaner', 'Disinfecting wipes', 'Sponges', 'Trash bags', 'Paper towels'],
+    notes: 'Student council cleaning supply drive.',
+    status: 'completed',
+    created_at: '2026-01-18T09:00:00Z',
+    completed_at: '2026-01-31T14:00:00Z',
+  },
+  // February 2026 Supply Drives (current month)
+  {
+    id: 'sd9',
+    volunteer_id: 'v9',
+    event_type: 'supply-drive',
+    contact_name: 'Brian Thompson',
+    contact_email: 'bthompson@uvaalumni.org',
+    contact_phone: '(804) 555-7890',
+    organization: 'UVA Alumni Chapter',
+    location_name: 'New Clay House',
+    location_address: '707 N Harrison St, Richmond, VA 23220',
+    drop_off_date: 'Friday, February 28',
+    drop_off_time: '9:00 AM - 5:00 PM',
+    items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Cooking oil', 'Cereal'],
+    notes: 'Alumni association food drive.',
+    status: 'pending',
+    created_at: '2026-02-01T14:00:00Z',
+  },
+];
+
 // Auth middleware
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -329,17 +494,68 @@ const authMiddleware = (req, res, next) => {
 };
 
 // Public endpoint - get booked dates (no auth required)
-// Returns dates that have pending or approved events
+// Returns dates that have pending or approved events (both Connection Nights and Supply Drives)
 app.get('/api/booked-dates', (req, res) => {
   try {
-    const bookedDates = mockEvents
+    const connectionNightDates = mockEvents
       .filter(e => e.status === 'pending' || e.status === 'approved')
       .map(e => e.time_slot_day);
 
-    res.json({ bookedDates });
+    const supplyDriveDates = mockSupplyDrives
+      .filter(e => e.status === 'pending' || e.status === 'approved')
+      .map(e => e.drop_off_date);
+
+    res.json({
+      bookedDates: connectionNightDates,
+      bookedSupplyDriveDates: supplyDriveDates,
+    });
   } catch (error) {
     console.error('Error fetching booked dates:', error);
     res.status(500).json({ error: 'Failed to fetch booked dates' });
+  }
+});
+
+// Public endpoint - submit a supply drive (no auth required)
+app.post('/api/supply-drives', (req, res) => {
+  try {
+    const {
+      contact_name,
+      contact_email,
+      contact_phone,
+      organization,
+      location_name,
+      location_address,
+      drop_off_date,
+      drop_off_time,
+      items,
+      notes,
+    } = req.body;
+
+    const newSupplyDrive = {
+      id: 'sd' + (mockSupplyDrives.length + 1),
+      volunteer_id: null, // Will be linked when volunteer is created/found
+      event_type: 'supply-drive',
+      contact_name,
+      contact_email,
+      contact_phone,
+      organization: organization || null,
+      location_name,
+      location_address,
+      drop_off_date,
+      drop_off_time,
+      items,
+      notes: notes || null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    };
+
+    mockSupplyDrives.push(newSupplyDrive);
+    console.log('New supply drive submission:', newSupplyDrive);
+
+    res.json({ success: true, id: newSupplyDrive.id });
+  } catch (error) {
+    console.error('Error creating supply drive:', error);
+    res.status(500).json({ error: 'Failed to create supply drive' });
   }
 });
 
@@ -354,7 +570,7 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// Get events
+// Get events (includes both Connection Nights and Supply Drives)
 app.get('/api/admin/events', authMiddleware, async (req, res) => {
   try {
     if (supabase) {
@@ -364,10 +580,19 @@ app.get('/api/admin/events', authMiddleware, async (req, res) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      res.json({ events: data || [] });
+      res.json({ events: data || [], supplyDrives: [] });
     } else {
-      // Return mock data
-      res.json({ events: mockEvents });
+      // Return mock data - include both event types
+      // Add event_type to connection nights for clarity
+      const eventsWithType = mockEvents.map(e => ({
+        ...e,
+        event_type: 'connection-night',
+      }));
+
+      res.json({
+        events: eventsWithType,
+        supplyDrives: mockSupplyDrives,
+      });
     }
   } catch (error) {
     console.error('Error fetching events:', error);
@@ -441,6 +666,58 @@ app.post('/api/admin/events/:id/deny', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error denying event:', error);
     res.status(500).json({ error: 'Failed to deny event' });
+  }
+});
+
+// Approve supply drive
+app.post('/api/admin/supply-drives/:id/approve', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const supplyDrive = mockSupplyDrives.find(e => e.id === id);
+    if (supplyDrive) {
+      supplyDrive.status = 'approved';
+      supplyDrive.approved_at = new Date().toISOString();
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error approving supply drive:', error);
+    res.status(500).json({ error: 'Failed to approve supply drive' });
+  }
+});
+
+// Deny supply drive
+app.post('/api/admin/supply-drives/:id/deny', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const supplyDrive = mockSupplyDrives.find(e => e.id === id);
+    if (supplyDrive) {
+      supplyDrive.status = 'denied';
+      supplyDrive.denial_reason = reason || null;
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error denying supply drive:', error);
+    res.status(500).json({ error: 'Failed to deny supply drive' });
+  }
+});
+
+// Mark supply drive as completed
+app.post('/api/admin/supply-drives/:id/complete', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const supplyDrive = mockSupplyDrives.find(e => e.id === id);
+    if (supplyDrive) {
+      supplyDrive.status = 'completed';
+      supplyDrive.completed_at = new Date().toISOString();
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error completing supply drive:', error);
+    res.status(500).json({ error: 'Failed to complete supply drive' });
   }
 });
 

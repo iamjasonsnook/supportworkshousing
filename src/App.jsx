@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Impact from './components/Impact';
-import ConnectionNights from './components/ConnectionNights';
+import GetInvolved from './components/GetInvolved';
 import About from './components/About';
 import Stories from './components/Stories';
 import Donate from './components/Donate';
@@ -21,7 +21,7 @@ function HomePage() {
       // Map friendly names to section IDs
       const hashTargets = {
         'donate': 'donate',
-        'volunteer': 'connection-nights',
+        'volunteer': 'get-involved',
       };
       const targetId = hashTargets[hash] || hash;
 
@@ -79,7 +79,7 @@ function HomePage() {
         <About />
         <Stories />
         <Donate />
-        <ConnectionNights timeSlotsByLocation={connectionNightsTimeSlots} />
+        <GetInvolved timeSlotsByLocation={connectionNightsTimeSlots} />
       </main>
       <Footer />
     </>

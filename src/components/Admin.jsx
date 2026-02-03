@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Shield, Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search } from 'lucide-react';
+import { Shield, Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -9,6 +9,7 @@ function Admin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [events, setEvents] = useState([]);
+  const [supplyDrives, setSupplyDrives] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState(null);
@@ -97,6 +98,9 @@ function Admin() {
       const data = await response.json();
       if (data.events) {
         setEvents(data.events);
+      }
+      if (data.supplyDrives) {
+        setSupplyDrives(data.supplyDrives);
       }
     } catch (err) {
       console.error('Failed to fetch events:', err);
@@ -302,6 +306,53 @@ function Admin() {
     }
   };
 
+  const handleApproveSupplyDrive = async (drive) => {
+    if (!confirm(`Approve Supply Drive from ${drive.contact_name}?`)) return;
+
+    setActionLoading(drive.id);
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/supply-drives/${drive.id}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        fetchEvents();
+      }
+    } catch (err) {
+      console.error('Approve failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDenySupplyDrive = async (drive) => {
+    const reason = prompt(`Deny Supply Drive from ${drive.contact_name}?\n\nEnter a reason (optional):`);
+    if (reason === null) return;
+
+    setActionLoading(drive.id);
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/supply-drives/${drive.id}/deny`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      if (response.ok) {
+        fetchEvents();
+      }
+    } catch (err) {
+      console.error('Deny failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -332,8 +383,9 @@ function Admin() {
 
   // Calendar helpers
   const parseEventDate = (event) => {
-    // Parse "Tuesday, February 11" format
-    const dayStr = event.time_slot_day;
+    // Parse "Tuesday, February 11" format for connection nights
+    // or "Friday, February 14" for supply drives
+    const dayStr = event.time_slot_day || event.drop_off_date;
     if (!dayStr) return null;
 
     const match = dayStr.match(/(\w+),\s*(\w+)\s*(\d+)/);
@@ -360,11 +412,19 @@ function Admin() {
     return new Date(year, monthIndex, parseInt(day));
   };
 
+  // Combine events and supply drives for calendar display
+  const allCalendarItems = useMemo(() => {
+    return [
+      ...events.map(e => ({ ...e, itemType: 'connection-night' })),
+      ...supplyDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
+    ];
+  }, [events, supplyDrives]);
+
   const getEventsForDate = (date) => {
-    return events.filter(event => {
-      const eventDate = parseEventDate(event);
-      if (!eventDate) return false;
-      return eventDate.toDateString() === date.toDateString();
+    return allCalendarItems.filter(item => {
+      const itemDate = parseEventDate(item);
+      if (!itemDate) return false;
+      return itemDate.toDateString() === date.toDateString();
     });
   };
 
@@ -443,16 +503,23 @@ function Admin() {
 
   // Filter events based on selected date or filter
   const displayedEvents = useMemo(() => {
-    let filtered = events;
-
     if (selectedDate) {
-      filtered = getEventsForDate(selectedDate);
-    } else if (filter !== 'all') {
-      filtered = events.filter(e => e.status === filter);
+      // When date is selected, show all items for that date
+      return getEventsForDate(selectedDate);
     }
 
-    return filtered;
-  }, [events, filter, selectedDate]);
+    // Combine events and supply drives for display
+    const allItems = [
+      ...events.map(e => ({ ...e, itemType: 'connection-night' })),
+      ...supplyDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
+    ];
+
+    if (filter !== 'all') {
+      return allItems.filter(e => e.status === filter);
+    }
+
+    return allItems;
+  }, [events, supplyDrives, filter, selectedDate]);
 
   // Calculate stats based on timeframe
   const calculatedStats = useMemo(() => {
@@ -723,31 +790,31 @@ function Admin() {
               className={`filter-btn ${filter === 'all' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('all'); setSelectedDate(null); }}
             >
-              All ({events.length})
+              All ({events.length + supplyDrives.length})
             </button>
             <button
               className={`filter-btn ${filter === 'pending' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('pending'); setSelectedDate(null); }}
             >
-              Pending ({events.filter(e => e.status === 'pending').length})
+              Pending ({events.filter(e => e.status === 'pending').length + supplyDrives.filter(e => e.status === 'pending').length})
             </button>
             <button
               className={`filter-btn ${filter === 'approved' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('approved'); setSelectedDate(null); }}
             >
-              Approved ({events.filter(e => e.status === 'approved').length})
+              Approved ({events.filter(e => e.status === 'approved').length + supplyDrives.filter(e => e.status === 'approved').length})
             </button>
             <button
               className={`filter-btn ${filter === 'completed' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('completed'); setSelectedDate(null); }}
             >
-              Completed ({events.filter(e => e.status === 'completed').length})
+              Completed ({events.filter(e => e.status === 'completed').length + supplyDrives.filter(e => e.status === 'completed').length})
             </button>
             <button
               className={`filter-btn ${filter === 'denied' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('denied'); setSelectedDate(null); }}
             >
-              Denied ({events.filter(e => e.status === 'denied').length})
+              Denied ({events.filter(e => e.status === 'denied').length + supplyDrives.filter(e => e.status === 'denied').length})
             </button>
           </div>
         </div>
@@ -761,55 +828,84 @@ function Admin() {
           </div>
         ) : (
           <div className="admin-events">
-            {displayedEvents.map((event) => {
-              const volunteer = getVolunteerForEvent(event);
+            {displayedEvents.map((item) => {
+              const volunteer = getVolunteerForEvent(item);
+              const isSupplyDrive = item.itemType === 'supply-drive';
+
               return (
-              <div key={event.id} id={`event-${event.id}`} className="event-card">
+              <div key={item.id} id={`event-${item.id}`} className={`event-card ${isSupplyDrive ? 'supply-drive-card' : ''}`}>
                 <div className="event-header">
                   <div className="event-title">
-                    <h3>{event.group_name}</h3>
-                    {getStatusBadge(event.status)}
+                    <div className="event-type-badge">
+                      {isSupplyDrive ? <Package size={16} /> : <Users size={16} />}
+                      <span>{isSupplyDrive ? 'Supply Drive' : 'Connection Night'}</span>
+                    </div>
+                    <h3>{isSupplyDrive ? (item.organization || item.contact_name) : item.group_name}</h3>
+                    {getStatusBadge(item.status)}
                   </div>
-                  <span className="event-date">Submitted {formatDate(event.created_at)}</span>
+                  <span className="event-date">Submitted {formatDate(item.created_at)}</span>
                 </div>
 
                 <div className="event-details">
                   <div className="event-detail">
                     <Calendar size={16} />
-                    <span>{event.time_slot_day}, {event.time_slot_time}</span>
+                    <span>{isSupplyDrive ? `${item.drop_off_date}, ${item.drop_off_time}` : `${item.time_slot_day}, ${item.time_slot_time}`}</span>
                   </div>
                   <div className="event-detail">
                     <MapPin size={16} />
-                    <span>{event.location_name}</span>
+                    <span>{item.location_name}</span>
                   </div>
-                  <div className="event-detail">
-                    <Users size={16} />
-                    <span>{event.group_size} people</span>
-                  </div>
+                  {!isSupplyDrive && (
+                    <div className="event-detail">
+                      <Users size={16} />
+                      <span>{item.group_size} people</span>
+                    </div>
+                  )}
                   <div className="event-detail">
                     <Mail size={16} />
-                    <a href={`mailto:${event.contact_email}`}>{event.contact_email}</a>
+                    <a href={`mailto:${item.contact_email}`}>{item.contact_email}</a>
                   </div>
                   <div className="event-detail">
                     <Phone size={16} />
-                    <a href={`tel:${event.contact_phone}`}>{event.contact_phone}</a>
+                    <a href={`tel:${item.contact_phone}`}>{item.contact_phone}</a>
                   </div>
                 </div>
 
-                <div className="event-info">
-                  <div className="info-item">
-                    <strong>Contact:</strong> {event.contact_name}
+                {isSupplyDrive ? (
+                  <div className="event-info">
+                    <div className="info-item">
+                      <strong>Contact:</strong> {item.contact_name}
+                    </div>
+                    <div className="info-item supply-items">
+                      <strong>Items:</strong>
+                      <div className="supply-items-list">
+                        {item.items?.map((supply, idx) => (
+                          <span key={idx} className="supply-item-tag">{supply}</span>
+                        ))}
+                      </div>
+                    </div>
+                    {item.notes && (
+                      <div className="info-item">
+                        <strong>Notes:</strong> {item.notes}
+                      </div>
+                    )}
                   </div>
-                  <div className="info-item">
-                    <strong>Food Plan:</strong> {event.food_plan === 'bring' ? 'Bringing food' : 'Catering'}
+                ) : (
+                  <div className="event-info">
+                    <div className="info-item">
+                      <strong>Contact:</strong> {item.contact_name}
+                    </div>
+                    <div className="info-item">
+                      <strong>Food Plan:</strong> {item.food_plan === 'bring' ? 'Bringing food' : 'Catering'}
+                    </div>
+                    <div className="info-item">
+                      <strong>Activity:</strong> {item.activity_plan}
+                    </div>
                   </div>
-                  <div className="info-item">
-                    <strong>Activity:</strong> {event.activity_plan}
-                  </div>
-                </div>
+                )}
 
                 {/* Volunteer Link */}
-                {volunteer && (
+                {volunteer && !isSupplyDrive && (
                   <div className="event-volunteer-link">
                     <button
                       className="volunteer-link-btn"
@@ -822,20 +918,20 @@ function Admin() {
                   </div>
                 )}
 
-                {event.status === 'pending' && (
+                {item.status === 'pending' && (
                   <div className="event-actions">
                     <button
                       className="admin-btn-approve"
-                      onClick={() => handleApprove(event)}
-                      disabled={actionLoading === event.id}
+                      onClick={() => isSupplyDrive ? handleApproveSupplyDrive(item) : handleApprove(item)}
+                      disabled={actionLoading === item.id}
                     >
                       <Check size={18} />
                       Approve
                     </button>
                     <button
                       className="admin-btn-deny"
-                      onClick={() => handleDeny(event)}
-                      disabled={actionLoading === event.id}
+                      onClick={() => isSupplyDrive ? handleDenySupplyDrive(item) : handleDeny(item)}
+                      disabled={actionLoading === item.id}
                     >
                       <X size={18} />
                       Deny
@@ -843,9 +939,9 @@ function Admin() {
                   </div>
                 )}
 
-                {event.status === 'denied' && event.denial_reason && (
+                {item.status === 'denied' && item.denial_reason && (
                   <div className="event-denial-reason">
-                    <strong>Denial reason:</strong> {event.denial_reason}
+                    <strong>Denial reason:</strong> {item.denial_reason}
                   </div>
                 )}
               </div>
