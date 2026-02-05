@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils, Package, Heart, Truck } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import './GetInvolved.css';
+
+// EmailJS Configuration
+const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
+const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
+const EMAILJS_CN_TEMPLATE = 'connection_night';
+const EMAILJS_SD_TEMPLATE = 'supply_drive';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
@@ -277,38 +284,31 @@ function GetInvolved({
     };
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
-    const payload = {
-      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
-      subject: `Connection Night Request: ${cnFormData.groupName}`,
-      from_name: 'SupportWorks Housing Website',
-      replyto: cnFormData.contactEmail,
-      // Plain text format for Web3Forms
-      'Group Name': cnFormData.groupName,
-      'Contact Name': cnFormData.contactName,
-      'Email': cnFormData.contactEmail,
-      'Phone': cnFormData.contactPhone,
-      'Group Size': `${cnFormData.groupSize} people`,
-      'Date & Time': `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
-      'Food Plan': foodPlanText,
-      'Activity': activityPlanText,
+    const templateParams = {
+      group_name: cnFormData.groupName,
+      contact_name: cnFormData.contactName,
+      contact_email: cnFormData.contactEmail,
+      contact_phone: cnFormData.contactPhone,
+      group_size: cnFormData.groupSize,
+      date_time: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+      location: selectedLocation?.name,
+      address: selectedLocation?.address,
+      food_plan: foodPlanText,
+      activity: activityPlanText,
+      reply_to: cnFormData.contactEmail,
     };
 
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setIsSubmitted(true);
-      } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
-      }
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_CN_TEMPLATE,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+      setIsSubmitted(true);
     } catch (error) {
-      setSubmitError(error.message || 'An error occurred. Please try again.');
+      console.error('EmailJS error:', error);
+      setSubmitError(error.text || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -324,24 +324,25 @@ function GetInvolved({
     const selectedLocation = locations.find(loc => loc.id === sdFormData.locationId);
     const selectedDate = fridayDates.find(d => d.id === sdFormData.dropOffDate);
 
+    // Format items as bullet list for email
     const itemsList = sdFormData.selectedItems.length > 0
-      ? sdFormData.selectedItems.join(', ')
+      ? sdFormData.selectedItems.map(item => `• ${item}`).join('<br>')
       : 'None selected';
 
-    const payload = {
-      access_key: '80468770-ffe3-4bc0-b2fd-f7ca1c8f1f72',
-      subject: `Supply Drive Drop-Off: ${sdFormData.contactName}`,
-      from_name: 'SupportWorks Housing Website',
-      replyto: sdFormData.contactEmail,
-      // Plain text format for Web3Forms
-      'Contact Name': sdFormData.contactName,
-      'Email': sdFormData.contactEmail,
-      'Phone': sdFormData.contactPhone,
-      'Drop-Off Date': selectedDate?.day,
-      'Drop-Off Time': selectedDate?.time,
-      'Location': `${selectedLocation?.name} - ${selectedLocation?.address}`,
-      'Items to Donate': itemsList,
-      'Other Items': sdFormData.otherItems || 'None',
+    const otherItemsText = sdFormData.otherItems
+      ? `<br><em style="color: #666;">Other: ${sdFormData.otherItems}</em>`
+      : '';
+
+    const templateParams = {
+      contact_name: sdFormData.contactName,
+      contact_email: sdFormData.contactEmail,
+      contact_phone: sdFormData.contactPhone,
+      date_time: `${selectedDate?.day}, ${selectedDate?.time}`,
+      location: selectedLocation?.name,
+      address: selectedLocation?.address,
+      items_list: itemsList,
+      other_items: otherItemsText,
+      reply_to: sdFormData.contactEmail,
     };
 
     try {
@@ -363,21 +364,17 @@ function GetInvolved({
         })
       });
 
-      // Send email via Web3Forms
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setIsSubmitted(true);
-      } else {
-        throw new Error(result.message || 'Failed to submit. Please try again.');
-      }
+      // Send email via EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_SD_TEMPLATE,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+      setIsSubmitted(true);
     } catch (error) {
-      setSubmitError(error.message || 'An error occurred. Please try again.');
+      console.error('EmailJS error:', error);
+      setSubmitError(error.text || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
