@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils, Package, Heart, Truck } from 'lucide-react';
 import emailjs from '@emailjs/browser';
+import { buildEmailHTML, tableRow } from '../utils/emailTemplate';
 import './GetInvolved.css';
 
 // EmailJS Configuration
 const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
 const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
-const EMAILJS_CN_TEMPLATE = 'connection_night';
-const EMAILJS_SD_TEMPLATE = 'supply_drive';
+const EMAILJS_TEMPLATE = 'universal';
+
+// Format phone number as (xxx)xxx-xxxx
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)})${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)})${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
@@ -284,24 +293,32 @@ function GetInvolved({
     };
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
+    // Build full email HTML
+    const contentHtml =
+      tableRow('Group', `<strong>${cnFormData.groupName}</strong>`) +
+      tableRow('Date & Time', `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`) +
+      tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
+      tableRow('Contact', `${cnFormData.contactName}<br><a href="mailto:${cnFormData.contactEmail}" style="color: #9B1B5D;">${cnFormData.contactEmail}</a><br>${cnFormData.contactPhone}`) +
+      tableRow('Group Size', `${cnFormData.groupSize} people`) +
+      tableRow('Food Plan', foodPlanText) +
+      tableRow('Activity', activityPlanText, true);
+
+    const emailHtml = buildEmailHTML({
+      title: 'Connection Night Request',
+      intro: 'A volunteer group has submitted a request to host a Connection Night at one of our properties. Connection Nights bring together volunteers and residents for an evening of food, fellowship, and community activities.',
+      contentHtml,
+    });
+
     const templateParams = {
-      group_name: cnFormData.groupName,
-      contact_name: cnFormData.contactName,
-      contact_email: cnFormData.contactEmail,
-      contact_phone: cnFormData.contactPhone,
-      group_size: cnFormData.groupSize,
-      date_time: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
-      location: selectedLocation?.name,
-      address: selectedLocation?.address,
-      food_plan: foodPlanText,
-      activity: activityPlanText,
+      email_subject: `Connection Night Request: ${cnFormData.groupName} - ${selectedTimeSlot?.day}`,
+      email_html: emailHtml,
       reply_to: cnFormData.contactEmail,
     };
 
     try {
       await emailjs.send(
         EMAILJS_SERVICE_ID,
-        EMAILJS_CN_TEMPLATE,
+        EMAILJS_TEMPLATE,
         templateParams,
         EMAILJS_PUBLIC_KEY
       );
@@ -329,19 +346,26 @@ function GetInvolved({
       ? sdFormData.selectedItems.map(item => `• ${item}`).join('<br>')
       : 'None selected';
 
-    const otherItemsText = sdFormData.otherItems
+    const otherItemsHtml = sdFormData.otherItems
       ? `<br><em style="color: #666;">Other: ${sdFormData.otherItems}</em>`
       : '';
 
+    // Build full email HTML
+    const contentHtml =
+      tableRow('Contact', `<strong>${sdFormData.contactName}</strong><br><a href="mailto:${sdFormData.contactEmail}" style="color: #9B1B5D;">${sdFormData.contactEmail}</a><br>${sdFormData.contactPhone}`) +
+      tableRow('Date & Time', `${selectedDate?.day}, ${selectedDate?.time}`) +
+      tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
+      tableRow('Items', `${itemsList}${otherItemsHtml}`, true);
+
+    const emailHtml = buildEmailHTML({
+      title: 'Supply Drive Drop-Off',
+      intro: 'A donor has scheduled a supply drop-off for our residents. These in-kind donations help provide essential items like toiletries, cleaning supplies, and household goods to families in our housing program.',
+      contentHtml,
+    });
+
     const templateParams = {
-      contact_name: sdFormData.contactName,
-      contact_email: sdFormData.contactEmail,
-      contact_phone: sdFormData.contactPhone,
-      date_time: `${selectedDate?.day}, ${selectedDate?.time}`,
-      location: selectedLocation?.name,
-      address: selectedLocation?.address,
-      items_list: itemsList,
-      other_items: otherItemsText,
+      email_subject: `Supply Drive Drop-Off: ${sdFormData.contactName} - ${selectedDate?.day}`,
+      email_html: emailHtml,
       reply_to: sdFormData.contactEmail,
     };
 
@@ -367,7 +391,7 @@ function GetInvolved({
       // Send email via EmailJS
       await emailjs.send(
         EMAILJS_SERVICE_ID,
-        EMAILJS_SD_TEMPLATE,
+        EMAILJS_TEMPLATE,
         templateParams,
         EMAILJS_PUBLIC_KEY
       );
@@ -690,9 +714,9 @@ function GetInvolved({
                         <input
                           type="tel"
                           id="cn-contactPhone"
-                          placeholder="(555) 123-4567"
+                          placeholder="(555)123-4567"
                           value={cnFormData.contactPhone}
-                          onChange={(e) => updateCNField('contactPhone', e.target.value)}
+                          onChange={(e) => updateCNField('contactPhone', formatPhone(e.target.value))}
                           className={errors.contactPhone ? 'error' : ''}
                         />
                         {errors.contactPhone && <span className="gi-error">{errors.contactPhone}</span>}
@@ -889,9 +913,9 @@ function GetInvolved({
                         <input
                           type="tel"
                           id="sd-contactPhone"
-                          placeholder="(555) 123-4567"
+                          placeholder="(555)123-4567"
                           value={sdFormData.contactPhone}
-                          onChange={(e) => updateSDField('contactPhone', e.target.value)}
+                          onChange={(e) => updateSDField('contactPhone', formatPhone(e.target.value))}
                           className={errors.contactPhone ? 'error' : ''}
                         />
                         {errors.contactPhone && <span className="gi-error">{errors.contactPhone}</span>}

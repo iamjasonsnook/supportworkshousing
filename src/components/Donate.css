@@ -43,6 +43,43 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Donation Type Toggle */
+.donation-type-section {
+  margin-bottom: 20px;
+}
+
+.donation-type-toggle {
+  display: flex;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 4px;
+}
+
+.donation-type-toggle.full-width {
+  max-width: 300px;
+}
+
+.donation-type-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.donation-type-btn.active {
+  background-color: var(--color-white);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.donation-type-btn:hover:not(.active) {
+  color: var(--color-text-dark);
+}
+
 .amount-label {
   display: block;
   font-weight: 500;
@@ -181,6 +218,324 @@
   color: var(--color-white);
 }
 
+/* ===== WIZARD STYLES ===== */
+
+.donate-wizard-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.donate-progress {
+  margin-bottom: 20px;
+}
+
+.donate-progress-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.donate-progress-bar {
+  height: 6px;
+  background-color: var(--color-gray-200);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.donate-progress-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.donate-wizard-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+}
+
+.donate-step {
+  min-height: 300px;
+}
+
+.donate-step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.donate-step-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-pink-icon);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.donate-step-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  color: var(--color-text-dark);
+}
+
+.donate-step-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* Form Elements */
+.donate-form-group {
+  margin-bottom: 20px;
+}
+
+.donate-form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.donate-form-group input,
+.donate-form-group textarea,
+.donate-form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.donate-form-group input:focus,
+.donate-form-group textarea:focus,
+.donate-form-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.donate-form-group input.error {
+  border-color: #dc2626;
+}
+
+.donate-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.donate-form-row.three-col {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+.donate-form-row.card-row {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+.donate-error {
+  display: block;
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* Radio Group */
+.donate-radio-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.donate-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.donate-radio input {
+  width: auto;
+  margin: 0;
+}
+
+.donate-radio span {
+  font-size: 0.9rem;
+}
+
+/* Stub Notice */
+.donate-stub-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  color: #92400e;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+/* Review Section */
+.donate-review-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.donate-review-section {
+  background-color: var(--color-gray-50);
+  padding: 14px;
+  border-radius: var(--radius-md);
+}
+
+.donate-review-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.donate-review-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-gray-200);
+  font-size: 0.85rem;
+}
+
+.donate-review-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.donate-review-item strong {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.donate-review-item span {
+  color: var(--color-text-dark);
+  text-align: right;
+}
+
+/* Success Screen */
+.donate-success-details {
+  text-align: center;
+  padding: 24px;
+  background-color: var(--color-pink-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+}
+
+.donate-success-amount {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.donate-success-type {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.donate-next-steps {
+  background-color: var(--color-gray-50);
+  padding: 20px;
+  border-radius: var(--radius-md);
+}
+
+.donate-next-steps h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--color-text-dark);
+}
+
+.donate-next-steps ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.donate-next-steps li {
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+}
+
+.donate-next-steps li:last-child {
+  margin-bottom: 0;
+}
+
+/* Wizard Actions */
+.donate-wizard-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.donate-wizard-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.donate-wizard-actions .btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--color-gray-300);
+  color: var(--color-text-dark);
+}
+
+.donate-wizard-actions .btn-outline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.donate-wizard-actions .btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+}
+
+.donate-wizard-actions .btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.donate-wizard-actions .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.donate-submit-error {
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: 16px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .donate-header h2 {
@@ -210,5 +565,52 @@
   .giving-btn {
     width: 100%;
     text-align: center;
+  }
+
+  .donate-wizard-card {
+    padding: 20px;
+  }
+
+  .donate-form-row,
+  .donate-form-row.three-col,
+  .donate-form-row.card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .donate-form-row.card-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .donate-form-row.card-row .card-number {
+    grid-column: 1 / -1;
+  }
+
+  .donate-review-container {
+    grid-template-columns: 1fr;
+  }
+
+  .donate-step {
+    min-height: auto;
+  }
+
+  .donate-wizard-actions {
+    flex-direction: column;
+  }
+
+  .donate-wizard-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .donate-wizard-actions .btn-outline {
+    order: 2;
+  }
+
+  .donate-wizard-actions .btn-primary {
+    order: 1;
+  }
+
+  .donate-wizard-actions > div {
+    display: none;
   }
 }
