@@ -1,13 +1,37 @@
 import { useState } from 'react';
-import { Heart, Lock, ArrowLeft, ArrowRight, CheckCircle, User, Mail, Phone, CreditCard, Calendar, Building } from 'lucide-react';
+import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import emailjs from '@emailjs/browser';
 import { buildEmailHTML, tableRow } from '../utils/emailTemplate';
 import './Donate.css';
+
+// Stripe Configuration
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const API_BASE = '';
 
 // EmailJS Configuration
 const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
 const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
 const EMAILJS_TEMPLATE = 'universal';
+
+// Stripe Elements styling to match existing inputs
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#1A1A1A',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      '::placeholder': {
+        color: '#6B7280',
+      },
+    },
+    invalid: {
+      color: '#dc2626',
+    },
+  },
+};
 
 // Format phone number as (xxx)xxx-xxxx
 const formatPhone = (value) => {
@@ -18,17 +42,36 @@ const formatPhone = (value) => {
   return `(${digits.slice(0, 3)})${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
-function Donate() {
-  const [currentStep, setCurrentStep] = useState(0); // 0 = amount selection, 1 = personal info, 2 = payment, 3 = review
+function DonateForm() {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [currentStep, setCurrentStep] = useState(0); // 0 = amount, 1 = personal info, 2 = payment, 3 = review
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  // Stripe state
+  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [cardBrand, setCardBrand] = useState(null);
+  const [cardComplete, setCardComplete] = useState({
+    cardNumber: false,
+    cardExpiry: false,
+    cardCvc: false,
+  });
+  const [cardErrors, setCardErrors] = useState({
+    cardNumber: null,
+    cardExpiry: null,
+    cardCvc: null,
+  });
+
   const [formData, setFormData] = useState({
     // Donation details
-    donationType: 'one-time', // 'one-time' or 'monthly'
+    donationType: 'one-time',
     amount: 100,
     customAmount: '',
+    startDate: '',
     // Personal info
     firstName: '',
     lastName: '',
@@ -38,10 +81,7 @@ function Donate() {
     city: '',
     state: '',
     zip: '',
-    // Payment info (stubbed)
-    cardNumber: '',
-    cardExpiry: '',
-    cardCvc: '',
+    // Card name (Stripe Elements handles number/expiry/cvc)
     cardName: '',
   });
 
@@ -87,25 +127,79 @@ function Donate() {
     }
 
     if (step === 2) {
-      if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required';
-      if (!formData.cardExpiry.trim()) newErrors.cardExpiry = 'Expiration date is required';
-      if (!formData.cardCvc.trim()) newErrors.cardCvc = 'CVC is required';
       if (!formData.cardName.trim()) newErrors.cardName = 'Name on card is required';
+      if (!cardComplete.cardNumber) newErrors.cardNumber = cardErrors.cardNumber || 'Card number is required';
+      if (!cardComplete.cardExpiry) newErrors.cardExpiry = cardErrors.cardExpiry || 'Expiration date is required';
+      if (!cardComplete.cardCvc) newErrors.cardCvc = cardErrors.cardCvc || 'CVC is required';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (currentStep === 0 || validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+  const handleCardChange = (field) => (event) => {
+    setCardComplete(prev => ({ ...prev, [field]: event.complete }));
+    setCardErrors(prev => ({ ...prev, [field]: event.error ? event.error.message : null }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+    if (field === 'cardNumber' && event.brand) {
+      setCardBrand(event.brand);
     }
+  };
+
+  const handleNext = async () => {
+    if (currentStep === 0) {
+      setCurrentStep(1);
+      return;
+    }
+
+    if (!validateStep(currentStep)) return;
+
+    // Create PaymentIntent when moving from Step 1 to Step 2
+    if (currentStep === 1) {
+      // Skip PaymentIntent creation if Stripe isn't configured yet
+      if (!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
+        console.warn('Stripe not configured — skipping PaymentIntent creation (preview mode)');
+        setCurrentStep(2);
+        return;
+      }
+
+      try {
+        setIsSubmitting(true);
+        setSubmitError(null);
+        const donationAmount = formData.customAmount || formData.amount;
+        const response = await fetch(`${API_BASE}/api/create-payment-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: donationAmount,
+            donationType: formData.donationType,
+            email: formData.email,
+            name: `${formData.firstName} ${formData.lastName}`,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to initialize payment');
+
+        setClientSecret(data.clientSecret);
+        setPaymentIntentId(data.paymentIntentId);
+        setCurrentStep(2);
+      } catch (error) {
+        console.error('PaymentIntent creation failed:', error);
+        setSubmitError('Unable to initialize payment. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    setCurrentStep(prev => Math.min(prev + 1, 3));
   };
 
   const handleBack = () => {
     setCurrentStep(prev => Math.max(prev - 1, 0));
     setErrors({});
+    setSubmitError(null);
   };
 
   const updateField = (field, value) => {
@@ -129,49 +223,94 @@ function Donate() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(3)) return;
+    if (!stripe || !elements) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const donationAmount = formData.customAmount || formData.amount;
-    const donationTypeText = formData.donationType === 'monthly' ? 'Monthly' : 'One-time';
-
-    // Build full email HTML
-    const contentHtml =
-      tableRow('Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
-      tableRow('Card', `•••• •••• •••• ${formData.cardNumber.slice(-4)}`) +
-      tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong><br><a href="mailto:${formData.email}" style="color: #9B1B5D;">${formData.email}</a>${formData.phone ? '<br>' + formData.phone : ''}`) +
-      (formData.address ? tableRow('Address', `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`, true) : '') +
-      `<tr>
-        <td colspan="2" style="padding: 12px 0; font-size: 12px; color: #92400e; background-color: #fef3c7; text-align: center; border-radius: 4px;">
-          <strong>Note:</strong> This is a demo submission. No actual payment was processed.
-        </td>
-      </tr>`;
-
-    const emailHtml = buildEmailHTML({
-      title: 'Donation Received',
-      intro: 'A new donation has been submitted through the SupportWorks Housing website. This is a notification for internal records.',
-      contentHtml,
-    });
-
-    const templateParams = {
-      email_subject: `Donation Received: $${donationAmount} from ${formData.firstName} ${formData.lastName}`,
-      email_html: emailHtml,
-      reply_to: formData.email,
-    };
-
     try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
+      // Confirm card payment with Stripe
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement(CardNumberElement),
+            billing_details: {
+              name: formData.cardName,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              address: formData.address ? {
+                line1: formData.address,
+                city: formData.city,
+                state: formData.state,
+                postal_code: formData.zip,
+              } : undefined,
+            },
+          },
+        }
       );
+
+      if (stripeError) {
+        setSubmitError(stripeError.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (paymentIntent.status !== 'succeeded') {
+        setSubmitError('Payment was not completed. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Payment succeeded — send email notification
+      const donationAmount = formData.customAmount || formData.amount;
+      const donationTypeText = formData.donationType === 'monthly' ? 'Monthly' : 'One-time';
+
+      const contentHtml =
+        tableRow('Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
+        tableRow('Payment', `Stripe ID: ${paymentIntent.id}`) +
+        tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong><br><a href="mailto:${formData.email}" style="color: #9B1B5D;">${formData.email}</a>${formData.phone ? '<br>' + formData.phone : ''}`) +
+        (formData.address ? tableRow('Address', `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`, true) : '');
+
+      const emailHtml = buildEmailHTML({
+        title: 'Donation Received',
+        intro: 'A new donation has been processed through Stripe on the SupportWorks Housing website.',
+        contentHtml,
+      });
+
+      const templateParams = {
+        email_subject: `Donation Received: $${donationAmount} from ${formData.firstName} ${formData.lastName}`,
+        email_html: emailHtml,
+        reply_to: formData.email,
+      };
+
+      // Fire EmailJS (non-blocking)
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
+        .catch(err => console.error('EmailJS error (non-blocking):', err));
+
+      // Record donation in Bloomerang (non-blocking)
+      fetch(`${API_BASE}/api/record-donation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentIntentId: paymentIntent.id,
+          amount: donationAmount,
+          donationType: formData.donationType,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip: formData.zip,
+        }),
+      }).catch(err => console.error('Record donation error (non-blocking):', err));
+
       setIsSubmitted(true);
     } catch (error) {
-      console.error('EmailJS error:', error);
-      setSubmitError(error.text || 'An error occurred. Please try again.');
+      console.error('Payment error:', error);
+      setSubmitError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -180,10 +319,16 @@ function Donate() {
   const resetForm = () => {
     setIsSubmitted(false);
     setCurrentStep(0);
+    setClientSecret(null);
+    setPaymentIntentId(null);
+    setCardBrand(null);
+    setCardComplete({ cardNumber: false, cardExpiry: false, cardCvc: false });
+    setCardErrors({ cardNumber: null, cardExpiry: null, cardCvc: null });
     setFormData({
       donationType: 'one-time',
       amount: 100,
       customAmount: '',
+      startDate: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -192,15 +337,16 @@ function Donate() {
       city: '',
       state: '',
       zip: '',
-      cardNumber: '',
-      cardExpiry: '',
-      cardCvc: '',
       cardName: '',
     });
     setErrors({});
   };
 
   const displayAmount = formData.customAmount || formData.amount;
+  const formatCardBrand = (brand) => {
+    if (!brand || brand === 'unknown') return 'Card';
+    return brand.charAt(0).toUpperCase() + brand.slice(1);
+  };
 
   // Success screen
   if (isSubmitted) {
@@ -307,13 +453,29 @@ function Donate() {
                 </div>
               </div>
 
+              {formData.donationType === 'monthly' && (
+                <div className="start-date-section">
+                  <label className="amount-label">
+                    <Calendar size={16} />
+                    Starting on:
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => updateField('startDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="start-date-input"
+                  />
+                </div>
+              )}
+
               <button className="donate-btn" onClick={handleNext}>
                 Continue with ${displayAmount}{formData.donationType === 'monthly' ? '/month' : ''}
               </button>
 
               <div className="donate-secure">
                 <Lock size={14} />
-                <span>Secure payment processing • Tax-deductible donation</span>
+                <span>Donations are securely processed using Stripe • Tax-deductible</span>
               </div>
             </div>
           </div>
@@ -478,12 +640,14 @@ function Donate() {
                     />
                   </div>
                 </div>
+
+                {submitError && <div className="donate-submit-error">{submitError}</div>}
               </div>
             )}
 
-            {/* Step 2: Payment Information */}
-            {currentStep === 2 && (
-              <div className="donate-step">
+            {/* Step 2: Payment Information — kept mounted on Step 3 so Stripe Elements stay in DOM */}
+            {(currentStep === 2 || currentStep === 3) && (
+              <div className="donate-step" style={currentStep === 3 ? { display: 'none' } : undefined}>
                 <div className="donate-step-header">
                   <div className="donate-step-icon">
                     <CreditCard size={24} color="#9B1B5D" />
@@ -494,9 +658,12 @@ function Donate() {
                   </div>
                 </div>
 
-                <div className="donate-stub-notice">
-                  <Lock size={16} />
-                  <span>This is a demo. No actual payment will be processed.</span>
+                <div className="donate-secure-badge">
+                  <ShieldCheck size={20} />
+                  <div className="donate-secure-text">
+                    <span className="donate-secure-title">Secure payment powered by Stripe</span>
+                    <span className="donate-secure-detail">Your payment details are encrypted and never stored on our servers</span>
+                  </div>
                 </div>
 
                 <div className="donate-form-group">
@@ -513,48 +680,56 @@ function Donate() {
                 </div>
 
                 <div className="donate-form-row card-row">
-                  <div className="donate-form-group card-number">
-                    <label htmlFor="cardNumber">Card Number *</label>
-                    <input
-                      type="text"
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={formData.cardNumber}
-                      onChange={(e) => updateField('cardNumber', e.target.value.replace(/\D/g, '').slice(0, 16))}
-                      className={errors.cardNumber ? 'error' : ''}
-                    />
-                    {errors.cardNumber && <span className="donate-error">{errors.cardNumber}</span>}
-                  </div>
+                  {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? (
+                    <>
+                      <div className="donate-form-group card-number">
+                        <label>Card Number *</label>
+                        <div className={`stripe-element-wrapper ${errors.cardNumber ? 'error' : ''}`}>
+                          <CardNumberElement options={{ ...CARD_ELEMENT_OPTIONS, showIcon: true, disableLink: true }} onChange={handleCardChange('cardNumber')} />
+                        </div>
+                        {errors.cardNumber && <span className="donate-error">{errors.cardNumber}</span>}
+                      </div>
 
-                  <div className="donate-form-group card-expiry">
-                    <label htmlFor="cardExpiry">Expiration *</label>
-                    <input
-                      type="text"
-                      id="cardExpiry"
-                      placeholder="MM/YY"
-                      value={formData.cardExpiry}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
-                        updateField('cardExpiry', val);
-                      }}
-                      className={errors.cardExpiry ? 'error' : ''}
-                    />
-                    {errors.cardExpiry && <span className="donate-error">{errors.cardExpiry}</span>}
-                  </div>
+                      <div className="donate-form-group card-expiry">
+                        <label>Expiration *</label>
+                        <div className={`stripe-element-wrapper ${errors.cardExpiry ? 'error' : ''}`}>
+                          <CardExpiryElement options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardExpiry')} />
+                        </div>
+                        {errors.cardExpiry && <span className="donate-error">{errors.cardExpiry}</span>}
+                      </div>
 
-                  <div className="donate-form-group card-cvc">
-                    <label htmlFor="cardCvc">CVC *</label>
-                    <input
-                      type="text"
-                      id="cardCvc"
-                      placeholder="123"
-                      value={formData.cardCvc}
-                      onChange={(e) => updateField('cardCvc', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      className={errors.cardCvc ? 'error' : ''}
-                    />
-                    {errors.cardCvc && <span className="donate-error">{errors.cardCvc}</span>}
-                  </div>
+                      <div className="donate-form-group card-cvc">
+                        <label>CVC *</label>
+                        <div className={`stripe-element-wrapper stripe-cvc-wrapper ${errors.cardCvc ? 'error' : ''}`}>
+                          <CardCvcElement options={CARD_ELEMENT_OPTIONS} onChange={handleCardChange('cardCvc')} />
+                          <svg className="cvc-icon" width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="0.5" y="0.5" width="23" height="17" rx="2.5" stroke="#6B7280" />
+                            <rect y="3" width="24" height="4" fill="#6B7280" />
+                            <rect x="3" y="10" width="14" height="3" rx="1" fill="#E5E7EB" />
+                            <rect x="14" y="10" width="6" height="3" rx="1" fill="#9B1B5D" />
+                          </svg>
+                        </div>
+                        {errors.cardCvc && <span className="donate-error">{errors.cardCvc}</span>}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="donate-form-group card-number">
+                        <label>Card Number *</label>
+                        <input type="text" placeholder="1234 5678 9012 3456" disabled />
+                      </div>
+
+                      <div className="donate-form-group card-expiry">
+                        <label>Expiration *</label>
+                        <input type="text" placeholder="MM / YY" disabled />
+                      </div>
+
+                      <div className="donate-form-group card-cvc">
+                        <label>CVC *</label>
+                        <input type="text" placeholder="CVC" disabled />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -579,9 +754,15 @@ function Donate() {
                       <strong>Amount:</strong>
                       <span>${displayAmount}{formData.donationType === 'monthly' ? '/month' : ' (one-time)'}</span>
                     </div>
+                    {formData.donationType === 'monthly' && formData.startDate && (
+                      <div className="donate-review-item">
+                        <strong>Starting:</strong>
+                        <span>{new Date(formData.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
                     <div className="donate-review-item">
                       <strong>Card:</strong>
-                      <span>•••• •••• •••• {formData.cardNumber.slice(-4)}</span>
+                      <span>{formData.cardName} ({formatCardBrand(cardBrand)})</span>
                     </div>
                   </div>
 
@@ -610,16 +791,16 @@ function Donate() {
               </button>
               <div style={{ flex: 1 }} />
               {currentStep < totalSteps ? (
-                <button type="button" className="btn btn-primary" onClick={handleNext}>
-                  Next
-                  <ArrowRight size={18} />
+                <button type="button" className="btn btn-primary" onClick={handleNext} disabled={isSubmitting}>
+                  {isSubmitting ? 'Loading...' : 'Next'}
+                  {!isSubmitting && <ArrowRight size={18} />}
                 </button>
               ) : (
                 <button
                   type="button"
                   className="btn btn-primary"
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !stripe}
                 >
                   {isSubmitting ? 'Processing...' : `Donate $${displayAmount}`}
                 </button>
@@ -629,6 +810,14 @@ function Donate() {
         </div>
       </div>
     </section>
+  );
+}
+
+function Donate() {
+  return (
+    <Elements stripe={stripePromise}>
+      <DonateForm />
+    </Elements>
   );
 }
 

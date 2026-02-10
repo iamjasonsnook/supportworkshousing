@@ -2,6 +2,7 @@
 // Compatible with Vercel serverless functions
 
 import { createClient } from '@supabase/supabase-js';
+import { setCorsHeaders } from './_cors.js';
 
 const getApprovalEmail = (data) => {
   const locationInfo = `${data.location_name} - ${data.location_address}`;
@@ -153,10 +154,7 @@ const getPropertyManagerEmail = (data) => {
 };
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();

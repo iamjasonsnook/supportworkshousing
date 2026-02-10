@@ -2,6 +2,7 @@
 // Compatible with Vercel serverless functions
 
 import { createClient } from '@supabase/supabase-js';
+import { setCorsHeaders } from './_cors.js';
 
 // Email templates
 const getVolunteerReceiptEmail = (data) => {
@@ -240,10 +241,7 @@ const getApprovalEmail = (data) => {
 };
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
