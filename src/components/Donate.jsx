@@ -55,6 +55,7 @@ function DonateForm() {
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
   const [cardBrand, setCardBrand] = useState(null);
+  const [confirmedPayment, setConfirmedPayment] = useState(null);
   const [cardComplete, setCardComplete] = useState({
     cardNumber: false,
     cardExpiry: false,
@@ -262,6 +263,25 @@ function DonateForm() {
         return;
       }
 
+      // Retrieve card details from the payment method
+      let cardLast4 = '••••';
+      let confirmedBrand = cardBrand;
+      try {
+        const { paymentMethod } = await stripe.retrievePaymentMethod(paymentIntent.payment_method);
+        if (paymentMethod?.card) {
+          cardLast4 = paymentMethod.card.last4;
+          confirmedBrand = paymentMethod.card.brand;
+        }
+      } catch (e) {
+        // Non-critical, fall back to what we have
+      }
+
+      setConfirmedPayment({
+        id: paymentIntent.id,
+        last4: cardLast4,
+        brand: confirmedBrand,
+      });
+
       // Payment succeeded — send email notification
       const donationAmount = formData.customAmount || formData.amount;
       const donationTypeText = formData.donationType === 'monthly' ? 'Monthly' : 'One-time';
@@ -322,6 +342,7 @@ function DonateForm() {
     setClientSecret(null);
     setPaymentIntentId(null);
     setCardBrand(null);
+    setConfirmedPayment(null);
     setCardComplete({ cardNumber: false, cardExpiry: false, cardCvc: false });
     setCardErrors({ cardNumber: null, cardExpiry: null, cardCvc: null });
     setFormData({
@@ -370,6 +391,15 @@ function DonateForm() {
                 </p>
               </div>
 
+              {confirmedPayment && (
+                <div className="donate-review-section" style={{ marginBottom: 16 }}>
+                  <div className="donate-review-item">
+                    <strong>Card:</strong>
+                    <span>•••• •••• •••• {confirmedPayment.last4} ({formatCardBrand(confirmedPayment.brand)})</span>
+                  </div>
+                </div>
+              )}
+
               <div className="donate-next-steps">
                 <h4>What happens next?</h4>
                 <ol>
@@ -379,7 +409,14 @@ function DonateForm() {
                 </ol>
               </div>
 
-              <button className="donate-btn" onClick={resetForm}>
+              {confirmedPayment && (
+                <div className="donate-secure" style={{ marginTop: 16 }}>
+                  <Lock size={14} />
+                  <span>Transaction processed securely by Stripe • ID: {confirmedPayment.id}</span>
+                </div>
+              )}
+
+              <button className="donate-btn" style={{ marginTop: 16 }} onClick={resetForm}>
                 Make Another Donation
               </button>
             </div>
