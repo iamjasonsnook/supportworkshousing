@@ -263,15 +263,18 @@ function DonateForm() {
         return;
       }
 
-      // Retrieve card details from the payment method
+      // Retrieve card details from the server
       let cardLast4 = '••••';
       let confirmedBrand = cardBrand;
       try {
-        const { paymentMethod } = await stripe.retrievePaymentMethod(paymentIntent.payment_method);
-        if (paymentMethod?.card) {
-          cardLast4 = paymentMethod.card.last4;
-          confirmedBrand = paymentMethod.card.brand;
-        }
+        const cardResp = await fetch(`${API_BASE}/api/get-card-details`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentMethodId: paymentIntent.payment_method }),
+        });
+        const cardData = await cardResp.json();
+        if (cardData.last4) cardLast4 = cardData.last4;
+        if (cardData.brand) confirmedBrand = cardData.brand;
       } catch (e) {
         // Non-critical, fall back to what we have
       }
