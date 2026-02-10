@@ -286,11 +286,17 @@ function DonateForm() {
       const donationAmount = formData.customAmount || formData.amount;
       const donationTypeText = formData.donationType === 'monthly' ? 'Monthly' : 'One-time';
 
+      const brandDisplay = formatCardBrand(confirmedBrand);
       const contentHtml =
         tableRow('Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
-        tableRow('Payment', `Stripe ID: ${paymentIntent.id}`) +
+        tableRow('Card', `•••• •••• •••• ${cardLast4} (${brandDisplay})`) +
         tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong><br><a href="mailto:${formData.email}" style="color: #9B1B5D;">${formData.email}</a>${formData.phone ? '<br>' + formData.phone : ''}`) +
-        (formData.address ? tableRow('Address', `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`, true) : '');
+        (formData.address ? tableRow('Address', `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`) : '') +
+        `<tr>
+          <td colspan="2" style="padding: 16px 0 0; font-size: 12px; color: #6B7280; text-align: center;">
+            🔒 Processed securely by Stripe • Transaction ID: ${paymentIntent.id}
+          </td>
+        </tr>`;
 
       const emailHtml = buildEmailHTML({
         title: 'Donation Received',

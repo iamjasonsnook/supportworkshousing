@@ -58,6 +58,19 @@ export default async function handler(req, res) {
       metadata: paymentIntent.metadata,
     });
 
+    // Retrieve card details from the payment method
+    let cardLast4 = '••••';
+    let cardBrand = 'Card';
+    try {
+      const pm = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
+      if (pm?.card) {
+        cardLast4 = pm.card.last4;
+        cardBrand = pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1);
+      }
+    } catch (e) {
+      // Non-critical
+    }
+
     // ---- Email notification ----
     // Send via Resend (server-side, more reliable than client-side EmailJS)
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -81,10 +94,11 @@ export default async function handler(req, res) {
             html: `
               <h2>Donation Confirmed via Stripe</h2>
               <p><strong>Amount:</strong> $${amount} (${typeText})</p>
+              <p><strong>Card:</strong> •••• •••• •••• ${cardLast4} (${cardBrand})</p>
               <p><strong>Donor:</strong> ${donor_name}</p>
               <p><strong>Email:</strong> ${donor_email}</p>
-              <p><strong>Stripe Payment ID:</strong> ${paymentIntent.id}</p>
-              <p><em>This confirmation was sent by the Stripe webhook — the payment has been verified server-to-server.</em></p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+              <p style="font-size: 12px; color: #6B7280;">🔒 Processed securely by Stripe • Transaction ID: ${paymentIntent.id}</p>
             `,
           }),
         });
