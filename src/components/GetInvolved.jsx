@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils, Package, Heart, Truck } from 'lucide-react';
-import emailjs from '@emailjs/browser';
-import { buildEmailHTML, tableRow } from '../utils/emailTemplate';
 import './GetInvolved.css';
-
-// EmailJS Configuration
-const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
-const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
-const EMAILJS_TEMPLATE = 'universal';
 
 // Format phone number as (xxx)xxx-xxxx
 const formatPhone = (value) => {
@@ -293,39 +286,34 @@ function GetInvolved({
     };
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
-    // Build full email HTML
-    const contentHtml =
-      tableRow('Group', `<strong>${cnFormData.groupName}</strong>`) +
-      tableRow('Date & Time', `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`) +
-      tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
-      tableRow('Contact', `${cnFormData.contactName}<br><a href="mailto:${cnFormData.contactEmail}" style="color: #9B1B5D;">${cnFormData.contactEmail}</a><br>${cnFormData.contactPhone}`) +
-      tableRow('Group Size', `${cnFormData.groupSize} people`) +
-      tableRow('Food Plan', foodPlanText) +
-      tableRow('Activity', activityPlanText, true);
-
-    const emailHtml = buildEmailHTML({
-      title: 'Connection Night Request',
-      intro: 'A volunteer group has submitted a request to host a Connection Night at one of our properties. Connection Nights bring together volunteers and residents for an evening of food, fellowship, and community activities.',
-      contentHtml,
-    });
-
-    const templateParams = {
-      email_subject: `Connection Night Request: ${cnFormData.groupName} - ${selectedTimeSlot?.day}`,
-      email_html: emailHtml,
-      reply_to: cnFormData.contactEmail,
-    };
-
     try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+      const response = await fetch(`${API_BASE}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'connection-night',
+          groupName: cnFormData.groupName,
+          dateTime: `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`,
+          location: selectedLocation?.name,
+          address: selectedLocation?.address,
+          contactName: cnFormData.contactName,
+          contactEmail: cnFormData.contactEmail,
+          contactPhone: cnFormData.contactPhone,
+          groupSize: cnFormData.groupSize,
+          foodPlan: foodPlanText,
+          activity: activityPlanText,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send request');
+      }
+
       setIsSubmitted(true);
     } catch (error) {
-      console.error('EmailJS error:', error);
-      setSubmitError(error.text || 'An error occurred. Please try again.');
+      console.error('Send email error:', error);
+      setSubmitError(error.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -340,34 +328,6 @@ function GetInvolved({
 
     const selectedLocation = locations.find(loc => loc.id === sdFormData.locationId);
     const selectedDate = fridayDates.find(d => d.id === sdFormData.dropOffDate);
-
-    // Format items as bullet list for email
-    const itemsList = sdFormData.selectedItems.length > 0
-      ? sdFormData.selectedItems.map(item => `• ${item}`).join('<br>')
-      : 'None selected';
-
-    const otherItemsHtml = sdFormData.otherItems
-      ? `<br><em style="color: #666;">Other: ${sdFormData.otherItems}</em>`
-      : '';
-
-    // Build full email HTML
-    const contentHtml =
-      tableRow('Contact', `<strong>${sdFormData.contactName}</strong><br><a href="mailto:${sdFormData.contactEmail}" style="color: #9B1B5D;">${sdFormData.contactEmail}</a><br>${sdFormData.contactPhone}`) +
-      tableRow('Date & Time', `${selectedDate?.day}, ${selectedDate?.time}`) +
-      tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
-      tableRow('Items', `${itemsList}${otherItemsHtml}`, true);
-
-    const emailHtml = buildEmailHTML({
-      title: 'Supply Drive Drop-Off',
-      intro: 'A donor has scheduled a supply drop-off for our residents. These in-kind donations help provide essential items like toiletries, cleaning supplies, and household goods to families in our housing program.',
-      contentHtml,
-    });
-
-    const templateParams = {
-      email_subject: `Supply Drive Drop-Off: ${sdFormData.contactName} - ${selectedDate?.day}`,
-      email_html: emailHtml,
-      reply_to: sdFormData.contactEmail,
-    };
 
     try {
       // Submit to our API for admin tracking
@@ -388,17 +348,32 @@ function GetInvolved({
         })
       });
 
-      // Send email via EmailJS
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+      // Send admin notification + receipt email via server-side Resend
+      const response = await fetch(`${API_BASE}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'supply-drive',
+          contactName: sdFormData.contactName,
+          contactEmail: sdFormData.contactEmail,
+          contactPhone: sdFormData.contactPhone,
+          location: selectedLocation?.name,
+          address: selectedLocation?.address,
+          dateTime: `${selectedDate?.day}, ${selectedDate?.time}`,
+          items: sdFormData.selectedItems,
+          otherItems: sdFormData.otherItems,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send request');
+      }
+
       setIsSubmitted(true);
     } catch (error) {
-      console.error('EmailJS error:', error);
-      setSubmitError(error.text || 'An error occurred. Please try again.');
+      console.error('Send email error:', error);
+      setSubmitError(error.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

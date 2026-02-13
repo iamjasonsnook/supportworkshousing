@@ -484,6 +484,152 @@ const mockSupplyDrives = [
   },
 ];
 
+// Donation records (mock Stripe data)
+const mockDonations = [
+  // Donations from existing volunteers (making them "both")
+  {
+    id: 'd1',
+    payment_intent_id: 'pi_3Qa1b2c3d4e5f6g7h8',
+    amount: 100,
+    donation_type: 'one-time',
+    donor_name: 'Sarah Johnson',
+    donor_email: 'sarah@gracecc.org',
+    donor_phone: '(804) 555-1234',
+    donor_address: '123 Grace Ave, Richmond, VA 23220',
+    card_last4: '4242',
+    card_brand: 'Visa',
+    volunteer_id: 'v1',
+    created_at: '2025-12-15T14:30:00Z',
+  },
+  {
+    id: 'd2',
+    payment_intent_id: 'pi_8Xk9m2n3p4q5r6s7t8',
+    amount: 250,
+    donation_type: 'monthly',
+    donor_name: 'Jennifer Lee',
+    donor_email: 'jennifer.lee@capitalone.com',
+    donor_phone: '(804) 555-6789',
+    donor_address: '456 Corporate Blvd, Richmond, VA 23219',
+    card_last4: '1234',
+    card_brand: 'Mastercard',
+    volunteer_id: 'v8',
+    created_at: '2025-11-20T09:15:00Z',
+  },
+  {
+    id: 'd3',
+    payment_intent_id: 'pi_2Yz3a4b5c6d7e8f9g0',
+    amount: 50,
+    donation_type: 'one-time',
+    donor_name: 'Rachel Kim',
+    donor_email: 'rachel.kim@gmail.com',
+    donor_phone: '(804) 555-4567',
+    donor_address: '789 Elm St, Richmond, VA 23221',
+    card_last4: '5678',
+    card_brand: 'Visa',
+    volunteer_id: 'v16',
+    created_at: '2026-01-10T16:45:00Z',
+  },
+  {
+    id: 'd4',
+    payment_intent_id: 'pi_4Cd5e6f7g8h9i0j1k2',
+    amount: 75,
+    donation_type: 'one-time',
+    donor_name: 'Rachel Kim',
+    donor_email: 'rachel.kim@gmail.com',
+    donor_phone: '(804) 555-4567',
+    donor_address: '789 Elm St, Richmond, VA 23221',
+    card_last4: '5678',
+    card_brand: 'Visa',
+    volunteer_id: 'v16',
+    created_at: '2026-02-05T11:20:00Z',
+  },
+  {
+    id: 'd5',
+    payment_intent_id: 'pi_6Ef7g8h9i0j1k2l3m4',
+    amount: 500,
+    donation_type: 'one-time',
+    donor_name: 'James Wilson',
+    donor_email: 'jwilson.volunteer@yahoo.com',
+    donor_phone: '(804) 555-5678',
+    donor_address: '321 Oak Lane, Richmond, VA 23222',
+    card_last4: '9012',
+    card_brand: 'Amex',
+    volunteer_id: 'v17',
+    created_at: '2025-12-28T10:00:00Z',
+  },
+  // Donor-only people (no volunteer_id)
+  {
+    id: 'd6',
+    payment_intent_id: 'pi_7Fg8h9i0j1k2l3m4n5',
+    amount: 200,
+    donation_type: 'monthly',
+    donor_name: 'Catherine Brooks',
+    donor_email: 'cbrooks@outlook.com',
+    donor_phone: '(804) 555-7777',
+    donor_address: '550 Monument Ave, Richmond, VA 23220',
+    card_last4: '3456',
+    card_brand: 'Visa',
+    volunteer_id: null,
+    created_at: '2025-11-05T13:00:00Z',
+  },
+  {
+    id: 'd7',
+    payment_intent_id: 'pi_9Hi0j1k2l3m4n5o6p7',
+    amount: 200,
+    donation_type: 'monthly',
+    donor_name: 'Catherine Brooks',
+    donor_email: 'cbrooks@outlook.com',
+    donor_phone: '(804) 555-7777',
+    donor_address: '550 Monument Ave, Richmond, VA 23220',
+    card_last4: '3456',
+    card_brand: 'Visa',
+    volunteer_id: null,
+    created_at: '2025-12-05T13:00:00Z',
+  },
+  {
+    id: 'd8',
+    payment_intent_id: 'pi_1Ab2c3d4e5f6g7h8i9',
+    amount: 1000,
+    donation_type: 'one-time',
+    donor_name: 'Robert Taylor',
+    donor_email: 'rtaylor@taylorlaw.com',
+    donor_phone: '(804) 555-8888',
+    donor_address: '900 Main St, Suite 200, Richmond, VA 23219',
+    card_last4: '7890',
+    card_brand: 'Amex',
+    volunteer_id: null,
+    created_at: '2026-01-22T15:30:00Z',
+  },
+  {
+    id: 'd9',
+    payment_intent_id: 'pi_3Cd4e5f6g7h8i9j0k1',
+    amount: 150,
+    donation_type: 'one-time',
+    donor_name: 'Priya Patel',
+    donor_email: 'priya.patel@gmail.com',
+    donor_phone: '(804) 555-9999',
+    donor_address: '42 Riverside Dr, Richmond, VA 23225',
+    card_last4: '2468',
+    card_brand: 'Mastercard',
+    volunteer_id: null,
+    created_at: '2026-02-01T10:45:00Z',
+  },
+  {
+    id: 'd10',
+    payment_intent_id: 'pi_5Ef6g7h8i9j0k1l2m3',
+    amount: 25,
+    donation_type: 'one-time',
+    donor_name: 'William & Margaret Hayes',
+    donor_email: 'wmhayes@verizon.net',
+    donor_phone: '(804) 555-1010',
+    donor_address: '15 Church Hill Rd, Richmond, VA 23223',
+    card_last4: '1357',
+    card_brand: 'Discover',
+    volunteer_id: null,
+    created_at: '2026-02-08T18:00:00Z',
+  },
+];
+
 // Auth middleware
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -556,6 +702,30 @@ app.post('/api/supply-drives', (req, res) => {
   } catch (error) {
     console.error('Error creating supply drive:', error);
     res.status(500).json({ error: 'Failed to create supply drive' });
+  }
+});
+
+// Public endpoint - send email (dev: logs what would be sent, no actual Resend call)
+app.post('/api/send-email', (req, res) => {
+  try {
+    const { type, contactName, contactEmail } = req.body;
+
+    console.log('\n📧 [DEV] send-email called');
+    console.log('─── Admin Notification ───');
+    console.log('  To: jsnook@supportworkshousing.org');
+    console.log(`  Type: ${type}`);
+    console.log(`  From: ${contactName} <${contactEmail}>`);
+    console.log('  Body:', JSON.stringify(req.body, null, 2));
+
+    console.log('─── Receipt Email ───');
+    console.log(`  To: ${contactEmail}`);
+    console.log(`  Subject: Thank You for Your ${type === 'supply-drive' ? 'Supply Drive Donation' : 'Connection Night Request'}!`);
+    console.log('');
+
+    res.json({ success: true, id: 'dev-' + Date.now() });
+  } catch (error) {
+    console.error('Error in send-email dev endpoint:', error);
+    res.status(500).json({ error: 'Failed to process email request' });
   }
 });
 
@@ -721,10 +891,10 @@ app.post('/api/admin/supply-drives/:id/complete', authMiddleware, async (req, re
   }
 });
 
-// Get all volunteers
+// Get all volunteers (now "people" — volunteers, donors, or both)
 app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
   try {
-    // Enrich volunteers with event counts (including supply drives)
+    // Enrich volunteers with event counts (including supply drives) and donation info
     const enrichedVolunteers = mockVolunteers.map(volunteer => {
       // Connection Night events
       const volunteerEvents = mockEvents.filter(e => e.volunteer_id === volunteer.id);
@@ -740,11 +910,23 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       const allCompleted = [...completedEvents, ...completedSupplyDrives];
       const allUpcoming = [...upcomingEvents, ...upcomingSupplyDrives];
 
+      // Donation info
+      const volunteerDonations = mockDonations.filter(d => d.volunteer_id === volunteer.id);
+      const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
+      const donationCount = volunteerDonations.length;
+
+      // Compute roles
+      const roles = ['volunteer'];
+      if (donationCount > 0) roles.push('donor');
+
       return {
         ...volunteer,
+        roles,
         total_events: volunteerEvents.length + volunteerSupplyDrives.length,
         completed_events: allCompleted.length,
         upcoming_events: allUpcoming.length,
+        total_donated: totalDonated,
+        donation_count: donationCount,
         last_event: allCompleted.length > 0
           ? allCompleted.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))[0]
           : null,
@@ -754,18 +936,85 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       };
     });
 
-    res.json({ volunteers: enrichedVolunteers });
+    // Build donor-only people from donations with no volunteer_id
+    const donorOnlyEmails = new Set();
+    const donorOnlyPeople = [];
+    mockDonations
+      .filter(d => !d.volunteer_id)
+      .forEach(d => {
+        if (!donorOnlyEmails.has(d.donor_email)) {
+          donorOnlyEmails.add(d.donor_email);
+          const allDonationsForDonor = mockDonations.filter(
+            dd => dd.donor_email === d.donor_email && !dd.volunteer_id
+          );
+          const totalDonated = allDonationsForDonor.reduce((sum, dd) => sum + dd.amount, 0);
+          donorOnlyPeople.push({
+            id: `donor-${d.donor_email}`,
+            name: d.donor_name,
+            email: d.donor_email,
+            phone: d.donor_phone,
+            organization: null,
+            type: 'individual',
+            notes: null,
+            first_event: null,
+            total_events: 0,
+            completed_events: 0,
+            upcoming_events: 0,
+            total_donated: totalDonated,
+            donation_count: allDonationsForDonor.length,
+            roles: ['donor'],
+            last_event: null,
+            next_event: null,
+            created_at: allDonationsForDonor.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0].created_at,
+          });
+        }
+      });
+
+    res.json({ volunteers: [...enrichedVolunteers, ...donorOnlyPeople] });
   } catch (error) {
     console.error('Error fetching volunteers:', error);
     res.status(500).json({ error: 'Failed to fetch volunteers' });
   }
 });
 
-// Get single volunteer with full event history
+// Get single volunteer/person with full event and donation history
 app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Handle donor-only people (prefixed with "donor-")
+    if (id.startsWith('donor-')) {
+      const donorEmail = id.replace('donor-', '');
+      const donorDonations = mockDonations
+        .filter(d => d.donor_email === donorEmail && !d.volunteer_id)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      if (donorDonations.length === 0) {
+        return res.status(404).json({ error: 'Person not found' });
+      }
+
+      const first = donorDonations[donorDonations.length - 1];
+      const totalDonated = donorDonations.reduce((sum, d) => sum + d.amount, 0);
+
+      return res.json({
+        volunteer: {
+          id,
+          name: first.donor_name,
+          email: first.donor_email,
+          phone: first.donor_phone,
+          organization: null,
+          type: 'individual',
+          notes: null,
+          roles: ['donor'],
+          total_donated: totalDonated,
+          donation_count: donorDonations.length,
+          events: [],
+          donations: donorDonations,
+          created_at: first.created_at,
+        },
+      });
+    }
+
     const volunteer = mockVolunteers.find(v => v.id === id);
     if (!volunteer) {
       return res.status(404).json({ error: 'Volunteer not found' });
@@ -787,10 +1036,25 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
     const allEvents = [...volunteerEvents, ...volunteerSupplyDrives]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+    // Get donations
+    const volunteerDonations = mockDonations
+      .filter(d => d.volunteer_id === id)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
+
+    // Compute roles
+    const roles = ['volunteer'];
+    if (volunteerDonations.length > 0) roles.push('donor');
+
     res.json({
       volunteer: {
         ...volunteer,
+        roles,
+        total_donated: totalDonated,
+        donation_count: volunteerDonations.length,
         events: allEvents,
+        donations: volunteerDonations,
       },
     });
   } catch (error) {
@@ -851,6 +1115,10 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
     // Total residents served (estimated: 15 residents per event)
     const residentsServed = completedEvents * 15;
 
+    // Donation stats
+    const totalDonations = mockDonations.length;
+    const totalAmountRaised = mockDonations.reduce((sum, d) => sum + d.amount, 0);
+
     res.json({
       stats: {
         totalVolunteers,
@@ -861,11 +1129,53 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
         eventsThisMonth,
         totalVolunteerHours,
         residentsServed,
+        totalDonations,
+        totalAmountRaised,
       },
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Get all donations
+app.get('/api/admin/donations', authMiddleware, async (req, res) => {
+  try {
+    const sorted = [...mockDonations].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+    res.json({ donations: sorted });
+  } catch (error) {
+    console.error('Error fetching donations:', error);
+    res.status(500).json({ error: 'Failed to fetch donations' });
+  }
+});
+
+// Get single donation with linked volunteer info
+app.get('/api/admin/donations/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const donation = mockDonations.find(d => d.id === id);
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+
+    let volunteer = null;
+    if (donation.volunteer_id) {
+      volunteer = mockVolunteers.find(v => v.id === donation.volunteer_id) || null;
+    }
+
+    res.json({
+      donation: {
+        ...donation,
+        volunteer,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching donation:', error);
+    res.status(500).json({ error: 'Failed to fetch donation' });
   }
 });
 

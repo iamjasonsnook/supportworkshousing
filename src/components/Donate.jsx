@@ -313,9 +313,10 @@ function DonateForm() {
         reply_to: formData.email,
       };
 
-      // Fire EmailJS (non-blocking)
+      // Fire EmailJS as fallback admin notification (non-blocking).
+      // Primary admin + donor thank-you emails are sent by the Stripe webhook (api/stripe-webhook.js).
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
-        .catch(err => console.error('EmailJS error (non-blocking):', err));
+        .catch(err => console.error('EmailJS fallback error (non-blocking):', err));
 
       // Record donation in Bloomerang (non-blocking)
       fetch(`${API_BASE}/api/record-donation`, {

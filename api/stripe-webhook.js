@@ -102,6 +102,68 @@ export default async function handler(req, res) {
             `,
           }),
         });
+        // Send donor thank-you / receipt email
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
+            to: [donor_email],
+            subject: `Thank You for Your ${typeText} Donation!`,
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff;">
+    <div style="background-color: #10B981; padding: 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Thank You for Your Generosity!</h1>
+    </div>
+    <div style="padding: 24px;">
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #333; line-height: 1.6;">
+        Dear ${donor_name},
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: #333; line-height: 1.6;">
+        Thank you for your ${typeText.toLowerCase()} donation of <strong>$${amount}</strong> to SupportWorks Housing. Your generosity helps us create stable communities and provide comprehensive support services to Virginians rebuilding their lives.
+      </p>
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px; width: 110px;">Amount</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;"><strong>$${amount}</strong> (${typeText})</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Card</td>
+          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; ${cardLast4} (${cardBrand})</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; color: #666; font-size: 14px;">Transaction</td>
+          <td style="padding: 12px 0; font-size: 14px; font-size: 12px; color: #999;">${paymentIntent.id}</td>
+        </tr>
+      </table>
+      <p style="margin: 16px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">
+        If you have any questions about your donation, please contact us at
+        <a href="mailto:jsnook@supportworkshousing.org" style="color: #10B981;">jsnook@supportworkshousing.org</a>.
+      </p>
+    </div>
+    <div style="padding: 20px 24px; background-color: #10B981; color: #ffffff;">
+      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.5; text-align: center;">
+        SupportWorks Housing provides stable, affordable housing combined with comprehensive support services to help Virginians rebuild their lives and achieve lasting independence.
+      </p>
+      <p style="margin: 0; font-size: 12px; text-align: center; opacity: 0.8;">
+        SupportWorks Housing &bull; <a href="https://supportworkshousing.org" style="color: #ffffff;">supportworkshousing.org</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`,
+          }),
+        });
       } catch (emailErr) {
         console.error('Webhook email notification failed:', emailErr);
         // Don't fail the webhook response for email errors
