@@ -310,6 +310,12 @@ function GetInvolved({
         throw new Error(data.error || 'Failed to send request');
       }
 
+      window.gtag?.('event', 'generate_lead', {
+        event_category: 'connection_night',
+        event_label: cnFormData.groupName,
+        value: Number(cnFormData.groupSize),
+      });
+
       setIsSubmitted(true);
     } catch (error) {
       console.error('Send email error:', error);
@@ -369,6 +375,12 @@ function GetInvolved({
         const data = await response.json();
         throw new Error(data.error || 'Failed to send request');
       }
+
+      window.gtag?.('event', 'generate_lead', {
+        event_category: 'supply_drive',
+        event_label: sdFormData.contactName,
+        value: sdFormData.selectedItems.length,
+      });
 
       setIsSubmitted(true);
     } catch (error) {

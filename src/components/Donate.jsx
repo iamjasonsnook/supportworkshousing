@@ -149,6 +149,12 @@ function DonateForm() {
 
   const handleNext = async () => {
     if (currentStep === 0) {
+      const donationAmount = formData.customAmount || formData.amount;
+      window.gtag?.('event', 'begin_checkout', {
+        currency: 'USD',
+        value: Number(donationAmount),
+        items: [{ item_name: `${formData.donationType} donation`, price: Number(donationAmount), quantity: 1 }],
+      });
       setCurrentStep(1);
       return;
     }
@@ -336,6 +342,13 @@ function DonateForm() {
           zip: formData.zip,
         }),
       }).catch(err => console.error('Record donation error (non-blocking):', err));
+
+      window.gtag?.('event', 'purchase', {
+        currency: 'USD',
+        value: Number(donationAmount),
+        transaction_id: paymentIntent.id,
+        items: [{ item_name: `${formData.donationType} donation`, price: Number(donationAmount), quantity: 1 }],
+      });
 
       setIsSubmitted(true);
     } catch (error) {
