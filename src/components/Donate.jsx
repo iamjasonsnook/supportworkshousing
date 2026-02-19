@@ -324,24 +324,7 @@ function DonateForm() {
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
         .catch(err => console.error('EmailJS fallback error (non-blocking):', err));
 
-      // Record donation in Bloomerang (non-blocking)
-      fetch(`${API_BASE}/api/record-donation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paymentIntentId: paymentIntent.id,
-          amount: donationAmount,
-          donationType: formData.donationType,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-        }),
-      }).catch(err => console.error('Record donation error (non-blocking):', err));
+      // Bloomerang CRM recording is handled by the Stripe webhook (api/stripe-webhook.js)
 
       window.gtag?.('event', 'purchase', {
         currency: 'USD',

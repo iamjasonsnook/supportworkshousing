@@ -170,9 +170,77 @@ export default async function handler(req, res) {
       }
     }
 
-    // ---- Bloomerang CRM (TBD) ----
-    // When ready, record the donation here instead of from the client.
-    // This is more reliable since it only fires on verified payments.
+    // ---- Bloomerang CRM ----
+    // Record the donation server-side (more reliable than client-side)
+    const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
+    if (BLOOMERANG_API_KEY) {
+      try {
+        const { donor_name, donor_email, donation_type } = paymentIntent.metadata;
+        const donorAmount = paymentIntent.amount / 100;
+        const nameParts = (donor_name || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const bloomerangHeaders = {
+          'X-API-KEY': BLOOMERANG_API_KEY,
+          'Content-Type': 'application/json',
+        };
+
+        // Search for existing constituent by email
+        let accountId = null;
+        const searchResp = await fetch(
+          `https://api.bloomerang.co/v2/constituents?search=${encodeURIComponent(donor_email)}&take=1`,
+          { headers: bloomerangHeaders }
+        );
+        const searchData = await searchResp.json();
+
+        if (searchData.Results && searchData.Results.length > 0) {
+          accountId = searchData.Results[0].Id;
+        } else {
+          // Create new constituent
+          const createResp = await fetch('https://api.bloomerang.co/v2/constituent', {
+            method: 'POST',
+            headers: bloomerangHeaders,
+            body: JSON.stringify({
+              Type: 'Individual',
+              Status: 'Active',
+              FirstName: firstName,
+              LastName: lastName,
+              PrimaryEmail: {
+                Type: 'Home',
+                Value: donor_email,
+                IsPrimary: true,
+              },
+            }),
+          });
+          const newConstituent = await createResp.json();
+          accountId = newConstituent.Id;
+        }
+
+        // Record the transaction
+        if (accountId) {
+          await fetch('https://api.bloomerang.co/v2/transaction', {
+            method: 'POST',
+            headers: bloomerangHeaders,
+            body: JSON.stringify({
+              AccountId: accountId,
+              Date: new Date().toISOString().split('T')[0],
+              Amount: donorAmount,
+              Method: 'CreditCard',
+              Designations: [{
+                Amount: donorAmount,
+                Fund: { Name: 'General Fund' },
+                Note: `Online donation via website • ${donation_type || 'one-time'} • Stripe ${paymentIntent.id}`,
+              }],
+            }),
+          });
+          console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
+        }
+      } catch (bloomerangErr) {
+        console.error('Bloomerang integration error:', bloomerangErr);
+        // Don't fail the webhook for Bloomerang errors
+      }
+    }
   }
 
   // Acknowledge receipt of the event
