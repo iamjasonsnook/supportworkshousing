@@ -182,6 +182,11 @@ function DonateForm() {
             donationType: formData.donationType,
             email: formData.email,
             name: `${formData.firstName} ${formData.lastName}`,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
           }),
         });
 

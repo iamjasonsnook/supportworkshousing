@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   const stripe = new Stripe(STRIPE_SECRET_KEY);
 
   try {
-    const { amount, donationType, email, name } = req.body;
+    const { amount, donationType, email, name, phone, address, city, state, zip } = req.body;
 
     // Validate required fields
     if (!email || !name) {
@@ -52,6 +52,11 @@ export default async function handler(req, res) {
         donation_type: donationType,
         donor_name: name,
         donor_email: email,
+        donor_phone: phone || '',
+        donor_address: address || '',
+        donor_city: city || '',
+        donor_state: state || '',
+        donor_zip: zip || '',
       },
     };
 

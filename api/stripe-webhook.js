@@ -175,7 +175,7 @@ export default async function handler(req, res) {
     const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
     if (BLOOMERANG_API_KEY) {
       try {
-        const { donor_name, donor_email, donation_type } = paymentIntent.metadata;
+        const { donor_name, donor_email, donation_type, donor_phone, donor_address, donor_city, donor_state, donor_zip } = paymentIntent.metadata;
         const donorAmount = paymentIntent.amount / 100;
         const nameParts = (donor_name || '').split(' ');
         const firstName = nameParts[0] || '';
@@ -197,21 +197,43 @@ export default async function handler(req, res) {
         if (searchData.Results && searchData.Results.length > 0) {
           accountId = searchData.Results[0].Id;
         } else {
-          // Create new constituent
+          // Create new constituent with all available info
+          const constituentBody = {
+            Type: 'Individual',
+            Status: 'Active',
+            FirstName: firstName,
+            LastName: lastName,
+            PrimaryEmail: {
+              Type: 'Home',
+              Value: donor_email,
+              IsPrimary: true,
+            },
+          };
+
+          if (donor_phone) {
+            constituentBody.PrimaryPhone = {
+              Type: 'Home',
+              Number: donor_phone,
+              IsPrimary: true,
+            };
+          }
+
+          if (donor_address) {
+            constituentBody.PrimaryAddress = {
+              Type: 'Home',
+              Street: donor_address,
+              City: donor_city || '',
+              State: donor_state || '',
+              PostalCode: donor_zip || '',
+              Country: 'US',
+              IsPrimary: true,
+            };
+          }
+
           const createResp = await fetch('https://api.bloomerang.co/v2/constituent', {
             method: 'POST',
             headers: bloomerangHeaders,
-            body: JSON.stringify({
-              Type: 'Individual',
-              Status: 'Active',
-              FirstName: firstName,
-              LastName: lastName,
-              PrimaryEmail: {
-                Type: 'Home',
-                Value: donor_email,
-                IsPrimary: true,
-              },
-            }),
+            body: JSON.stringify(constituentBody),
           });
           const newConstituent = await createResp.json();
           accountId = newConstituent.Id;
