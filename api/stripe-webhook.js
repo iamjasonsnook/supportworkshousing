@@ -47,11 +47,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
+  const diagnostics = {};
+
   // Handle the event
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-
-    const diagnostics = { payment: paymentIntent.id };
+    diagnostics.payment = paymentIntent.id;
 
     console.log('Payment confirmed via webhook:', {
       id: paymentIntent.id,
