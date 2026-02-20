@@ -51,6 +51,8 @@ export default async function handler(req, res) {
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
 
+    const diagnostics = { payment: paymentIntent.id };
+
     console.log('Payment confirmed via webhook:', {
       id: paymentIntent.id,
       amount: paymentIntent.amount / 100,
@@ -103,7 +105,7 @@ export default async function handler(req, res) {
           }),
         });
         // Send donor thank-you / receipt email
-        await fetch('https://api.resend.com/emails', {
+        const thankYouResp = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
@@ -164,16 +166,23 @@ export default async function handler(req, res) {
 </html>`,
           }),
         });
+        const thankYouResult = await thankYouResp.json();
+        if (!thankYouResp.ok) {
+          console.error('Thank-you email failed:', thankYouResult);
+        }
+        diagnostics.thankYouEmail = thankYouResp.ok ? 'sent' : thankYouResult;
       } catch (emailErr) {
-        console.error('Webhook email notification failed:', emailErr);
-        // Don't fail the webhook response for email errors
+        console.error('Webhook email notification failed:', emailErr.message);
+        diagnostics.emailError = emailErr.message;
       }
     }
 
     // ---- Bloomerang CRM ----
     // Record the donation server-side (more reliable than client-side)
     const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
-    if (BLOOMERANG_API_KEY) {
+    if (!BLOOMERANG_API_KEY) {
+      diagnostics.bloomerang = 'BLOOMERANG_API_KEY not configured';
+    } else {
       try {
         const { donor_name, donor_email, donation_type, donor_phone, donor_address, donor_city, donor_state, donor_zip } = paymentIntent.metadata;
         const donorAmount = paymentIntent.amount / 100;
@@ -241,7 +250,7 @@ export default async function handler(req, res) {
 
         // Record the transaction
         if (accountId) {
-          await fetch('https://api.bloomerang.co/v2/transaction', {
+          const txnResp = await fetch('https://api.bloomerang.co/v2/transaction', {
             method: 'POST',
             headers: bloomerangHeaders,
             body: JSON.stringify({
@@ -256,15 +265,24 @@ export default async function handler(req, res) {
               }],
             }),
           });
-          console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
+          const txnResult = await txnResp.json();
+          if (!txnResp.ok) {
+            console.error('Bloomerang transaction failed:', txnResult);
+            diagnostics.bloomerang = { error: txnResult };
+          } else {
+            console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
+            diagnostics.bloomerang = 'recorded';
+          }
+        } else {
+          diagnostics.bloomerang = 'no accountId';
         }
       } catch (bloomerangErr) {
-        console.error('Bloomerang integration error:', bloomerangErr);
-        // Don't fail the webhook for Bloomerang errors
+        console.error('Bloomerang integration error:', bloomerangErr.message);
+        diagnostics.bloomerang = bloomerangErr.message;
       }
     }
   }
 
-  // Acknowledge receipt of the event
-  return res.status(200).json({ received: true });
+  // Acknowledge receipt of the event — include diagnostics so we can debug via Stripe
+  return res.status(200).json({ received: true, diagnostics });
 }
