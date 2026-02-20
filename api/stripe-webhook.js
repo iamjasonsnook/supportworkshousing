@@ -113,7 +113,7 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
+            from: 'SupportWorks Housing <donations@supportworkshousing.org>',
             to: [donor_email],
             subject: `Thank You for Your ${typeText} Donation!`,
             html: `
@@ -260,6 +260,7 @@ export default async function handler(req, res) {
               Amount: donorAmount,
               Method: 'CreditCard',
               Designations: [{
+                Type: 'Donation',
                 Amount: donorAmount,
                 Fund: { Name: 'General Fund' },
                 Note: `Online donation via website • ${donation_type || 'one-time'} • Stripe ${paymentIntent.id}`,

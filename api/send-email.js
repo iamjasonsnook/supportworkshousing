@@ -277,7 +277,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
+        from: 'SupportWorks Housing <donations@supportworkshousing.org>',
         to: RECIPIENT_EMAIL,
         reply_to: replyTo,
         subject: subject,
@@ -303,7 +303,7 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
+            from: 'SupportWorks Housing <donations@supportworkshousing.org>',
             to: [contactEmail],
             subject: receiptSubject,
             html: receiptHtml,
