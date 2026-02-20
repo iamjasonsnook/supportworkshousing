@@ -249,8 +249,28 @@ export default async function handler(req, res) {
           accountId = newConstituent.Id;
         }
 
+        // Look up the "General Fund" ID
+        let fundId = null;
+        try {
+          const fundsResp = await fetch(
+            'https://api.bloomerang.co/v2/funds?isActive=true',
+            { headers: bloomerangHeaders }
+          );
+          const fundsData = await fundsResp.json();
+          const generalFund = (fundsData.Results || []).find(f => f.Name === 'General Fund');
+          if (generalFund) {
+            fundId = generalFund.Id;
+          } else if (fundsData.Results && fundsData.Results.length > 0) {
+            // Fall back to the first active fund
+            fundId = fundsData.Results[0].Id;
+            diagnostics.bloomerangFundFallback = fundsData.Results[0].Name;
+          }
+        } catch (e) {
+          diagnostics.bloomerangFundLookup = e.message;
+        }
+
         // Record the transaction
-        if (accountId) {
+        if (accountId && fundId) {
           const txnResp = await fetch('https://api.bloomerang.co/v2/transaction', {
             method: 'POST',
             headers: bloomerangHeaders,
@@ -262,7 +282,7 @@ export default async function handler(req, res) {
               Designations: [{
                 Type: 'Donation',
                 Amount: donorAmount,
-                Fund: { Name: 'General Fund' },
+                FundId: fundId,
                 Note: `Online donation via website • ${donation_type || 'one-time'} • Stripe ${paymentIntent.id}`,
               }],
             }),
@@ -275,8 +295,10 @@ export default async function handler(req, res) {
             console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
             diagnostics.bloomerang = 'recorded';
           }
-        } else {
+        } else if (!accountId) {
           diagnostics.bloomerang = 'no accountId';
+        } else {
+          diagnostics.bloomerang = 'no fundId found';
         }
       } catch (bloomerangErr) {
         console.error('Bloomerang integration error:', bloomerangErr.message);
