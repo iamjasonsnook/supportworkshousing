@@ -47,12 +47,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
-  const diagnostics = {};
-
   // Handle the event
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-    diagnostics.payment = paymentIntent.id;
 
     console.log('Payment confirmed via webhook:', {
       id: paymentIntent.id,
@@ -167,14 +164,12 @@ export default async function handler(req, res) {
 </html>`,
           }),
         });
-        const thankYouResult = await thankYouResp.json();
         if (!thankYouResp.ok) {
+          const thankYouResult = await thankYouResp.json();
           console.error('Thank-you email failed:', thankYouResult);
         }
-        diagnostics.thankYouEmail = thankYouResp.ok ? 'sent' : thankYouResult;
       } catch (emailErr) {
         console.error('Webhook email notification failed:', emailErr.message);
-        diagnostics.emailError = emailErr.message;
       }
     }
 
@@ -182,7 +177,7 @@ export default async function handler(req, res) {
     // Record the donation server-side (more reliable than client-side)
     const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
     if (!BLOOMERANG_API_KEY) {
-      diagnostics.bloomerang = 'BLOOMERANG_API_KEY not configured';
+      console.error('BLOOMERANG_API_KEY not configured');
     } else {
       try {
         const { donor_name, donor_email, donation_type, donor_phone, donor_address, donor_city, donor_state, donor_zip } = paymentIntent.metadata;
@@ -263,10 +258,10 @@ export default async function handler(req, res) {
           } else if (fundsData.Results && fundsData.Results.length > 0) {
             // Fall back to the first active fund
             fundId = fundsData.Results[0].Id;
-            diagnostics.bloomerangFundFallback = fundsData.Results[0].Name;
+            console.log('Bloomerang: no "General Fund" found, using', fundsData.Results[0].Name);
           }
         } catch (e) {
-          diagnostics.bloomerangFundLookup = e.message;
+          console.error('Bloomerang fund lookup failed:', e.message);
         }
 
         // Record the transaction
@@ -290,23 +285,20 @@ export default async function handler(req, res) {
           const txnResult = await txnResp.json();
           if (!txnResp.ok) {
             console.error('Bloomerang transaction failed:', txnResult);
-            diagnostics.bloomerang = { error: txnResult };
           } else {
             console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
-            diagnostics.bloomerang = 'recorded';
           }
         } else if (!accountId) {
-          diagnostics.bloomerang = 'no accountId';
+          console.error('Bloomerang: no accountId found for', donor_email);
         } else {
-          diagnostics.bloomerang = 'no fundId found';
+          console.error('Bloomerang: no fundId found');
         }
       } catch (bloomerangErr) {
         console.error('Bloomerang integration error:', bloomerangErr.message);
-        diagnostics.bloomerang = bloomerangErr.message;
       }
     }
   }
 
-  // Acknowledge receipt of the event — include diagnostics so we can debug via Stripe
-  return res.status(200).json({ received: true, diagnostics });
+  // Acknowledge receipt of the event
+  return res.status(200).json({ received: true });
 }
