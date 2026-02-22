@@ -477,20 +477,16 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Parse the path from the catch-all parameter
-  // Vercel provides req.query.path as an array for [...path] routes
-  const pathSegments = req.query.path || [];
-  const path = pathSegments.join('/');
+  // Parse the path from the URL (strip /api/admin/ prefix)
+  const urlPath = (req.url || '').split('?')[0];
+  const path = urlPath.replace(/^\/api\/admin\/?/, '');
   const method = req.method;
 
-  // Parse body for POST/PATCH if not already parsed
-  if ((method === 'POST' || method === 'PATCH') && !req.body && req.headers['content-type']?.includes('application/json')) {
+  // Safely access Vercel's auto-parsed body (its getter can throw)
+  if (method === 'POST' || method === 'PATCH') {
     try {
-      const chunks = [];
-      for await (const chunk of req) {
-        chunks.push(chunk);
-      }
-      req.body = JSON.parse(Buffer.concat(chunks).toString());
+      // Trigger Vercel's lazy body parser
+      if (!req.body) req.body = {};
     } catch {
       req.body = {};
     }
