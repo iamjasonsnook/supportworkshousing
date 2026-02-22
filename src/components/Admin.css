@@ -1483,3 +1483,475 @@
 .volunteer-event-item.supply-drive svg {
   color: #7C3AED;
 }
+
+/* Role Badges */
+.role-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.role-badge.role-volunteer {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.role-badge.role-donor {
+  background: #FCE7F3;
+  color: #BE185D;
+}
+
+.volunteer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Filter divider and dismiss icon */
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: #E5E7EB;
+  flex-shrink: 0;
+}
+
+.filter-x {
+  margin-left: 4px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* Donation Summary Bar */
+.donation-summary-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.donation-summary-card {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+}
+
+.donation-summary-card svg {
+  color: #9B1B5D;
+  flex-shrink: 0;
+}
+
+.donation-summary-card > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.donation-summary-card .summary-value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.donation-summary-card .summary-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  text-transform: uppercase;
+}
+
+/* Donation Toolbar */
+.donation-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.donation-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.donation-sort {
+  padding: 8px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+}
+
+.donation-sort:focus {
+  outline: none;
+  border-color: #9B1B5D;
+}
+
+/* Donation List */
+.donation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Donation Card */
+.donation-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.donation-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #9B1B5D;
+}
+
+.donation-card-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.donation-card-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.donation-card-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.donation-card-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1A1A1A;
+}
+
+.donation-card-email {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
+
+.donation-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.donation-card-date {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
+
+.donation-card-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+.donation-card-volunteer-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* Donation Type Badge */
+.donation-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.donation-type-badge.one-time {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.donation-type-badge.monthly {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+/* Donation Detail View */
+.donation-detail {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.donation-detail-header {
+  text-align: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 24px;
+}
+
+.donation-detail-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #9B1B5D;
+  margin-bottom: 8px;
+}
+
+.donation-detail-date {
+  font-size: 0.9375rem;
+  color: #6B7280;
+  margin-top: 8px;
+}
+
+.donation-detail-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.donation-detail-section {
+  padding: 20px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.donation-detail-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.donation-detail-section h3 svg {
+  color: #9B1B5D;
+}
+
+.donation-detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.donation-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.donation-detail-field .field-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9CA3AF;
+  text-transform: uppercase;
+}
+
+.donation-detail-field .field-value {
+  font-size: 0.9375rem;
+  color: #1A1A1A;
+}
+
+.donation-detail-field .field-value a {
+  color: #9B1B5D;
+  text-decoration: none;
+}
+
+.donation-detail-field .field-value a:hover {
+  text-decoration: underline;
+}
+
+.donation-txn-id {
+  font-family: monospace;
+  font-size: 0.8125rem !important;
+  color: #6B7280 !important;
+  word-break: break-all;
+}
+
+.donation-detail-actions {
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.donation-view-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #9B1B5D;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.donation-view-profile-btn:hover {
+  background: #7D1649;
+}
+
+.donation-view-profile-btn .donation-card-volunteer-badge {
+  margin-left: 4px;
+}
+
+/* Donation History in Person Detail View */
+.volunteer-donations-section {
+  margin-bottom: 24px;
+}
+
+.volunteer-donations-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.volunteer-donations-section h3 svg {
+  color: #9B1B5D;
+}
+
+.volunteer-donations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.volunteer-donation-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border-left: 3px solid #9B1B5D;
+}
+
+.volunteer-donation-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #4B5563;
+  min-width: 140px;
+}
+
+.volunteer-donation-date svg {
+  color: #9B1B5D;
+}
+
+.volunteer-donation-details {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volunteer-donation-amount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.volunteer-donation-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #9CA3AF;
+}
+
+.volunteer-donation-card svg {
+  color: #9CA3AF;
+}
+
+/* Responsive for donation styles */
+@media (max-width: 768px) {
+  .donation-summary-bar {
+    flex-direction: column;
+  }
+
+  .donation-summary-card {
+    min-width: unset;
+  }
+
+  .donation-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .donation-controls {
+    flex-direction: column;
+  }
+
+  .donation-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .donation-card-right {
+    align-items: flex-start;
+    width: 100%;
+    flex-direction: row;
+    gap: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #F3F4F6;
+  }
+
+  .donation-detail-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .volunteer-donation-item {
+    flex-wrap: wrap;
+  }
+
+  .volunteer-donation-date {
+    min-width: 100%;
+    margin-bottom: 4px;
+  }
+}

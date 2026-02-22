@@ -41,8 +41,10 @@ function Impact() {
               <div className="impact-icon">
                 <card.icon size={24} color="#9B1B5D" />
               </div>
-              <h3>{card.title}</h3>
-              <p>{card.description}</p>
+              <div className="impact-card-text">
+                <h3>{card.title}</h3>
+                <p>{card.description}</p>
+              </div>
             </div>
           ))}
         </div>

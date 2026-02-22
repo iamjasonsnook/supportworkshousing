@@ -145,8 +145,7 @@
 
   .stat {
     flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    align-items: baseline;
     gap: 12px;
     padding: 8px 0;
     border-bottom: 1px solid var(--color-gray-200);
@@ -157,11 +156,12 @@
   }
 
   .stat-value {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+    flex-shrink: 0;
   }
 
   .stat-label {
     max-width: none;
-    text-align: right;
+    font-size: 1rem;
   }
 }

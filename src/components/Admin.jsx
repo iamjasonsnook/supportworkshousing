@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Shield, Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package } from 'lucide-react';
+import { Shield, Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, CreditCard } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -22,7 +22,7 @@ function Admin() {
   const [volunteers, setVolunteers] = useState([]);
   const [selectedVolunteer, setSelectedVolunteer] = useState(null);
   const [volunteerDetail, setVolunteerDetail] = useState(null);
-  const [volunteerFilter, setVolunteerFilter] = useState('all'); // 'all', 'organization', 'individual'
+  const [peopleFilters, setPeopleFilters] = useState([]); // toggleable: 'organization', 'individual', 'volunteer', 'donor'
   const [volunteerSearch, setVolunteerSearch] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
@@ -30,6 +30,20 @@ function Admin() {
   const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '', organization: '' });
   const [statsTimeframe, setStatsTimeframe] = useState('all'); // 'all', 'year', 'quarter', 'month'
   const [stats, setStats] = useState(null);
+
+  // Donation management state
+  const [donations, setDonations] = useState([]);
+  const [selectedDonation, setSelectedDonation] = useState(null);
+  const [donationFilter, setDonationFilter] = useState('all'); // 'all', 'one-time', 'monthly'
+  const [donationSearch, setDonationSearch] = useState('');
+  const [donationSort, setDonationSort] = useState('newest'); // 'newest', 'oldest', 'highest', 'lowest'
+  const togglePeopleFilter = (filter) => {
+    setPeopleFilters(prev =>
+      prev.includes(filter)
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    );
+  };
 
   // Check for existing session
   useEffect(() => {
@@ -39,12 +53,13 @@ function Admin() {
     }
   }, []);
 
-  // Fetch events and volunteers when authenticated
+  // Fetch events, volunteers, and donations when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchEvents();
       fetchVolunteers();
       fetchStats();
+      fetchDonations();
     }
   }, [isAuthenticated]);
 
@@ -176,6 +191,27 @@ function Admin() {
       }
     } catch (err) {
       console.error('Failed to fetch stats:', err);
+    }
+  };
+
+  const fetchDonations = async () => {
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/donations`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        handleLogout();
+        return;
+      }
+
+      const data = await response.json();
+      if (data.donations) {
+        setDonations(data.donations);
+      }
+    } catch (err) {
+      console.error('Failed to fetch donations:', err);
     }
   };
 
@@ -591,22 +627,40 @@ function Admin() {
     ];
     const uniqueVolunteerIds = new Set(allVolunteerIds.filter(Boolean));
 
+    // Donation stats for timeframe
+    const filteredDonations = startDate
+      ? donations.filter(d => new Date(d.created_at) >= startDate)
+      : donations;
+    const totalDonationAmount = filteredDonations.reduce((sum, d) => sum + d.amount, 0);
+    const donationCount = filteredDonations.length;
+
     return {
       totalVolunteers: statsTimeframe === 'all' ? volunteers.length : uniqueVolunteerIds.size,
       completedEvents: completedEvents + filteredSupplyDrives.filter(e => e.status === 'completed').length,
       pendingEvents,
       totalVolunteerHours,
       inKindValue,
+      totalDonationAmount,
+      donationCount,
     };
-  }, [events, supplyDrives, volunteers, statsTimeframe]);
+  }, [events, supplyDrives, volunteers, donations, statsTimeframe]);
 
-  // Filter volunteers based on type and search query
+  // Filter volunteers based on type, role, and search query
   const displayedVolunteers = useMemo(() => {
     let filtered = volunteers;
 
-    // Filter by type
-    if (volunteerFilter !== 'all') {
-      filtered = filtered.filter(v => v.type === volunteerFilter);
+    // Type filters (OR within category)
+    const typeFilters = peopleFilters.filter(f => ['organization', 'individual'].includes(f));
+    if (typeFilters.length > 0) {
+      filtered = filtered.filter(v => typeFilters.includes(v.type));
+    }
+
+    // Role filters (AND — must have all selected roles)
+    const roleFilters = peopleFilters.filter(f => ['volunteer', 'donor'].includes(f));
+    if (roleFilters.length > 0) {
+      filtered = filtered.filter(v =>
+        roleFilters.every(role => v.roles?.includes(role))
+      );
     }
 
     // Filter by search query
@@ -620,7 +674,56 @@ function Admin() {
     }
 
     return filtered;
-  }, [volunteers, volunteerFilter, volunteerSearch]);
+  }, [volunteers, peopleFilters, volunteerSearch]);
+
+  // Filter and sort donations
+  const displayedDonations = useMemo(() => {
+    let filtered = donations;
+
+    if (donationFilter !== 'all') {
+      filtered = filtered.filter(d => d.donation_type === donationFilter);
+    }
+
+    if (donationSearch.trim()) {
+      const query = donationSearch.toLowerCase();
+      filtered = filtered.filter(d =>
+        d.donor_name.toLowerCase().includes(query) ||
+        d.donor_email.toLowerCase().includes(query)
+      );
+    }
+
+    const sorted = [...filtered];
+    switch (donationSort) {
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        break;
+      case 'highest':
+        sorted.sort((a, b) => b.amount - a.amount);
+        break;
+      case 'lowest':
+        sorted.sort((a, b) => a.amount - b.amount);
+        break;
+      default: // newest
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    return sorted;
+  }, [donations, donationFilter, donationSearch, donationSort]);
+
+  // Donation summary stats
+  const donationStats = useMemo(() => {
+    if (!donations.length) return null;
+    const total = donations.reduce((sum, d) => sum + d.amount, 0);
+    const uniqueDonors = new Set(donations.map(d => d.donor_email)).size;
+    const monthlyCount = donations.filter(d => d.donation_type === 'monthly').length;
+    return {
+      total,
+      count: donations.length,
+      average: Math.round(total / donations.length),
+      uniqueDonors,
+      monthlyCount,
+    };
+  }, [donations]);
 
   // Login Screen
   if (!isAuthenticated) {
@@ -666,7 +769,7 @@ function Admin() {
           </div>
         </div>
         <div className="admin-header-right">
-          <button onClick={() => { fetchEvents(); fetchVolunteers(); fetchStats(); }} className="admin-btn-icon" title="Refresh">
+          <button onClick={() => { fetchEvents(); fetchVolunteers(); fetchStats(); fetchDonations(); }} className="admin-btn-icon" title="Refresh">
             <RefreshCw size={20} className={loading ? 'spinning' : ''} />
           </button>
           <button onClick={handleLogout} className="admin-btn-icon" title="Logout">
@@ -710,6 +813,14 @@ function Admin() {
               <span className="stat-value">${calculatedStats.inKindValue?.toLocaleString() || 0}</span>
               <span className="stat-label">In-Kind<br />Value</span>
             </div>
+            <div className="stat-item">
+              <span className="stat-value">{calculatedStats.donationCount}</span>
+              <span className="stat-label">Donations</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">${calculatedStats.totalDonationAmount?.toLocaleString() || 0}</span>
+              <span className="stat-label">Amount<br />Raised</span>
+            </div>
           </div>
         </div>
       )}
@@ -728,7 +839,14 @@ function Admin() {
           onClick={() => { setActiveTab('volunteers'); setSelectedVolunteer(null); setVolunteerDetail(null); }}
         >
           <Users size={18} />
-          Volunteers
+          People
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'donations' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('donations'); setSelectedDonation(null); }}
+        >
+          <DollarSign size={18} />
+          Donations
         </button>
       </div>
 
@@ -995,38 +1113,49 @@ function Admin() {
           </>
         )}
 
-        {/* Volunteers Tab */}
+        {/* People Tab */}
         {activeTab === 'volunteers' && !selectedVolunteer && (
           <>
             <div className="admin-toolbar volunteer-toolbar">
               <div className="admin-filters">
                 <Filter size={18} />
                 <button
-                  className={`filter-btn ${volunteerFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setVolunteerFilter('all')}
-                >
-                  All ({volunteers.length})
-                </button>
-                <button
-                  className={`filter-btn ${volunteerFilter === 'organization' ? 'active' : ''}`}
-                  onClick={() => setVolunteerFilter('organization')}
+                  className={`filter-btn ${peopleFilters.includes('organization') ? 'active' : ''}`}
+                  onClick={() => togglePeopleFilter('organization')}
                 >
                   <Building size={14} />
                   Organizations ({volunteers.filter(v => v.type === 'organization').length})
+                  {peopleFilters.includes('organization') && <X size={12} className="filter-x" />}
                 </button>
                 <button
-                  className={`filter-btn ${volunteerFilter === 'individual' ? 'active' : ''}`}
-                  onClick={() => setVolunteerFilter('individual')}
+                  className={`filter-btn ${peopleFilters.includes('individual') ? 'active' : ''}`}
+                  onClick={() => togglePeopleFilter('individual')}
                 >
                   <User size={14} />
                   Individuals ({volunteers.filter(v => v.type === 'individual').length})
+                  {peopleFilters.includes('individual') && <X size={12} className="filter-x" />}
+                </button>
+                <span className="filter-divider" />
+                <button
+                  className={`filter-btn ${peopleFilters.includes('volunteer') ? 'active' : ''}`}
+                  onClick={() => togglePeopleFilter('volunteer')}
+                >
+                  Volunteers ({volunteers.filter(v => v.roles?.includes('volunteer')).length})
+                  {peopleFilters.includes('volunteer') && <X size={12} className="filter-x" />}
+                </button>
+                <button
+                  className={`filter-btn ${peopleFilters.includes('donor') ? 'active' : ''}`}
+                  onClick={() => togglePeopleFilter('donor')}
+                >
+                  Donors ({volunteers.filter(v => v.roles?.includes('donor')).length})
+                  {peopleFilters.includes('donor') && <X size={12} className="filter-x" />}
                 </button>
               </div>
               <div className="volunteer-search">
                 <Search size={18} />
                 <input
                   type="text"
-                  placeholder="Search volunteers..."
+                  placeholder="Search people..."
                   value={volunteerSearch}
                   onChange={(e) => setVolunteerSearch(e.target.value)}
                 />
@@ -1053,20 +1182,40 @@ function Admin() {
                       {volunteer.type === 'organization' ? <Building size={24} /> : <User size={24} />}
                     </div>
                     <div className="volunteer-info">
-                      <h3>{volunteer.type === 'organization' ? volunteer.organization : volunteer.name}</h3>
+                      <div className="volunteer-name-row">
+                        <h3>{volunteer.type === 'organization' ? volunteer.organization : volunteer.name}</h3>
+                        <div className="role-badges">
+                          {volunteer.roles?.includes('volunteer') && (
+                            <span className="role-badge role-volunteer">Volunteer</span>
+                          )}
+                          {volunteer.roles?.includes('donor') && (
+                            <span className="role-badge role-donor">Donor</span>
+                          )}
+                        </div>
+                      </div>
                       {volunteer.type === 'organization' && (
                         <p className="volunteer-contact">{volunteer.name}</p>
                       )}
                     </div>
                     <div className="volunteer-stats">
-                      <div className="volunteer-stat">
-                        <span className="stat-number">{volunteer.completed_events || 0}</span>
-                        <span className="stat-label">Completed</span>
-                      </div>
-                      <div className="volunteer-stat">
-                        <span className="stat-number">{volunteer.upcoming_events || 0}</span>
-                        <span className="stat-label">Upcoming</span>
-                      </div>
+                      {volunteer.roles?.includes('volunteer') && (
+                        <>
+                          <div className="volunteer-stat">
+                            <span className="stat-number">{volunteer.completed_events || 0}</span>
+                            <span className="stat-label">Completed</span>
+                          </div>
+                          <div className="volunteer-stat">
+                            <span className="stat-number">{volunteer.upcoming_events || 0}</span>
+                            <span className="stat-label">Upcoming</span>
+                          </div>
+                        </>
+                      )}
+                      {volunteer.total_donated > 0 && (
+                        <div className="volunteer-stat">
+                          <span className="stat-number">${volunteer.total_donated.toLocaleString()}</span>
+                          <span className="stat-label">Donated</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="volunteer-card-footer">
@@ -1086,12 +1235,12 @@ function Admin() {
           </>
         )}
 
-        {/* Volunteer Detail View */}
+        {/* Person Detail View */}
         {activeTab === 'volunteers' && selectedVolunteer && volunteerDetail && (
           <div className="volunteer-detail">
             <button className="back-btn" onClick={handleBackToVolunteerList}>
               <ArrowLeft size={18} />
-              Back to Volunteers
+              Back to People
             </button>
 
             <div className="volunteer-detail-header">
@@ -1156,9 +1305,19 @@ function Admin() {
                   <>
                     <div className="volunteer-detail-title">
                       <h2>{volunteerDetail.type === 'organization' ? volunteerDetail.organization : volunteerDetail.name}</h2>
-                      <button className="edit-profile-btn" onClick={() => setEditingProfile(true)}>
-                        <Edit3 size={16} /> Edit
-                      </button>
+                      <div className="role-badges">
+                        {volunteerDetail.roles?.includes('volunteer') && (
+                          <span className="role-badge role-volunteer">Volunteer</span>
+                        )}
+                        {volunteerDetail.roles?.includes('donor') && (
+                          <span className="role-badge role-donor">Donor</span>
+                        )}
+                      </div>
+                      {!volunteerDetail.id.startsWith('donor-') && (
+                        <button className="edit-profile-btn" onClick={() => setEditingProfile(true)}>
+                          <Edit3 size={16} /> Edit
+                        </button>
+                      )}
                     </div>
                     {volunteerDetail.type === 'organization' && (
                       <p className="volunteer-detail-contact">Contact: {volunteerDetail.name}</p>
@@ -1172,52 +1331,97 @@ function Admin() {
               </div>
               {!editingProfile && (
                 <div className="volunteer-detail-stats">
-                  <div className="detail-stat">
-                    <span className="detail-stat-value">{volunteerDetail.events?.length || 0}</span>
-                    <span className="detail-stat-label">Total Events</span>
-                  </div>
-                  <div className="detail-stat">
-                    <span className="detail-stat-value">{volunteerDetail.events?.filter(e => e.status === 'completed').length || 0}</span>
-                    <span className="detail-stat-label">Completed</span>
-                  </div>
-                  <div className="detail-stat">
-                    <span className="detail-stat-value">{volunteerDetail.events?.filter(e => ['pending', 'approved'].includes(e.status)).length || 0}</span>
-                    <span className="detail-stat-label">Upcoming</span>
-                  </div>
+                  {volunteerDetail.roles?.includes('volunteer') && (
+                    <>
+                      <div className="detail-stat">
+                        <span className="detail-stat-value">{volunteerDetail.events?.length || 0}</span>
+                        <span className="detail-stat-label">Total Events</span>
+                      </div>
+                      <div className="detail-stat">
+                        <span className="detail-stat-value">{volunteerDetail.events?.filter(e => e.status === 'completed').length || 0}</span>
+                        <span className="detail-stat-label">Completed</span>
+                      </div>
+                      <div className="detail-stat">
+                        <span className="detail-stat-value">{volunteerDetail.events?.filter(e => ['pending', 'approved'].includes(e.status)).length || 0}</span>
+                        <span className="detail-stat-label">Upcoming</span>
+                      </div>
+                    </>
+                  )}
+                  {volunteerDetail.total_donated > 0 && (
+                    <>
+                      <div className="detail-stat">
+                        <span className="detail-stat-value">${volunteerDetail.total_donated?.toLocaleString()}</span>
+                        <span className="detail-stat-label">Total Donated</span>
+                      </div>
+                      <div className="detail-stat">
+                        <span className="detail-stat-value">{volunteerDetail.donation_count}</span>
+                        <span className="detail-stat-label">Donations</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Notes Section */}
-            <div className="volunteer-notes-section">
-              <div className="notes-header">
-                <h3><FileText size={18} /> Notes</h3>
-                {!editingNotes ? (
-                  <button className="edit-notes-btn" onClick={() => setEditingNotes(true)}>
-                    <Edit3 size={16} /> Edit
-                  </button>
+            {!volunteerDetail.id.startsWith('donor-') && (
+              <div className="volunteer-notes-section">
+                <div className="notes-header">
+                  <h3><FileText size={18} /> Notes</h3>
+                  {!editingNotes ? (
+                    <button className="edit-notes-btn" onClick={() => setEditingNotes(true)}>
+                      <Edit3 size={16} /> Edit
+                    </button>
+                  ) : (
+                    <button className="save-notes-btn" onClick={saveVolunteerNotes}>
+                      <Save size={16} /> Save
+                    </button>
+                  )}
+                </div>
+                {editingNotes ? (
+                  <textarea
+                    className="notes-textarea"
+                    value={notesText}
+                    onChange={(e) => setNotesText(e.target.value)}
+                    placeholder="Add notes about this person..."
+                  />
                 ) : (
-                  <button className="save-notes-btn" onClick={saveVolunteerNotes}>
-                    <Save size={16} /> Save
-                  </button>
+                  <p className="notes-content">{volunteerDetail.notes || 'No notes yet.'}</p>
                 )}
               </div>
-              {editingNotes ? (
-                <textarea
-                  className="notes-textarea"
-                  value={notesText}
-                  onChange={(e) => setNotesText(e.target.value)}
-                  placeholder="Add notes about this volunteer..."
-                />
-              ) : (
-                <p className="notes-content">{volunteerDetail.notes || 'No notes yet.'}</p>
-              )}
-            </div>
+            )}
+
+            {/* Donation History */}
+            {volunteerDetail.donations && volunteerDetail.donations.length > 0 && (
+              <div className="volunteer-donations-section">
+                <h3><Heart size={18} /> Donation History</h3>
+                <div className="volunteer-donations-list">
+                  {volunteerDetail.donations.map(donation => (
+                    <div key={donation.id} className="volunteer-donation-item">
+                      <div className="volunteer-donation-date">
+                        <DollarSign size={16} />
+                        <span>{new Date(donation.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <div className="volunteer-donation-details">
+                        <span className="volunteer-donation-amount">${donation.amount.toLocaleString()}</span>
+                        <span className={`donation-type-badge ${donation.donation_type}`}>
+                          {donation.donation_type === 'monthly' ? 'Monthly' : 'One-time'}
+                        </span>
+                      </div>
+                      <div className="volunteer-donation-card">
+                        <CreditCard size={14} />
+                        <span>{donation.card_brand} ****{donation.card_last4}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Event History */}
-            <div className="volunteer-events-section">
-              <h3>Event History</h3>
-              {volunteerDetail.events && volunteerDetail.events.length > 0 ? (
+            {volunteerDetail.events && volunteerDetail.events.length > 0 && (
+              <div className="volunteer-events-section">
+                <h3>Event History</h3>
                 <div className="volunteer-events-list">
                   {volunteerDetail.events.map(event => {
                     const isSupplyDrive = event.event_type === 'supply-drive';
@@ -1249,17 +1453,254 @@ function Admin() {
                     );
                   })}
                 </div>
-              ) : (
-                <p className="no-events">No events recorded.</p>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Show message when no events and no donations */}
+            {(!volunteerDetail.events || volunteerDetail.events.length === 0) &&
+             (!volunteerDetail.donations || volunteerDetail.donations.length === 0) && (
+              <p className="no-events">No activity recorded.</p>
+            )}
           </div>
         )}
 
         {/* Loading state for volunteer detail */}
         {activeTab === 'volunteers' && selectedVolunteer && !volunteerDetail && (
-          <div className="admin-loading">Loading volunteer details...</div>
+          <div className="admin-loading">Loading person details...</div>
         )}
+
+        {/* Donations Tab — List View */}
+        {activeTab === 'donations' && !selectedDonation && (
+          <>
+            {donationStats && (
+              <div className="donation-summary-bar">
+                <div className="donation-summary-card">
+                  <DollarSign size={24} />
+                  <div>
+                    <span className="summary-value">${donationStats.total.toLocaleString()}</span>
+                    <span className="summary-label">Total Raised</span>
+                  </div>
+                </div>
+                <div className="donation-summary-card">
+                  <Heart size={24} />
+                  <div>
+                    <span className="summary-value">{donationStats.count}</span>
+                    <span className="summary-label">Donations</span>
+                  </div>
+                </div>
+                <div className="donation-summary-card">
+                  <CreditCard size={24} />
+                  <div>
+                    <span className="summary-value">${donationStats.average.toLocaleString()}</span>
+                    <span className="summary-label">Average</span>
+                  </div>
+                </div>
+                <div className="donation-summary-card">
+                  <Users size={24} />
+                  <div>
+                    <span className="summary-value">{donationStats.uniqueDonors}</span>
+                    <span className="summary-label">Unique Donors</span>
+                  </div>
+                </div>
+                <div className="donation-summary-card">
+                  <RefreshCw size={24} />
+                  <div>
+                    <span className="summary-value">{donationStats.monthlyCount}</span>
+                    <span className="summary-label">Monthly</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="admin-toolbar donation-toolbar">
+              <div className="admin-filters">
+                <Filter size={18} />
+                <button
+                  className={`filter-btn ${donationFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setDonationFilter('all')}
+                >
+                  All ({donations.length})
+                </button>
+                <button
+                  className={`filter-btn ${donationFilter === 'one-time' ? 'active' : ''}`}
+                  onClick={() => setDonationFilter('one-time')}
+                >
+                  One-time ({donations.filter(d => d.donation_type === 'one-time').length})
+                </button>
+                <button
+                  className={`filter-btn ${donationFilter === 'monthly' ? 'active' : ''}`}
+                  onClick={() => setDonationFilter('monthly')}
+                >
+                  Monthly ({donations.filter(d => d.donation_type === 'monthly').length})
+                </button>
+              </div>
+              <div className="donation-controls">
+                <select
+                  className="donation-sort"
+                  value={donationSort}
+                  onChange={(e) => setDonationSort(e.target.value)}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="highest">Highest Amount</option>
+                  <option value="lowest">Lowest Amount</option>
+                </select>
+                <div className="volunteer-search">
+                  <Search size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search donors..."
+                    value={donationSearch}
+                    onChange={(e) => setDonationSearch(e.target.value)}
+                  />
+                  {donationSearch && (
+                    <button
+                      className="search-clear"
+                      onClick={() => setDonationSearch('')}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {displayedDonations.length === 0 ? (
+              <div className="admin-empty">
+                <DollarSign size={48} />
+                <p>No donations found</p>
+              </div>
+            ) : (
+              <div className="donation-list">
+                {displayedDonations.map(donation => (
+                  <div
+                    key={donation.id}
+                    className="donation-card"
+                    onClick={() => setSelectedDonation(donation.id)}
+                  >
+                    <div className="donation-card-left">
+                      <span className="donation-card-amount">${donation.amount.toLocaleString()}</span>
+                      <span className={`donation-type-badge ${donation.donation_type}`}>
+                        {donation.donation_type === 'monthly' ? 'Monthly' : 'One-time'}
+                      </span>
+                    </div>
+                    <div className="donation-card-center">
+                      <span className="donation-card-name">{donation.donor_name}</span>
+                      <span className="donation-card-email">{donation.donor_email}</span>
+                    </div>
+                    <div className="donation-card-right">
+                      <span className="donation-card-date">
+                        {new Date(donation.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <span className="donation-card-card">
+                        <CreditCard size={14} />
+                        {donation.card_brand} ****{donation.card_last4}
+                      </span>
+                      {donation.volunteer_id && (
+                        <span className="donation-card-volunteer-badge">Also volunteers</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Donations Tab — Detail View */}
+        {activeTab === 'donations' && selectedDonation && (() => {
+          const donation = donations.find(d => d.id === selectedDonation);
+          if (!donation) return null;
+          const linkedVolunteer = donation.volunteer_id
+            ? volunteers.find(v => v.id === donation.volunteer_id)
+            : null;
+          const personId = donation.volunteer_id || `donor-${donation.donor_email}`;
+
+          return (
+            <div className="donation-detail">
+              <button className="back-btn" onClick={() => setSelectedDonation(null)}>
+                <ArrowLeft size={18} />
+                Back to Donations
+              </button>
+
+              <div className="donation-detail-header">
+                <div className="donation-detail-amount">
+                  ${donation.amount.toLocaleString()}
+                </div>
+                <span className={`donation-type-badge ${donation.donation_type}`}>
+                  {donation.donation_type === 'monthly' ? 'Monthly' : 'One-time'}
+                </span>
+                <div className="donation-detail-date">
+                  {new Date(donation.created_at).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </div>
+              </div>
+
+              <div className="donation-detail-sections">
+                <div className="donation-detail-section">
+                  <h3><User size={18} /> Donor Information</h3>
+                  <div className="donation-detail-fields">
+                    <div className="donation-detail-field">
+                      <span className="field-label">Name</span>
+                      <span className="field-value">{donation.donor_name}</span>
+                    </div>
+                    <div className="donation-detail-field">
+                      <span className="field-label">Email</span>
+                      <span className="field-value">
+                        <a href={`mailto:${donation.donor_email}`}>{donation.donor_email}</a>
+                      </span>
+                    </div>
+                    <div className="donation-detail-field">
+                      <span className="field-label">Phone</span>
+                      <span className="field-value">
+                        <a href={`tel:${donation.donor_phone}`}>{donation.donor_phone}</a>
+                      </span>
+                    </div>
+                    <div className="donation-detail-field">
+                      <span className="field-label">Address</span>
+                      <span className="field-value">{donation.donor_address}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="donation-detail-section">
+                  <h3><CreditCard size={18} /> Payment Details</h3>
+                  <div className="donation-detail-fields">
+                    <div className="donation-detail-field">
+                      <span className="field-label">Card</span>
+                      <span className="field-value">{donation.card_brand} ending in {donation.card_last4}</span>
+                    </div>
+                    <div className="donation-detail-field">
+                      <span className="field-label">Transaction ID</span>
+                      <span className="field-value donation-txn-id">{donation.payment_intent_id}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="donation-detail-actions">
+                <button
+                  className="donation-view-profile-btn"
+                  onClick={() => {
+                    setSelectedDonation(null);
+                    setActiveTab('volunteers');
+                    handleViewVolunteer(personId);
+                  }}
+                >
+                  <User size={16} />
+                  View Profile
+                  {linkedVolunteer && <span className="donation-card-volunteer-badge">Also volunteers</span>}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
