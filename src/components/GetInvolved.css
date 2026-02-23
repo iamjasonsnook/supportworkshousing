@@ -282,6 +282,28 @@
   color: var(--color-text-dark);
 }
 
+.gi-radio-other-active {
+  grid-column: 2 / -1;
+}
+
+.gi-other-input {
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid var(--color-primary);
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  padding: 2px 4px;
+  margin-left: 4px;
+  outline: none;
+}
+
+.gi-other-input::placeholder {
+  color: var(--color-gray-400);
+  font-weight: 400;
+}
+
 /* Location Tiles */
 .gi-location-tiles {
   display: flex;
@@ -646,6 +668,10 @@
 
   .gi-radio-group {
     grid-template-columns: 1fr;
+  }
+
+  .gi-radio-other-active {
+    grid-column: 1;
   }
 
   .gi-location-tile {

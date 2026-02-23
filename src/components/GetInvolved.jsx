@@ -95,6 +95,7 @@ function GetInvolved({
     groupSize: '',
     foodPlan: '',
     activityPlan: '',
+    otherActivity: '',
   });
 
   // Supply Drive form data
@@ -193,6 +194,7 @@ function GetInvolved({
     if (step === 3) {
       if (!cnFormData.foodPlan) newErrors.foodPlan = 'Please select a food plan';
       if (!cnFormData.activityPlan) newErrors.activityPlan = 'Please select an activity';
+      if (cnFormData.activityPlan === 'other' && !cnFormData.otherActivity.trim()) newErrors.otherActivity = 'Please describe your activity';
     }
 
     setErrors(newErrors);
@@ -289,7 +291,7 @@ function GetInvolved({
       'bingo': 'Bingo',
       'trivia': 'Trivia',
       'crafts': 'Crafts',
-      'other': 'Other'
+      'other': cnFormData.otherActivity.trim() || 'Other'
     };
     const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
 
@@ -429,6 +431,7 @@ function GetInvolved({
       groupSize: '',
       foodPlan: '',
       activityPlan: '',
+      otherActivity: '',
     });
     setSdFormData({
       locationId: '',
@@ -764,14 +767,29 @@ function GetInvolved({
                     <div className="gi-form-group">
                       <label>Activity Plan</label>
                       <div className="gi-radio-group">
-                        {['board-games', 'bingo', 'trivia', 'crafts', 'other'].map(activity => (
+                        {['board-games', 'bingo', 'trivia', 'crafts'].map(activity => (
                           <label key={activity} className="gi-radio">
                             <input type="radio" name="activityPlan" value={activity} checked={cnFormData.activityPlan === activity} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
                             <span>{activity === 'board-games' ? 'Board games' : activity.charAt(0).toUpperCase() + activity.slice(1)}</span>
                           </label>
                         ))}
+                        <label className={`gi-radio gi-radio-other${cnFormData.activityPlan === 'other' ? ' gi-radio-other-active' : ''}`}>
+                          <input type="radio" name="activityPlan" value="other" checked={cnFormData.activityPlan === 'other'} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
+                          <span>Other</span>
+                          {cnFormData.activityPlan === 'other' && (
+                            <input
+                              type="text"
+                              className="gi-other-input"
+                              placeholder="Describe your activity..."
+                              value={cnFormData.otherActivity}
+                              onChange={(e) => updateCNField('otherActivity', e.target.value)}
+                              autoFocus
+                            />
+                          )}
+                        </label>
                       </div>
                       {errors.activityPlan && <span className="gi-error">{errors.activityPlan}</span>}
+                      {errors.otherActivity && <span className="gi-error">{errors.otherActivity}</span>}
                     </div>
                   </div>
                 )}
@@ -796,7 +814,7 @@ function GetInvolved({
                           <span>{availableTimeSlots.find(slot => slot.id === cnFormData.timeSlotId)?.day}, {availableTimeSlots.find(slot => slot.id === cnFormData.timeSlotId)?.time}</span>
                         </div>
                         <div className="gi-review-item"><strong>Food Plan:</strong> <span>{cnFormData.foodPlan === 'bring' ? 'Bring food' : 'Cater/deliver food'}</span></div>
-                        <div className="gi-review-item"><strong>Activity:</strong> <span>{cnFormData.activityPlan === 'board-games' ? 'Board games' : cnFormData.activityPlan?.charAt(0).toUpperCase() + cnFormData.activityPlan?.slice(1)}</span></div>
+                        <div className="gi-review-item"><strong>Activity:</strong> <span>{cnFormData.activityPlan === 'other' ? (cnFormData.otherActivity.trim() || 'Other') : cnFormData.activityPlan === 'board-games' ? 'Board games' : cnFormData.activityPlan?.charAt(0).toUpperCase() + cnFormData.activityPlan?.slice(1)}</span></div>
                       </div>
 
                       <div className="gi-review-section">
