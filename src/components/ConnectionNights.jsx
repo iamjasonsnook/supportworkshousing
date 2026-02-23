@@ -54,6 +54,7 @@ function ConnectionNights({
     // Step 3
     foodPlan: '',
     activityPlan: '',
+    otherActivity: '',
 
     // Step 4 - auto-agreed (no checkboxes in UI)
     agreeToRequest: true,
@@ -113,6 +114,7 @@ function ConnectionNights({
     if (step === 3) {
       if (!formData.foodPlan) newErrors.foodPlan = 'Please select a food plan';
       if (!formData.activityPlan) newErrors.activityPlan = 'Please select an activity';
+      if (formData.activityPlan === 'other' && !formData.otherActivity.trim()) newErrors.otherActivity = 'Please describe your activity';
     }
 
     // Step 4 validation removed - no checkboxes needed
@@ -150,7 +152,7 @@ function ConnectionNights({
       'bingo': 'Bingo',
       'trivia': 'Trivia',
       'crafts': 'Crafts',
-      'other': 'Other'
+      'other': formData.otherActivity.trim() || 'Other'
     };
     const activityPlanText = activityPlanMap[formData.activityPlan] || formData.activityPlan;
 
@@ -272,6 +274,7 @@ function ConnectionNights({
                       groupSize: '',
                       foodPlan: '',
                       activityPlan: '',
+                      otherActivity: '',
                       agreeToRequest: true,
                       agreeToGuidelines: true,
                     });
@@ -595,7 +598,7 @@ function ConnectionNights({
                       />
                       <span>Crafts</span>
                     </label>
-                    <label className="cn-radio">
+                    <label className={`cn-radio cn-radio-other${formData.activityPlan === 'other' ? ' cn-radio-other-active' : ''}`}>
                       <input
                         type="radio"
                         name="activityPlan"
@@ -604,9 +607,20 @@ function ConnectionNights({
                         onChange={(e) => updateField('activityPlan', e.target.value)}
                       />
                       <span>Other</span>
+                      {formData.activityPlan === 'other' && (
+                        <input
+                          type="text"
+                          className="cn-other-input"
+                          placeholder="Describe your activity..."
+                          value={formData.otherActivity}
+                          onChange={(e) => updateField('otherActivity', e.target.value)}
+                          autoFocus
+                        />
+                      )}
                     </label>
                   </div>
                   {errors.activityPlan && <span className="cn-error">{errors.activityPlan}</span>}
+                  {errors.otherActivity && <span className="cn-error">{errors.otherActivity}</span>}
                 </div>
               </div>
             )}
@@ -657,7 +671,7 @@ function ConnectionNights({
                         {formData.activityPlan === 'bingo' && 'Bingo'}
                         {formData.activityPlan === 'trivia' && 'Trivia'}
                         {formData.activityPlan === 'crafts' && 'Crafts'}
-                        {formData.activityPlan === 'other' && 'Other'}
+                        {formData.activityPlan === 'other' && (formData.otherActivity.trim() || 'Other')}
                       </span>
                     </div>
                   </div>

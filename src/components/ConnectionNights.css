@@ -218,6 +218,28 @@
   color: var(--color-text-dark);
 }
 
+.cn-radio-other-active {
+  grid-column: 2 / -1;
+}
+
+.cn-other-input {
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid var(--color-primary);
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  padding: 2px 4px;
+  margin-left: 4px;
+  outline: none;
+}
+
+.cn-other-input::placeholder {
+  color: var(--color-gray-400);
+  font-weight: 400;
+}
+
 /* Location Tiles */
 .cn-location-tiles {
   display: flex;
