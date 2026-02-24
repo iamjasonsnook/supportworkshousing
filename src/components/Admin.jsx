@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Shield, Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, CreditCard } from 'lucide-react';
+import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, CreditCard } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -37,6 +37,7 @@ function Admin() {
   const [donationFilter, setDonationFilter] = useState('all'); // 'all', 'one-time', 'monthly'
   const [donationSearch, setDonationSearch] = useState('');
   const [donationSort, setDonationSort] = useState('newest'); // 'newest', 'oldest', 'highest', 'lowest'
+  const [showTestData, setShowTestData] = useState(true);
   const togglePeopleFilter = (filter) => {
     setPeopleFilters(prev =>
       prev.includes(filter)
@@ -450,11 +451,13 @@ function Admin() {
 
   // Combine events and supply drives for calendar display
   const allCalendarItems = useMemo(() => {
+    const filteredEvts = showTestData ? events : events.filter(e => !e._test);
+    const filteredDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
     return [
-      ...events.map(e => ({ ...e, itemType: 'connection-night' })),
-      ...supplyDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
+      ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
+      ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
     ];
-  }, [events, supplyDrives]);
+  }, [events, supplyDrives, showTestData]);
 
   const getEventsForDate = (date) => {
     return allCalendarItems.filter(item => {
@@ -539,15 +542,26 @@ function Admin() {
 
   // Filter events based on selected date or filter
   const displayedEvents = useMemo(() => {
+    const filteredEvts = showTestData ? events : events.filter(e => !e._test);
+    const filteredDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
+
     if (selectedDate) {
       // When date is selected, show all items for that date
-      return getEventsForDate(selectedDate);
+      const allItems = [
+        ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
+        ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
+      ];
+      return allItems.filter(item => {
+        const itemDate = parseEventDate(item);
+        if (!itemDate) return false;
+        return itemDate.toDateString() === selectedDate.toDateString();
+      });
     }
 
     // Combine events and supply drives for display
     const allItems = [
-      ...events.map(e => ({ ...e, itemType: 'connection-night' })),
-      ...supplyDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
+      ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
+      ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
     ];
 
     if (filter !== 'all') {
@@ -555,7 +569,7 @@ function Admin() {
     }
 
     return allItems;
-  }, [events, supplyDrives, filter, selectedDate]);
+  }, [events, supplyDrives, filter, selectedDate, showTestData]);
 
   // Calculate stats based on timeframe
   // Estimated values for supply drive items (for in-kind donation records)
@@ -575,7 +589,12 @@ function Admin() {
   const defaultItemValue = 8; // Default value for unlisted items
 
   const calculatedStats = useMemo(() => {
-    if (!events.length && !supplyDrives.length) return null;
+    const baseEvents = showTestData ? events : events.filter(e => !e._test);
+    const baseDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
+    const baseVolunteers = showTestData ? volunteers : volunteers.filter(v => !v._test);
+    const baseDonations = showTestData ? donations : donations.filter(d => !d._test);
+
+    if (!baseEvents.length && !baseDrives.length) return null;
 
     const now = new Date();
     let startDate = null;
@@ -590,18 +609,18 @@ function Admin() {
     }
 
     const filteredEvents = startDate
-      ? events.filter(e => {
+      ? baseEvents.filter(e => {
           const eventDate = e.completed_at ? new Date(e.completed_at) : new Date(e.created_at);
           return eventDate >= startDate;
         })
-      : events;
+      : baseEvents;
 
     const filteredSupplyDrives = startDate
-      ? supplyDrives.filter(e => {
+      ? baseDrives.filter(e => {
           const eventDate = e.completed_at ? new Date(e.completed_at) : new Date(e.created_at);
           return eventDate >= startDate;
         })
-      : supplyDrives;
+      : baseDrives;
 
     const completedEvents = filteredEvents.filter(e => e.status === 'completed').length;
     const pendingEvents = filteredEvents.filter(e => e.status === 'pending').length
@@ -629,13 +648,13 @@ function Admin() {
 
     // Donation stats for timeframe
     const filteredDonations = startDate
-      ? donations.filter(d => new Date(d.created_at) >= startDate)
-      : donations;
+      ? baseDonations.filter(d => new Date(d.created_at) >= startDate)
+      : baseDonations;
     const totalDonationAmount = filteredDonations.reduce((sum, d) => sum + d.amount, 0);
     const donationCount = filteredDonations.length;
 
     return {
-      totalVolunteers: statsTimeframe === 'all' ? volunteers.length : uniqueVolunteerIds.size,
+      totalVolunteers: statsTimeframe === 'all' ? baseVolunteers.length : uniqueVolunteerIds.size,
       completedEvents: completedEvents + filteredSupplyDrives.filter(e => e.status === 'completed').length,
       pendingEvents,
       totalVolunteerHours,
@@ -643,11 +662,11 @@ function Admin() {
       totalDonationAmount,
       donationCount,
     };
-  }, [events, supplyDrives, volunteers, donations, statsTimeframe]);
+  }, [events, supplyDrives, volunteers, donations, statsTimeframe, showTestData]);
 
   // Filter volunteers based on type, role, and search query
   const displayedVolunteers = useMemo(() => {
-    let filtered = volunteers;
+    let filtered = showTestData ? volunteers : volunteers.filter(v => !v._test);
 
     // Type filters (OR within category)
     const typeFilters = peopleFilters.filter(f => ['organization', 'individual'].includes(f));
@@ -674,11 +693,11 @@ function Admin() {
     }
 
     return filtered;
-  }, [volunteers, peopleFilters, volunteerSearch]);
+  }, [volunteers, peopleFilters, volunteerSearch, showTestData]);
 
   // Filter and sort donations
   const displayedDonations = useMemo(() => {
-    let filtered = donations;
+    let filtered = showTestData ? donations : donations.filter(d => !d._test);
 
     if (donationFilter !== 'all') {
       filtered = filtered.filter(d => d.donation_type === donationFilter);
@@ -708,22 +727,23 @@ function Admin() {
     }
 
     return sorted;
-  }, [donations, donationFilter, donationSearch, donationSort]);
+  }, [donations, donationFilter, donationSearch, donationSort, showTestData]);
 
   // Donation summary stats
   const donationStats = useMemo(() => {
-    if (!donations.length) return null;
-    const total = donations.reduce((sum, d) => sum + d.amount, 0);
-    const uniqueDonors = new Set(donations.map(d => d.donor_email)).size;
-    const monthlyCount = donations.filter(d => d.donation_type === 'monthly').length;
+    const baseDonations = showTestData ? donations : donations.filter(d => !d._test);
+    if (!baseDonations.length) return null;
+    const total = baseDonations.reduce((sum, d) => sum + d.amount, 0);
+    const uniqueDonors = new Set(baseDonations.map(d => d.donor_email)).size;
+    const monthlyCount = baseDonations.filter(d => d.donation_type === 'monthly').length;
     return {
       total,
-      count: donations.length,
-      average: Math.round(total / donations.length),
+      count: baseDonations.length,
+      average: Math.round(total / baseDonations.length),
       uniqueDonors,
       monthlyCount,
     };
-  }, [donations]);
+  }, [donations, showTestData]);
 
   // Login Screen
   if (!isAuthenticated) {
@@ -731,7 +751,7 @@ function Admin() {
       <div className="admin-login">
         <div className="admin-login-card">
           <div className="admin-login-header">
-            <Shield size={48} color="#9B1B5D" />
+            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="SupportWorks Housing" style={{ width: 48, height: 48 }} />
             <h1>Admin Dashboard</h1>
             <p>SupportWorks Housing</p>
           </div>
@@ -762,13 +782,19 @@ function Admin() {
     <div className="admin-dashboard">
       <header className="admin-header">
         <div className="admin-header-left">
-          <Shield size={32} color="#9B1B5D" />
+          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="SupportWorks Housing" style={{ width: 32, height: 32 }} />
           <div>
             <h1>Admin Dashboard</h1>
             <p>SupportWorks Housing</p>
           </div>
         </div>
         <div className="admin-header-right">
+          <label className="admin-test-toggle">
+            <span className="admin-test-toggle-label">Test Data</span>
+            <div className={`admin-test-toggle-switch ${showTestData ? 'active' : ''}`} onClick={() => setShowTestData(prev => !prev)}>
+              <div className="admin-test-toggle-knob" />
+            </div>
+          </label>
           <button onClick={() => { fetchEvents(); fetchVolunteers(); fetchStats(); fetchDonations(); }} className="admin-btn-icon" title="Refresh">
             <RefreshCw size={20} className={loading ? 'spinning' : ''} />
           </button>

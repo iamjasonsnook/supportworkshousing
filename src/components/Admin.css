@@ -130,6 +130,51 @@
   gap: 8px;
 }
 
+/* Test Data Toggle */
+.admin-test-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.admin-test-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6B7280;
+  white-space: nowrap;
+}
+
+.admin-test-toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: #D1D5DB;
+  border-radius: 10px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.admin-test-toggle-switch.active {
+  background: #9B1B5D;
+}
+
+.admin-test-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.admin-test-toggle-switch.active .admin-test-toggle-knob {
+  transform: translateX(16px);
+}
+
 .admin-btn-icon {
   background: none;
   border: 1px solid #E5E7EB;
