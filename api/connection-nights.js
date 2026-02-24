@@ -4,6 +4,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+
 // Email templates
 const getVolunteerReceiptEmail = (data) => {
   const locationInfo = `${data.location_name} - ${data.location_address}`;
@@ -70,7 +72,7 @@ const getVolunteerReceiptEmail = (data) => {
             ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
             ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${data.property_notes}</div>` : ''}
 
-            <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out to us at <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.</p>
+            <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out to us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
             <p>Thank you for making a difference in our community!</p>
 
@@ -224,7 +226,7 @@ const getApprovalEmail = (data) => {
               <li>Enjoy building connections through food and activities!</li>
             </ul>
 
-            <p style="margin-top: 30px;">If you have any questions or need to make changes, please contact us at <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.</p>
+            <p style="margin-top: 30px;">If you have any questions or need to make changes, please contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
             <p><strong>Thank you for making a difference!</strong></p>
 
@@ -307,7 +309,7 @@ export default async function handler(req, res) {
             activity_plan: requestData.event.activityPlan,
             activity_details: requestData.event.activityDetails,
             property_notes: requestData.event.propertyNotes,
-            mission_advancement_email: 'jsnook@supportworkshousing.org',
+            mission_advancement_email: ADMIN_EMAIL,
             property_manager_email: requestData.recipients?.propertyManager,
             status: 'pending',
           },
@@ -339,7 +341,7 @@ export default async function handler(req, res) {
           }),
         });
 
-        // Send mission advancement email to jsnook@supportworkshousing.org
+        // Send mission advancement email to ${ADMIN_EMAIL}
         const missionEmail = getMissionAdvancementEmail(insertedData, insertedData.confirmation_token, appUrl);
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -349,20 +351,20 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-            to: ['jsnook@supportworkshousing.org'],
+            to: [ADMIN_EMAIL],
             subject: missionEmail.subject,
             html: missionEmail.html,
           }),
         });
 
-        console.log('Emails sent successfully to volunteer and jsnook@supportworkshousing.org');
+        console.log('Emails sent successfully to volunteer and ${ADMIN_EMAIL}');
       } catch (emailError) {
         console.error('Email send error:', emailError);
         // Don't fail the request if email fails
       }
     } else {
       console.log('No RESEND_API_KEY configured - emails not sent');
-      console.log('Would send to: jsnook@supportworkshousing.org');
+      console.log('Would send to: ${ADMIN_EMAIL}');
       console.log('Request data:', JSON.stringify(insertedData, null, 2));
     }
 

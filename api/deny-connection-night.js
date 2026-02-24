@@ -4,6 +4,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+
 const getDenialEmail = (data, reason) => {
   return {
     subject: 'Connection Night Request Update - SupportWorks Housing',
@@ -46,7 +48,7 @@ const getDenialEmail = (data, reason) => {
               <li>Sign up for our volunteer newsletter to stay informed about upcoming events</li>
             </ul>
 
-            <p style="margin-top: 30px;">If you have questions or would like to discuss other ways to get involved, please reach out to us at <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.</p>
+            <p style="margin-top: 30px;">If you have questions or would like to discuss other ways to get involved, please reach out to us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
             <p><strong>Thank you for your understanding and continued support!</strong></p>
 
@@ -264,7 +266,7 @@ export default async function handler(req, res) {
         .update({
           status: 'denied',
           denial_reason: reason,
-          approved_by: 'jsnook@supportworkshousing.org',
+          approved_by: ADMIN_EMAIL,
           approved_at: new Date().toISOString(),
         })
         .eq('id', requestData.id);
@@ -286,7 +288,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
               to: [requestData.contact_email],
-              cc: ['jsnook@supportworkshousing.org'],
+              cc: [ADMIN_EMAIL],
               subject: denialEmail.subject,
               html: denialEmail.html,
             }),

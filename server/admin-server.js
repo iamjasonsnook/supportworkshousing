@@ -17,8 +17,9 @@ dotenv.config({ path: '.env.local' });
 const app = express();
 const PORT = 3001;
 
-// Simple admin password - in production use environment variable
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'swh2024';
+// Admin config from environment
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const SESSION_TOKEN = 'admin-session-token-' + Date.now();
 
 // Middleware
@@ -749,7 +750,7 @@ app.post('/api/send-email', (req, res) => {
 
     console.log('\n📧 [DEV] send-email called');
     console.log('─── Admin Notification ───');
-    console.log('  To: jsnook@supportworkshousing.org');
+    console.log(`  To: ${ADMIN_EMAIL}`);
     console.log(`  Type: ${type}`);
     console.log(`  From: ${contactName} <${contactEmail}>`);
     console.log('  Body:', JSON.stringify(req.body, null, 2));

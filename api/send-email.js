@@ -187,7 +187,7 @@ export default async function handler(req, res) {
       </table>
       <p style="margin: 16px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">
         If you have any questions, please contact us at
-        <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.
+        <a href="mailto:${RECIPIENT_EMAIL}" style="color: #9B1B5D;">${RECIPIENT_EMAIL}</a>.
       </p>
     </div>
     <div style="padding: 20px 24px; background-color: #9B1B5D; color: #ffffff;">
@@ -253,7 +253,7 @@ export default async function handler(req, res) {
       </table>
       <p style="margin: 16px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">
         If you have any questions, please contact us at
-        <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.
+        <a href="mailto:${RECIPIENT_EMAIL}" style="color: #9B1B5D;">${RECIPIENT_EMAIL}</a>.
       </p>
     </div>
     <div style="padding: 20px 24px; background-color: #9B1B5D; color: #ffffff;">

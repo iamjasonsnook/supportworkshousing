@@ -4,6 +4,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+
 const getApprovalEmail = (data) => {
   const locationInfo = `${data.location_name} - ${data.location_address}`;
   const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
@@ -61,7 +63,7 @@ const getApprovalEmail = (data) => {
               <li>Enjoy building connections through food and activities!</li>
             </ul>
 
-            <p style="margin-top: 30px;">If you have any questions or need to make changes, please contact us at <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.</p>
+            <p style="margin-top: 30px;">If you have any questions or need to make changes, please contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
             <p><strong>Thank you for making a difference!</strong></p>
 
@@ -139,7 +141,7 @@ const getPropertyManagerEmail = (data) => {
               <li>Notify residents about the Connection Night</li>
             </ul>
 
-            <p style="margin-top: 30px;">You'll receive a reminder 3 days before the event. If you have any questions, contact <a href="mailto:jsnook@supportworkshousing.org" style="color: #9B1B5D;">jsnook@supportworkshousing.org</a>.</p>
+            <p style="margin-top: 30px;">You'll receive a reminder 3 days before the event. If you have any questions, contact <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
             <p style="margin-top: 20px;">Thank you,<br><strong>SupportWorks Housing Team</strong></p>
           </div>
@@ -218,7 +220,7 @@ export default async function handler(req, res) {
       .from('connection_nights')
       .update({
         status: 'approved',
-        approved_by: 'jsnook@supportworkshousing.org',
+        approved_by: ADMIN_EMAIL,
         approved_at: new Date().toISOString(),
       })
       .eq('id', requestData.id);
@@ -241,7 +243,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
             to: [requestData.contact_email],
-            cc: ['jsnook@supportworkshousing.org'],
+            cc: [ADMIN_EMAIL],
             subject: volunteerEmail.subject,
             html: volunteerEmail.html,
           }),
@@ -258,7 +260,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
             to: [requestData.property_manager_email],
-            cc: ['jsnook@supportworkshousing.org'],
+            cc: [ADMIN_EMAIL],
             subject: propertyManagerEmail.subject,
             html: propertyManagerEmail.html,
           }),

@@ -9,6 +9,8 @@ import './Donate.css';
 // Stripe Configuration
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+const ADMIN_EMAIL = 'jsnook@supportworkshousing.org';
+
 const API_BASE = '';
 
 // EmailJS Configuration
@@ -230,7 +232,7 @@ function DonateForm() {
   };
 
   const handleGivingOptionClick = (option) => {
-    const mailtoUrl = `mailto:jsnook@supportworkshousing.org?subject=${encodeURIComponent(option.subject)}&body=${encodeURIComponent(option.body)}`;
+    const mailtoUrl = `mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(option.subject)}&body=${encodeURIComponent(option.body)}`;
     window.location.href = mailtoUrl;
   };
 

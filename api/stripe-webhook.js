@@ -5,6 +5,8 @@
 import Stripe from 'stripe';
 
 // Vercel config: disable body parsing so we can verify the raw signature
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+
 export const config = {
   api: {
     bodyParser: false,
@@ -88,7 +90,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             from: 'SupportWorks Housing <donations@supportworkshousing.org>',
-            to: ['jsnook@supportworkshousing.org'],
+            to: [ADMIN_EMAIL],
             reply_to: donor_email,
             subject: `Donation Confirmed: $${amount} from ${donor_name}`,
             html: `
@@ -148,7 +150,7 @@ export default async function handler(req, res) {
       </table>
       <p style="margin: 16px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">
         If you have any questions about your donation, please contact us at
-        <a href="mailto:jsnook@supportworkshousing.org" style="color: #10B981;">jsnook@supportworkshousing.org</a>.
+        <a href="mailto:${ADMIN_EMAIL}" style="color: #10B981;">${ADMIN_EMAIL}</a>.
       </p>
     </div>
     <div style="padding: 20px 24px; background-color: #10B981; color: #ffffff;">
