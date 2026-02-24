@@ -977,31 +977,31 @@ function Admin() {
               className={`filter-btn ${filter === 'all' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('all'); setSelectedDate(null); }}
             >
-              All ({events.length + supplyDrives.length})
+              All ({allCalendarItems.length})
             </button>
             <button
               className={`filter-btn ${filter === 'pending' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('pending'); setSelectedDate(null); }}
             >
-              Pending ({events.filter(e => e.status === 'pending').length + supplyDrives.filter(e => e.status === 'pending').length})
+              Pending ({allCalendarItems.filter(e => e.status === 'pending').length})
             </button>
             <button
               className={`filter-btn ${filter === 'approved' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('approved'); setSelectedDate(null); }}
             >
-              Approved ({events.filter(e => e.status === 'approved').length + supplyDrives.filter(e => e.status === 'approved').length})
+              Approved ({allCalendarItems.filter(e => e.status === 'approved').length})
             </button>
             <button
               className={`filter-btn ${filter === 'completed' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('completed'); setSelectedDate(null); }}
             >
-              Completed ({events.filter(e => e.status === 'completed').length + supplyDrives.filter(e => e.status === 'completed').length})
+              Completed ({allCalendarItems.filter(e => e.status === 'completed').length})
             </button>
             <button
               className={`filter-btn ${filter === 'denied' && !selectedDate ? 'active' : ''}`}
               onClick={() => { setFilter('denied'); setSelectedDate(null); }}
             >
-              Denied ({events.filter(e => e.status === 'denied').length + supplyDrives.filter(e => e.status === 'denied').length})
+              Denied ({allCalendarItems.filter(e => e.status === 'denied').length})
             </button>
           </div>
         </div>
@@ -1150,7 +1150,7 @@ function Admin() {
                   onClick={() => togglePeopleFilter('organization')}
                 >
                   <Building size={14} />
-                  Organizations ({volunteers.filter(v => v.type === 'organization').length})
+                  Organizations ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.type === 'organization').length})
                   {peopleFilters.includes('organization') && <X size={12} className="filter-x" />}
                 </button>
                 <button
@@ -1158,7 +1158,7 @@ function Admin() {
                   onClick={() => togglePeopleFilter('individual')}
                 >
                   <User size={14} />
-                  Individuals ({volunteers.filter(v => v.type === 'individual').length})
+                  Individuals ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.type === 'individual').length})
                   {peopleFilters.includes('individual') && <X size={12} className="filter-x" />}
                 </button>
                 <span className="filter-divider" />
@@ -1166,14 +1166,14 @@ function Admin() {
                   className={`filter-btn ${peopleFilters.includes('volunteer') ? 'active' : ''}`}
                   onClick={() => togglePeopleFilter('volunteer')}
                 >
-                  Volunteers ({volunteers.filter(v => v.roles?.includes('volunteer')).length})
+                  Volunteers ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.roles?.includes('volunteer')).length})
                   {peopleFilters.includes('volunteer') && <X size={12} className="filter-x" />}
                 </button>
                 <button
                   className={`filter-btn ${peopleFilters.includes('donor') ? 'active' : ''}`}
                   onClick={() => togglePeopleFilter('donor')}
                 >
-                  Donors ({volunteers.filter(v => v.roles?.includes('donor')).length})
+                  Donors ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.roles?.includes('donor')).length})
                   {peopleFilters.includes('donor') && <X size={12} className="filter-x" />}
                 </button>
               </div>
@@ -1196,6 +1196,12 @@ function Admin() {
               </div>
             </div>
 
+            {displayedVolunteers.length === 0 ? (
+              <div className="admin-empty">
+                <Users size={48} />
+                <p>No people found</p>
+              </div>
+            ) : (
             <div className="volunteer-list">
               {displayedVolunteers.map(volunteer => (
                 <div
@@ -1258,6 +1264,7 @@ function Admin() {
                 </div>
               ))}
             </div>
+            )}
           </>
         )}
 
@@ -1545,19 +1552,19 @@ function Admin() {
                   className={`filter-btn ${donationFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('all')}
                 >
-                  All ({donations.length})
+                  All ({(showTestData ? donations : donations.filter(d => !d._test)).length})
                 </button>
                 <button
                   className={`filter-btn ${donationFilter === 'one-time' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('one-time')}
                 >
-                  One-time ({donations.filter(d => d.donation_type === 'one-time').length})
+                  One-time ({(showTestData ? donations : donations.filter(d => !d._test)).filter(d => d.donation_type === 'one-time').length})
                 </button>
                 <button
                   className={`filter-btn ${donationFilter === 'monthly' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('monthly')}
                 >
-                  Monthly ({donations.filter(d => d.donation_type === 'monthly').length})
+                  Monthly ({(showTestData ? donations : donations.filter(d => !d._test)).filter(d => d.donation_type === 'monthly').length})
                 </button>
               </div>
               <div className="donation-controls">
