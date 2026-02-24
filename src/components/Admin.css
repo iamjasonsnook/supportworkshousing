@@ -92,12 +92,14 @@
 /* Admin Dashboard */
 .admin-dashboard {
   min-height: 100vh;
-  background: #F9FAFB;
+  background: white;
 }
 
 .admin-header {
   background: white;
   padding: 16px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -208,10 +210,7 @@
 
 /* Calendar Section */
 .calendar-section {
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 20px;
+  padding: 20px 0;
   margin-bottom: 24px;
 }
 
@@ -767,6 +766,8 @@
   align-items: center;
   gap: 48px;
   padding: 16px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
   background: white;
   border-bottom: 1px solid #E5E7EB;
 }
@@ -827,6 +828,8 @@
   background: white;
   border-bottom: 1px solid #E5E7EB;
   padding: 0 24px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .admin-tab {
