@@ -3,6 +3,7 @@
 // Configure in Stripe Dashboard > Developers > Webhooks
 // Events to listen for: payment_intent.succeeded
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 // Vercel config: disable body parsing so we can verify the raw signature
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
@@ -178,6 +179,7 @@ export default async function handler(req, res) {
     // ---- Bloomerang CRM ----
     // Record the donation server-side (more reliable than client-side)
     const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
+    let bloomerangTransactionId = null;
     if (!BLOOMERANG_API_KEY) {
       console.error('BLOOMERANG_API_KEY not configured');
     } else {
@@ -288,6 +290,7 @@ export default async function handler(req, res) {
           if (!txnResp.ok) {
             console.error('Bloomerang transaction failed:', txnResult);
           } else {
+            bloomerangTransactionId = txnResult.Id || null;
             console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
           }
         } else if (!accountId) {
@@ -297,6 +300,38 @@ export default async function handler(req, res) {
         }
       } catch (bloomerangErr) {
         console.error('Bloomerang integration error:', bloomerangErr.message);
+      }
+    }
+
+    // ---- Supabase ----
+    // Persist donation record for admin dashboard
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        const { donor_name, donor_email, donation_type, donor_phone, donor_address } = paymentIntent.metadata;
+
+        const { error: upsertError } = await supabase
+          .from('donations')
+          .upsert({
+            stripe_payment_intent_id: paymentIntent.id,
+            bloomerang_transaction_id: bloomerangTransactionId,
+            amount: paymentIntent.amount / 100,
+            donation_type: donation_type || 'one-time',
+            donor_name: donor_name || 'Anonymous',
+            donor_email: donor_email || '',
+            donor_phone: donor_phone || null,
+            donor_address: donor_address || null,
+          }, { onConflict: 'stripe_payment_intent_id' });
+
+        if (upsertError) {
+          console.error('Supabase donation upsert failed:', upsertError.message);
+        } else {
+          console.log('Supabase: recorded donation', paymentIntent.id);
+        }
+      } catch (supabaseErr) {
+        console.error('Supabase integration error:', supabaseErr.message);
       }
     }
   }

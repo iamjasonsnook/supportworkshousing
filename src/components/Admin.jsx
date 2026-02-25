@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, CreditCard } from 'lucide-react';
+import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -1441,10 +1441,6 @@ function Admin() {
                           {donation.donation_type === 'monthly' ? 'Monthly' : 'One-time'}
                         </span>
                       </div>
-                      <div className="volunteer-donation-card">
-                        <CreditCard size={14} />
-                        <span>{donation.card_brand} ****{donation.card_last4}</span>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -1522,7 +1518,7 @@ function Admin() {
                   </div>
                 </div>
                 <div className="donation-summary-card">
-                  <CreditCard size={24} />
+                  <DollarSign size={24} />
                   <div>
                     <span className="summary-value">${donationStats.average.toLocaleString()}</span>
                     <span className="summary-label">Average</span>
@@ -1625,10 +1621,6 @@ function Admin() {
                       <span className="donation-card-date">
                         {new Date(donation.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      <span className="donation-card-card">
-                        <CreditCard size={14} />
-                        {donation.card_brand} ****{donation.card_last4}
-                      </span>
                       {donation.volunteer_id && (
                         <span className="donation-card-volunteer-badge">Also volunteers</span>
                       )}
@@ -1703,12 +1695,8 @@ function Admin() {
                 </div>
 
                 <div className="donation-detail-section">
-                  <h3><CreditCard size={18} /> Payment Details</h3>
+                  <h3><DollarSign size={18} /> Transaction</h3>
                   <div className="donation-detail-fields">
-                    <div className="donation-detail-field">
-                      <span className="field-label">Card</span>
-                      <span className="field-value">{donation.card_brand} ending in {donation.card_last4}</span>
-                    </div>
                     <div className="donation-detail-field">
                       <span className="field-label">Transaction ID</span>
                       <span className="field-value donation-txn-id">{donation.payment_intent_id}</span>

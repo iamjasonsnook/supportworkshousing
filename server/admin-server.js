@@ -524,8 +524,6 @@ const mockDonations = [
     donor_email: 'sarah@gracecc.org',
     donor_phone: '(804) 555-1234',
     donor_address: '123 Grace Ave, Richmond, VA 23220',
-    card_last4: '4242',
-    card_brand: 'Visa',
     volunteer_id: 'v1',
     created_at: '2025-12-15T14:30:00Z',
     _test: true,
@@ -539,8 +537,6 @@ const mockDonations = [
     donor_email: 'jennifer.lee@capitalone.com',
     donor_phone: '(804) 555-6789',
     donor_address: '456 Corporate Blvd, Richmond, VA 23219',
-    card_last4: '1234',
-    card_brand: 'Mastercard',
     volunteer_id: 'v8',
     created_at: '2025-11-20T09:15:00Z',
     _test: true,
@@ -554,8 +550,6 @@ const mockDonations = [
     donor_email: 'rachel.kim@gmail.com',
     donor_phone: '(804) 555-4567',
     donor_address: '789 Elm St, Richmond, VA 23221',
-    card_last4: '5678',
-    card_brand: 'Visa',
     volunteer_id: 'v16',
     created_at: '2026-01-10T16:45:00Z',
     _test: true,
@@ -569,8 +563,6 @@ const mockDonations = [
     donor_email: 'rachel.kim@gmail.com',
     donor_phone: '(804) 555-4567',
     donor_address: '789 Elm St, Richmond, VA 23221',
-    card_last4: '5678',
-    card_brand: 'Visa',
     volunteer_id: 'v16',
     created_at: '2026-02-05T11:20:00Z',
     _test: true,
@@ -584,8 +576,6 @@ const mockDonations = [
     donor_email: 'jwilson.volunteer@yahoo.com',
     donor_phone: '(804) 555-5678',
     donor_address: '321 Oak Lane, Richmond, VA 23222',
-    card_last4: '9012',
-    card_brand: 'Amex',
     volunteer_id: 'v17',
     created_at: '2025-12-28T10:00:00Z',
     _test: true,
@@ -600,8 +590,6 @@ const mockDonations = [
     donor_email: 'cbrooks@outlook.com',
     donor_phone: '(804) 555-7777',
     donor_address: '550 Monument Ave, Richmond, VA 23220',
-    card_last4: '3456',
-    card_brand: 'Visa',
     volunteer_id: null,
     created_at: '2025-11-05T13:00:00Z',
     _test: true,
@@ -615,8 +603,6 @@ const mockDonations = [
     donor_email: 'cbrooks@outlook.com',
     donor_phone: '(804) 555-7777',
     donor_address: '550 Monument Ave, Richmond, VA 23220',
-    card_last4: '3456',
-    card_brand: 'Visa',
     volunteer_id: null,
     created_at: '2025-12-05T13:00:00Z',
     _test: true,
@@ -630,8 +616,6 @@ const mockDonations = [
     donor_email: 'rtaylor@taylorlaw.com',
     donor_phone: '(804) 555-8888',
     donor_address: '900 Main St, Suite 200, Richmond, VA 23219',
-    card_last4: '7890',
-    card_brand: 'Amex',
     volunteer_id: null,
     created_at: '2026-01-22T15:30:00Z',
     _test: true,
@@ -645,8 +629,6 @@ const mockDonations = [
     donor_email: 'priya.patel@gmail.com',
     donor_phone: '(804) 555-9999',
     donor_address: '42 Riverside Dr, Richmond, VA 23225',
-    card_last4: '2468',
-    card_brand: 'Mastercard',
     volunteer_id: null,
     created_at: '2026-02-01T10:45:00Z',
     _test: true,
@@ -660,8 +642,6 @@ const mockDonations = [
     donor_email: 'wmhayes@verizon.net',
     donor_phone: '(804) 555-1010',
     donor_address: '15 Church Hill Rd, Richmond, VA 23223',
-    card_last4: '1357',
-    card_brand: 'Discover',
     volunteer_id: null,
     created_at: '2026-02-08T18:00:00Z',
     _test: true,
@@ -932,6 +912,27 @@ app.post('/api/admin/supply-drives/:id/complete', authMiddleware, async (req, re
 // Get all volunteers (now "people" — volunteers, donors, or both)
 app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
   try {
+    // Fetch all donations (Supabase + mock) for volunteer enrichment
+    let allDonations = [...mockDonations];
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('donations')
+          .select('*');
+
+        if (!error && data) {
+          const supabaseDonations = data.map(d => ({
+            ...d,
+            payment_intent_id: d.stripe_payment_intent_id,
+            amount: parseFloat(d.amount),
+          }));
+          allDonations = [...supabaseDonations, ...mockDonations];
+        }
+      } catch (err) {
+        console.error('Supabase donations error:', err.message);
+      }
+    }
+
     // Enrich volunteers with event counts (including supply drives) and donation info
     const enrichedVolunteers = mockVolunteers.map(volunteer => {
       // Connection Night events
@@ -948,8 +949,10 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       const allCompleted = [...completedEvents, ...completedSupplyDrives];
       const allUpcoming = [...upcomingEvents, ...upcomingSupplyDrives];
 
-      // Donation info
-      const volunteerDonations = mockDonations.filter(d => d.volunteer_id === volunteer.id);
+      // Donation info — match by email or volunteer_id
+      const volunteerDonations = allDonations.filter(
+        d => d.donor_email === volunteer.email || d.volunteer_id === volunteer.id
+      );
       const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
       const donationCount = volunteerDonations.length;
 
@@ -974,18 +977,20 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       };
     });
 
-    // Build donor-only people from donations with no volunteer_id
+    // Build donor-only people from donations not linked to any volunteer
+    const volunteerEmails = new Set(mockVolunteers.map(v => v.email));
     const donorOnlyEmails = new Set();
     const donorOnlyPeople = [];
-    mockDonations
-      .filter(d => !d.volunteer_id)
+    allDonations
+      .filter(d => !d.volunteer_id && !volunteerEmails.has(d.donor_email))
       .forEach(d => {
         if (!donorOnlyEmails.has(d.donor_email)) {
           donorOnlyEmails.add(d.donor_email);
-          const allDonationsForDonor = mockDonations.filter(
-            dd => dd.donor_email === d.donor_email && !dd.volunteer_id
+          const allDonationsForDonor = allDonations.filter(
+            dd => dd.donor_email === d.donor_email && !dd.volunteer_id && !volunteerEmails.has(dd.donor_email)
           );
           const totalDonated = allDonationsForDonor.reduce((sum, dd) => sum + dd.amount, 0);
+          const isTest = allDonationsForDonor.every(dd => dd._test);
           donorOnlyPeople.push({
             id: `donor-${d.donor_email}`,
             name: d.donor_name,
@@ -1004,7 +1009,7 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
             last_event: null,
             next_event: null,
             created_at: allDonationsForDonor.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0].created_at,
-            _test: true,
+            ...(isTest ? { _test: true } : {}),
           });
         }
       });
@@ -1021,11 +1026,32 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Fetch all donations (Supabase + mock)
+    let allDonations = [...mockDonations];
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('donations')
+          .select('*');
+
+        if (!error && data) {
+          const supabaseDonations = data.map(d => ({
+            ...d,
+            payment_intent_id: d.stripe_payment_intent_id,
+            amount: parseFloat(d.amount),
+          }));
+          allDonations = [...supabaseDonations, ...mockDonations];
+        }
+      } catch (err) {
+        console.error('Supabase donations error:', err.message);
+      }
+    }
+
     // Handle donor-only people (prefixed with "donor-")
     if (id.startsWith('donor-')) {
       const donorEmail = id.replace('donor-', '');
-      const donorDonations = mockDonations
-        .filter(d => d.donor_email === donorEmail && !d.volunteer_id)
+      const donorDonations = allDonations
+        .filter(d => d.donor_email === donorEmail)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       if (donorDonations.length === 0) {
@@ -1034,6 +1060,7 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
 
       const first = donorDonations[donorDonations.length - 1];
       const totalDonated = donorDonations.reduce((sum, d) => sum + d.amount, 0);
+      const isTest = donorDonations.every(d => d._test);
 
       return res.json({
         volunteer: {
@@ -1050,6 +1077,7 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
           events: [],
           donations: donorDonations,
           created_at: first.created_at,
+          ...(isTest ? { _test: true } : {}),
         },
       });
     }
@@ -1075,9 +1103,9 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
     const allEvents = [...volunteerEvents, ...volunteerSupplyDrives]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Get donations
-    const volunteerDonations = mockDonations
-      .filter(d => d.volunteer_id === id)
+    // Get donations — match by email or volunteer_id
+    const volunteerDonations = allDonations
+      .filter(d => d.donor_email === volunteer.email || d.volunteer_id === id)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
@@ -1154,9 +1182,24 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
     // Total residents served (estimated: 15 residents per event)
     const residentsServed = completedEvents * 15;
 
-    // Donation stats
-    const totalDonations = mockDonations.length;
-    const totalAmountRaised = mockDonations.reduce((sum, d) => sum + d.amount, 0);
+    // Donation stats: combine Supabase + mock
+    let totalDonations = mockDonations.length;
+    let totalAmountRaised = mockDonations.reduce((sum, d) => sum + d.amount, 0);
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('donations')
+          .select('amount');
+
+        if (!error && data) {
+          totalDonations += data.length;
+          totalAmountRaised += data.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+        }
+      } catch (err) {
+        console.error('Supabase stats error:', err.message);
+      }
+    }
 
     res.json({
       stats: {
@@ -1181,7 +1224,26 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
 // Get all donations
 app.get('/api/admin/donations', authMiddleware, async (req, res) => {
   try {
-    const sorted = [...mockDonations].sort(
+    let supabaseDonations = [];
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase donations query failed:', error.message);
+      } else {
+        supabaseDonations = (data || []).map(d => ({
+          ...d,
+          payment_intent_id: d.stripe_payment_intent_id,
+          amount: parseFloat(d.amount),
+        }));
+      }
+    }
+
+    const allDonations = [...supabaseDonations, ...mockDonations.map(d => ({ ...d, _test: true }))];
+    const sorted = allDonations.sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
     res.json({ donations: sorted });
@@ -1196,6 +1258,25 @@ app.get('/api/admin/donations/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Try Supabase first
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && data) {
+        const donation = {
+          ...data,
+          payment_intent_id: data.stripe_payment_intent_id,
+          amount: parseFloat(data.amount),
+        };
+        return res.json({ donation: { ...donation, volunteer: null } });
+      }
+    }
+
+    // Fall back to mock
     const donation = mockDonations.find(d => d.id === id);
     if (!donation) {
       return res.status(404).json({ error: 'Donation not found' });

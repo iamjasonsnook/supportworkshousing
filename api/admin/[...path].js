@@ -10,7 +10,17 @@
  */
 
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from '../_cors.js';
+
+// ─── Supabase helper ────────────────────────────────────────────────────────
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 
@@ -149,16 +159,16 @@ const mockSupplyDrives = [
 ];
 
 const mockDonations = [
-  { id: 'd1', payment_intent_id: 'pi_3Qa1b2c3d4e5f6g7h8', amount: 100, donation_type: 'one-time', donor_name: 'Sarah Johnson', donor_email: 'sarah@gracecc.org', donor_phone: '(804) 555-1234', donor_address: '123 Grace Ave, Richmond, VA 23220', card_last4: '4242', card_brand: 'Visa', volunteer_id: 'v1', created_at: '2025-12-15T14:30:00Z', _test: true },
-  { id: 'd2', payment_intent_id: 'pi_8Xk9m2n3p4q5r6s7t8', amount: 250, donation_type: 'monthly', donor_name: 'Jennifer Lee', donor_email: 'jennifer.lee@capitalone.com', donor_phone: '(804) 555-6789', donor_address: '456 Corporate Blvd, Richmond, VA 23219', card_last4: '1234', card_brand: 'Mastercard', volunteer_id: 'v8', created_at: '2025-11-20T09:15:00Z', _test: true },
-  { id: 'd3', payment_intent_id: 'pi_2Yz3a4b5c6d7e8f9g0', amount: 50, donation_type: 'one-time', donor_name: 'Rachel Kim', donor_email: 'rachel.kim@gmail.com', donor_phone: '(804) 555-4567', donor_address: '789 Elm St, Richmond, VA 23221', card_last4: '5678', card_brand: 'Visa', volunteer_id: 'v16', created_at: '2026-01-10T16:45:00Z', _test: true },
-  { id: 'd4', payment_intent_id: 'pi_4Cd5e6f7g8h9i0j1k2', amount: 75, donation_type: 'one-time', donor_name: 'Rachel Kim', donor_email: 'rachel.kim@gmail.com', donor_phone: '(804) 555-4567', donor_address: '789 Elm St, Richmond, VA 23221', card_last4: '5678', card_brand: 'Visa', volunteer_id: 'v16', created_at: '2026-02-05T11:20:00Z', _test: true },
-  { id: 'd5', payment_intent_id: 'pi_6Ef7g8h9i0j1k2l3m4', amount: 500, donation_type: 'one-time', donor_name: 'James Wilson', donor_email: 'jwilson.volunteer@yahoo.com', donor_phone: '(804) 555-5678', donor_address: '321 Oak Lane, Richmond, VA 23222', card_last4: '9012', card_brand: 'Amex', volunteer_id: 'v17', created_at: '2025-12-28T10:00:00Z', _test: true },
-  { id: 'd6', payment_intent_id: 'pi_7Fg8h9i0j1k2l3m4n5', amount: 200, donation_type: 'monthly', donor_name: 'Catherine Brooks', donor_email: 'cbrooks@outlook.com', donor_phone: '(804) 555-7777', donor_address: '550 Monument Ave, Richmond, VA 23220', card_last4: '3456', card_brand: 'Visa', volunteer_id: null, created_at: '2025-11-05T13:00:00Z', _test: true },
-  { id: 'd7', payment_intent_id: 'pi_9Hi0j1k2l3m4n5o6p7', amount: 200, donation_type: 'monthly', donor_name: 'Catherine Brooks', donor_email: 'cbrooks@outlook.com', donor_phone: '(804) 555-7777', donor_address: '550 Monument Ave, Richmond, VA 23220', card_last4: '3456', card_brand: 'Visa', volunteer_id: null, created_at: '2025-12-05T13:00:00Z', _test: true },
-  { id: 'd8', payment_intent_id: 'pi_1Ab2c3d4e5f6g7h8i9', amount: 1000, donation_type: 'one-time', donor_name: 'Robert Taylor', donor_email: 'rtaylor@taylorlaw.com', donor_phone: '(804) 555-8888', donor_address: '900 Main St, Suite 200, Richmond, VA 23219', card_last4: '7890', card_brand: 'Amex', volunteer_id: null, created_at: '2026-01-22T15:30:00Z', _test: true },
-  { id: 'd9', payment_intent_id: 'pi_3Cd4e5f6g7h8i9j0k1', amount: 150, donation_type: 'one-time', donor_name: 'Priya Patel', donor_email: 'priya.patel@gmail.com', donor_phone: '(804) 555-9999', donor_address: '42 Riverside Dr, Richmond, VA 23225', card_last4: '2468', card_brand: 'Mastercard', volunteer_id: null, created_at: '2026-02-01T10:45:00Z', _test: true },
-  { id: 'd10', payment_intent_id: 'pi_5Ef6g7h8i9j0k1l2m3', amount: 25, donation_type: 'one-time', donor_name: 'William & Margaret Hayes', donor_email: 'wmhayes@verizon.net', donor_phone: '(804) 555-1010', donor_address: '15 Church Hill Rd, Richmond, VA 23223', card_last4: '1357', card_brand: 'Discover', volunteer_id: null, created_at: '2026-02-08T18:00:00Z', _test: true },
+  { id: 'd1', payment_intent_id: 'pi_3Qa1b2c3d4e5f6g7h8', amount: 100, donation_type: 'one-time', donor_name: 'Sarah Johnson', donor_email: 'sarah@gracecc.org', donor_phone: '(804) 555-1234', donor_address: '123 Grace Ave, Richmond, VA 23220', volunteer_id: 'v1', created_at: '2025-12-15T14:30:00Z', _test: true },
+  { id: 'd2', payment_intent_id: 'pi_8Xk9m2n3p4q5r6s7t8', amount: 250, donation_type: 'monthly', donor_name: 'Jennifer Lee', donor_email: 'jennifer.lee@capitalone.com', donor_phone: '(804) 555-6789', donor_address: '456 Corporate Blvd, Richmond, VA 23219', volunteer_id: 'v8', created_at: '2025-11-20T09:15:00Z', _test: true },
+  { id: 'd3', payment_intent_id: 'pi_2Yz3a4b5c6d7e8f9g0', amount: 50, donation_type: 'one-time', donor_name: 'Rachel Kim', donor_email: 'rachel.kim@gmail.com', donor_phone: '(804) 555-4567', donor_address: '789 Elm St, Richmond, VA 23221', volunteer_id: 'v16', created_at: '2026-01-10T16:45:00Z', _test: true },
+  { id: 'd4', payment_intent_id: 'pi_4Cd5e6f7g8h9i0j1k2', amount: 75, donation_type: 'one-time', donor_name: 'Rachel Kim', donor_email: 'rachel.kim@gmail.com', donor_phone: '(804) 555-4567', donor_address: '789 Elm St, Richmond, VA 23221', volunteer_id: 'v16', created_at: '2026-02-05T11:20:00Z', _test: true },
+  { id: 'd5', payment_intent_id: 'pi_6Ef7g8h9i0j1k2l3m4', amount: 500, donation_type: 'one-time', donor_name: 'James Wilson', donor_email: 'jwilson.volunteer@yahoo.com', donor_phone: '(804) 555-5678', donor_address: '321 Oak Lane, Richmond, VA 23222', volunteer_id: 'v17', created_at: '2025-12-28T10:00:00Z', _test: true },
+  { id: 'd6', payment_intent_id: 'pi_7Fg8h9i0j1k2l3m4n5', amount: 200, donation_type: 'monthly', donor_name: 'Catherine Brooks', donor_email: 'cbrooks@outlook.com', donor_phone: '(804) 555-7777', donor_address: '550 Monument Ave, Richmond, VA 23220', volunteer_id: null, created_at: '2025-11-05T13:00:00Z', _test: true },
+  { id: 'd7', payment_intent_id: 'pi_9Hi0j1k2l3m4n5o6p7', amount: 200, donation_type: 'monthly', donor_name: 'Catherine Brooks', donor_email: 'cbrooks@outlook.com', donor_phone: '(804) 555-7777', donor_address: '550 Monument Ave, Richmond, VA 23220', volunteer_id: null, created_at: '2025-12-05T13:00:00Z', _test: true },
+  { id: 'd8', payment_intent_id: 'pi_1Ab2c3d4e5f6g7h8i9', amount: 1000, donation_type: 'one-time', donor_name: 'Robert Taylor', donor_email: 'rtaylor@taylorlaw.com', donor_phone: '(804) 555-8888', donor_address: '900 Main St, Suite 200, Richmond, VA 23219', volunteer_id: null, created_at: '2026-01-22T15:30:00Z', _test: true },
+  { id: 'd9', payment_intent_id: 'pi_3Cd4e5f6g7h8i9j0k1', amount: 150, donation_type: 'one-time', donor_name: 'Priya Patel', donor_email: 'priya.patel@gmail.com', donor_phone: '(804) 555-9999', donor_address: '42 Riverside Dr, Richmond, VA 23225', volunteer_id: null, created_at: '2026-02-01T10:45:00Z', _test: true },
+  { id: 'd10', payment_intent_id: 'pi_5Ef6g7h8i9j0k1l2m3', amount: 25, donation_type: 'one-time', donor_name: 'William & Margaret Hayes', donor_email: 'wmhayes@verizon.net', donor_phone: '(804) 555-1010', donor_address: '15 Church Hill Rd, Richmond, VA 23223', volunteer_id: null, created_at: '2026-02-08T18:00:00Z', _test: true },
 ];
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
@@ -238,7 +248,29 @@ function handleCompleteSupplyDrive(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
-function handleGetVolunteers(req, res) {
+async function handleGetVolunteers(req, res) {
+  // Fetch all donations (Supabase + mock) for volunteer enrichment
+  let allDonations = [...mockDonations];
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*');
+
+      if (!error && data) {
+        const supabaseDonations = data.map(d => ({
+          ...d,
+          payment_intent_id: d.stripe_payment_intent_id,
+          amount: parseFloat(d.amount),
+        }));
+        allDonations = [...supabaseDonations, ...mockDonations];
+      }
+    } catch (err) {
+      console.error('Supabase donations error:', err.message);
+    }
+  }
+
   const enrichedVolunteers = mockVolunteers.map(volunteer => {
     const volunteerEvents = mockEvents.filter(e => e.volunteer_id === volunteer.id);
     const completedEvents = volunteerEvents.filter(e => e.status === 'completed');
@@ -251,7 +283,10 @@ function handleGetVolunteers(req, res) {
     const allCompleted = [...completedEvents, ...completedSupplyDrives];
     const allUpcoming = [...upcomingEvents, ...upcomingSupplyDrives];
 
-    const volunteerDonations = mockDonations.filter(d => d.volunteer_id === volunteer.id);
+    // Match donations by email (works for both Supabase and mock)
+    const volunteerDonations = allDonations.filter(
+      d => d.donor_email === volunteer.email || d.volunteer_id === volunteer.id
+    );
     const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
     const donationCount = volunteerDonations.length;
 
@@ -275,18 +310,20 @@ function handleGetVolunteers(req, res) {
     };
   });
 
-  // Build donor-only people
+  // Build donor-only people (from donations not linked to any volunteer)
+  const volunteerEmails = new Set(mockVolunteers.map(v => v.email));
   const donorOnlyEmails = new Set();
   const donorOnlyPeople = [];
-  mockDonations
-    .filter(d => !d.volunteer_id)
+  allDonations
+    .filter(d => !d.volunteer_id && !volunteerEmails.has(d.donor_email))
     .forEach(d => {
       if (!donorOnlyEmails.has(d.donor_email)) {
         donorOnlyEmails.add(d.donor_email);
-        const allDonationsForDonor = mockDonations.filter(
-          dd => dd.donor_email === d.donor_email && !dd.volunteer_id
+        const allDonationsForDonor = allDonations.filter(
+          dd => dd.donor_email === d.donor_email && !dd.volunteer_id && !volunteerEmails.has(dd.donor_email)
         );
         const totalDonated = allDonationsForDonor.reduce((sum, dd) => sum + dd.amount, 0);
+        const isTest = allDonationsForDonor.every(dd => dd._test);
         donorOnlyPeople.push({
           id: `donor-${d.donor_email}`,
           name: d.donor_name,
@@ -305,7 +342,7 @@ function handleGetVolunteers(req, res) {
           last_event: null,
           next_event: null,
           created_at: allDonationsForDonor.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0].created_at,
-          _test: true,
+          ...(isTest ? { _test: true } : {}),
         });
       }
     });
@@ -313,12 +350,34 @@ function handleGetVolunteers(req, res) {
   return res.status(200).json({ volunteers: [...enrichedVolunteers, ...donorOnlyPeople] });
 }
 
-function handleGetVolunteer(req, res, id) {
+async function handleGetVolunteer(req, res, id) {
+  // Fetch all donations (Supabase + mock) for this lookup
+  let allDonations = [...mockDonations];
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*');
+
+      if (!error && data) {
+        const supabaseDonations = data.map(d => ({
+          ...d,
+          payment_intent_id: d.stripe_payment_intent_id,
+          amount: parseFloat(d.amount),
+        }));
+        allDonations = [...supabaseDonations, ...mockDonations];
+      }
+    } catch (err) {
+      console.error('Supabase donations error:', err.message);
+    }
+  }
+
   // Handle donor-only people
   if (id.startsWith('donor-')) {
     const donorEmail = id.replace('donor-', '');
-    const donorDonations = mockDonations
-      .filter(d => d.donor_email === donorEmail && !d.volunteer_id)
+    const donorDonations = allDonations
+      .filter(d => d.donor_email === donorEmail)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (donorDonations.length === 0) {
@@ -327,6 +386,7 @@ function handleGetVolunteer(req, res, id) {
 
     const first = donorDonations[donorDonations.length - 1];
     const totalDonated = donorDonations.reduce((sum, d) => sum + d.amount, 0);
+    const isTest = donorDonations.every(d => d._test);
 
     return res.status(200).json({
       volunteer: {
@@ -343,7 +403,7 @@ function handleGetVolunteer(req, res, id) {
         events: [],
         donations: donorDonations,
         created_at: first.created_at,
-        _test: true,
+        ...(isTest ? { _test: true } : {}),
       },
     });
   }
@@ -366,8 +426,9 @@ function handleGetVolunteer(req, res, id) {
   const allEvents = [...volunteerEvents, ...volunteerSupplyDrives]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  const volunteerDonations = mockDonations
-    .filter(d => d.volunteer_id === id)
+  // Match donations by email or volunteer_id
+  const volunteerDonations = allDonations
+    .filter(d => d.donor_email === volunteer.email || d.volunteer_id === id)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
@@ -403,7 +464,7 @@ function handleUpdateVolunteer(req, res, id) {
   return res.status(200).json({ success: true, volunteer });
 }
 
-function handleGetStats(req, res) {
+async function handleGetStats(req, res) {
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
@@ -425,8 +486,25 @@ function handleGetStats(req, res) {
 
   const residentsServed = completedEvents * 15;
 
-  const totalDonations = mockDonations.length;
-  const totalAmountRaised = mockDonations.reduce((sum, d) => sum + d.amount, 0);
+  // Donation stats: combine Supabase + mock
+  let totalDonations = mockDonations.length;
+  let totalAmountRaised = mockDonations.reduce((sum, d) => sum + d.amount, 0);
+
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('amount');
+
+      if (!error && data) {
+        totalDonations += data.length;
+        totalAmountRaised += data.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+      }
+    } catch (err) {
+      console.error('Supabase stats error:', err.message);
+    }
+  }
 
   return res.status(200).json({
     stats: {
@@ -444,14 +522,63 @@ function handleGetStats(req, res) {
   });
 }
 
-function handleGetDonations(req, res) {
-  const sorted = [...mockDonations].sort(
+async function handleGetDonations(req, res) {
+  let supabaseDonations = [];
+  const supabase = getSupabase();
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase donations query failed:', error.message);
+      } else {
+        supabaseDonations = (data || []).map(d => ({
+          ...d,
+          payment_intent_id: d.stripe_payment_intent_id,
+          amount: parseFloat(d.amount),
+        }));
+      }
+    } catch (err) {
+      console.error('Supabase donations error:', err.message);
+    }
+  }
+
+  const allDonations = [...supabaseDonations, ...mockDonations.map(d => ({ ...d, _test: true }))];
+  const sorted = allDonations.sort(
     (a, b) => new Date(b.created_at) - new Date(a.created_at)
   );
   return res.status(200).json({ donations: sorted });
 }
 
-function handleGetDonation(req, res, id) {
+async function handleGetDonation(req, res, id) {
+  // Try Supabase first
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && data) {
+        const donation = {
+          ...data,
+          payment_intent_id: data.stripe_payment_intent_id,
+          amount: parseFloat(data.amount),
+        };
+        return res.status(200).json({ donation: { ...donation, volunteer: null } });
+      }
+    } catch (err) {
+      console.error('Supabase donation lookup error:', err.message);
+    }
+  }
+
+  // Fall back to mock
   const donation = mockDonations.find(d => d.id === id);
   if (!donation) {
     return res.status(404).json({ error: 'Donation not found' });
