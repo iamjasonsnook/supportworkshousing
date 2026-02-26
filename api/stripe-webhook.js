@@ -62,6 +62,10 @@ export default async function handler(req, res) {
       metadata: paymentIntent.metadata,
     });
 
+    // Supabase config — declared early so Bloomerang cache check can use it
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
     // Retrieve card details from the payment method
     let cardLast4 = '••••';
     let cardBrand = 'Card';
@@ -221,42 +225,104 @@ export default async function handler(req, res) {
           }
         }
 
-        // 2. Paginate through Bloomerang constituents to find by name or email.
-        // The search API's ?search= param is unreliable (returns unfiltered results),
-        // so we paginate the full list and match against FirstName/LastName from the
-        // list response (no detail fetch needed for name matching). We also check
-        // PrimaryEmail on the detail for email-based matches.
-        // Bloomerang caps at take=50 per page.
-        if (!accountId && firstName && lastName) {
-          const maxPages = 5; // Check up to 250 constituents
-          for (let page = 0; page < maxPages; page++) {
-            if (accountId) break;
-            try {
-              const listResp = await fetch(
-                `https://api.bloomerang.co/v2/constituents?take=50&skip=${page * 50}`,
-                { headers: bloomerangHeaders }
-              );
-              const listData = await listResp.json();
-              const results = listData.Results || [];
-              if (results.length === 0) break;
+        // 2. Search Bloomerang using /constituents/search endpoint.
+        // Strategy: search by email first (most precise), then by name.
+        // Cross-check multiple fields to pick the best match.
+        if (!accountId && donor_email) {
+          try {
+            // Search by email — most precise match
+            const emailSearchResp = await fetch(
+              `https://api.bloomerang.co/v2/constituents/search?search=${encodeURIComponent(donor_email)}&take=10`,
+              { headers: bloomerangHeaders }
+            );
+            const emailSearchData = await emailSearchResp.json();
+            const emailResults = emailSearchData.Results || [];
 
-              for (const c of results) {
-                const cFirst = (c.FirstName || '').toLowerCase();
-                const cLast = (c.LastName || '').toLowerCase();
-                if (cFirst === firstName.toLowerCase() && cLast === lastName.toLowerCase()) {
-                  accountId = c.Id;
-                  console.log('Bloomerang: matched constituent', accountId, `by name (${c.FirstName} ${c.LastName})`);
+            // Look for exact email match in results
+            for (const c of emailResults) {
+              if (c.PrimaryEmail?.Value?.toLowerCase() === donor_email.toLowerCase()) {
+                accountId = c.Id;
+                console.log('Bloomerang: matched constituent', accountId, 'by email search');
+                break;
+              }
+            }
+
+            // If no exact email match from list data, fetch details to check
+            if (!accountId && emailResults.length > 0 && emailResults.length <= 5) {
+              for (const c of emailResults) {
+                const detail = await fetch(
+                  `https://api.bloomerang.co/v2/constituent/${c.Id}`,
+                  { headers: bloomerangHeaders }
+                ).then(r => r.json());
+                if (detail.PrimaryEmail?.Value?.toLowerCase() === donor_email.toLowerCase()) {
+                  accountId = detail.Id;
+                  console.log('Bloomerang: matched constituent', accountId, 'by email (detail check)');
                   break;
                 }
               }
-            } catch (pageErr) {
-              console.error('Bloomerang pagination error:', pageErr.message);
-              break;
             }
+          } catch (emailSearchErr) {
+            console.error('Bloomerang email search error:', emailSearchErr.message);
           }
         }
 
-        // 3. No match found — create new constituent
+        // 3. If email search failed, try name search with multi-field verification
+        if (!accountId && firstName && lastName) {
+          try {
+            const nameSearchResp = await fetch(
+              `https://api.bloomerang.co/v2/constituents/search?search=${encodeURIComponent(firstName + ' ' + lastName)}&take=20`,
+              { headers: bloomerangHeaders }
+            );
+            const nameSearchData = await nameSearchResp.json();
+            const nameResults = nameSearchData.Results || [];
+
+            // Filter to exact name matches
+            const exactMatches = nameResults.filter(c =>
+              (c.FirstName || '').toLowerCase() === firstName.toLowerCase() &&
+              (c.LastName || '').toLowerCase() === lastName.toLowerCase()
+            );
+
+            if (exactMatches.length === 1) {
+              accountId = exactMatches[0].Id;
+              console.log('Bloomerang: matched constituent', accountId, 'by name (unique)');
+            } else if (exactMatches.length > 1) {
+              // Multiple name matches — cross-check with email and phone
+              console.log(`Bloomerang: ${exactMatches.length} name matches, verifying with email/phone`);
+              for (const candidate of exactMatches) {
+                const detail = await fetch(
+                  `https://api.bloomerang.co/v2/constituent/${candidate.Id}`,
+                  { headers: bloomerangHeaders }
+                ).then(r => r.json());
+
+                // Check email match
+                if (detail.PrimaryEmail?.Value?.toLowerCase() === donor_email?.toLowerCase()) {
+                  accountId = candidate.Id;
+                  console.log('Bloomerang: matched constituent', accountId, 'by name + email');
+                  break;
+                }
+                // Check phone match
+                if (donor_phone) {
+                  const cPhone = (detail.PrimaryPhone?.Number || '').replace(/\D/g, '');
+                  const dPhone = donor_phone.replace(/\D/g, '');
+                  if (cPhone && dPhone && cPhone === dPhone) {
+                    accountId = candidate.Id;
+                    console.log('Bloomerang: matched constituent', accountId, 'by name + phone');
+                    break;
+                  }
+                }
+              }
+              // Fallback to first exact name match
+              if (!accountId) {
+                accountId = exactMatches[0].Id;
+                console.log('Bloomerang: using first name match', accountId);
+              }
+            }
+          } catch (nameSearchErr) {
+            console.error('Bloomerang name search error:', nameSearchErr.message);
+          }
+        }
+
+        // 4. No match found — create new constituent
         if (!accountId) {
           // Create new constituent with all available info
           const constituentBody = {
@@ -371,8 +437,6 @@ export default async function handler(req, res) {
 
     // ---- Supabase ----
     // Persist donation record for admin dashboard
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
     if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
