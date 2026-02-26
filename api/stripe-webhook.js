@@ -221,29 +221,37 @@ export default async function handler(req, res) {
           }
         }
 
-        // 2. Search Bloomerang and verify email on each candidate (search is fuzzy)
-        if (!accountId) {
-          const searchResp = await fetch(
-            `https://api.bloomerang.co/v2/constituents?search=${encodeURIComponent(donor_email)}&take=10`,
-            { headers: bloomerangHeaders }
-          );
-          const searchData = await searchResp.json();
-
-          for (const candidate of (searchData.Results || []).slice(0, 10)) {
+        // 2. Paginate through Bloomerang constituents to find by name or email.
+        // The search API's ?search= param is unreliable (returns unfiltered results),
+        // so we paginate the full list and match against FirstName/LastName from the
+        // list response (no detail fetch needed for name matching). We also check
+        // PrimaryEmail on the detail for email-based matches.
+        // Bloomerang caps at take=50 per page.
+        if (!accountId && firstName && lastName) {
+          const maxPages = 5; // Check up to 250 constituents
+          for (let page = 0; page < maxPages; page++) {
+            if (accountId) break;
             try {
-              const detailResp = await fetch(
-                `https://api.bloomerang.co/v2/constituent/${candidate.Id}`,
+              const listResp = await fetch(
+                `https://api.bloomerang.co/v2/constituents?take=50&skip=${page * 50}`,
                 { headers: bloomerangHeaders }
               );
-              const detail = await detailResp.json();
-              const primaryEmail = (detail.PrimaryEmail?.Value || '').toLowerCase();
-              if (primaryEmail === donor_email.toLowerCase()) {
-                accountId = candidate.Id;
-                console.log('Bloomerang: matched constituent', accountId, 'by email');
-                break;
+              const listData = await listResp.json();
+              const results = listData.Results || [];
+              if (results.length === 0) break;
+
+              for (const c of results) {
+                const cFirst = (c.FirstName || '').toLowerCase();
+                const cLast = (c.LastName || '').toLowerCase();
+                if (cFirst === firstName.toLowerCase() && cLast === lastName.toLowerCase()) {
+                  accountId = c.Id;
+                  console.log('Bloomerang: matched constituent', accountId, `by name (${c.FirstName} ${c.LastName})`);
+                  break;
+                }
               }
-            } catch (lookupErr) {
-              // Skip this candidate
+            } catch (pageErr) {
+              console.error('Bloomerang pagination error:', pageErr.message);
+              break;
             }
           }
         }
