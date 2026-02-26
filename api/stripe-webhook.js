@@ -196,17 +196,60 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         };
 
-        // Search for existing constituent by email
+        // Find existing Bloomerang constituent by email.
+        // Strategy: first check our people table for a cached bloomerang_id,
+        // then search Bloomerang and verify email matches (their search is fuzzy).
         let accountId = null;
-        const searchResp = await fetch(
-          `https://api.bloomerang.co/v2/constituents?search=${encodeURIComponent(donor_email)}&take=1`,
-          { headers: bloomerangHeaders }
-        );
-        const searchData = await searchResp.json();
 
-        if (searchData.Results && searchData.Results.length > 0) {
-          accountId = searchData.Results[0].Id;
-        } else {
+        // 1. Check if we already have a bloomerang_id cached in our people table
+        if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+          try {
+            const sbCheck = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+            const { data: cached } = await sbCheck
+              .from('people')
+              .select('bloomerang_id')
+              .eq('primary_email', donor_email.toLowerCase().trim())
+              .not('bloomerang_id', 'is', null)
+              .limit(1)
+              .maybeSingle();
+            if (cached?.bloomerang_id) {
+              accountId = cached.bloomerang_id;
+              console.log('Bloomerang: matched via cached bloomerang_id', accountId);
+            }
+          } catch (e) {
+            // Non-critical, fall through to search
+          }
+        }
+
+        // 2. Search Bloomerang and verify email on each candidate (search is fuzzy)
+        if (!accountId) {
+          const searchResp = await fetch(
+            `https://api.bloomerang.co/v2/constituents?search=${encodeURIComponent(donor_email)}&take=10`,
+            { headers: bloomerangHeaders }
+          );
+          const searchData = await searchResp.json();
+
+          for (const candidate of (searchData.Results || []).slice(0, 10)) {
+            try {
+              const detailResp = await fetch(
+                `https://api.bloomerang.co/v2/constituent/${candidate.Id}`,
+                { headers: bloomerangHeaders }
+              );
+              const detail = await detailResp.json();
+              const primaryEmail = (detail.PrimaryEmail?.Value || '').toLowerCase();
+              if (primaryEmail === donor_email.toLowerCase()) {
+                accountId = candidate.Id;
+                console.log('Bloomerang: matched constituent', accountId, 'by email');
+                break;
+              }
+            } catch (lookupErr) {
+              // Skip this candidate
+            }
+          }
+        }
+
+        // 3. No match found — create new constituent
+        if (!accountId) {
           // Create new constituent with all available info
           const constituentBody = {
             Type: 'Individual',
@@ -293,6 +336,20 @@ export default async function handler(req, res) {
           } else {
             bloomerangTransactionId = txnResult.Id || null;
             console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
+
+            // Cache bloomerang_id on our people record for faster future lookups
+            if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+              try {
+                const sbCache = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+                await sbCache
+                  .from('people')
+                  .update({ bloomerang_id: accountId })
+                  .eq('primary_email', donor_email.toLowerCase().trim())
+                  .is('bloomerang_id', null);
+              } catch (e) {
+                // Non-critical
+              }
+            }
           }
         } else if (!accountId) {
           console.error('Bloomerang: no accountId found for', donor_email);
