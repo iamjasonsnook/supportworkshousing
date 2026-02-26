@@ -914,6 +914,8 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
   try {
     // Fetch all donations (Supabase + mock) for volunteer enrichment
     let allDonations = [...mockDonations];
+    let supabasePeople = [];
+
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -931,32 +933,72 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       } catch (err) {
         console.error('Supabase donations error:', err.message);
       }
+
+      // Fetch people from people table
+      try {
+        const { data: peopleData, error: peopleError } = await supabase
+          .from('people')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!peopleError && peopleData) {
+          supabasePeople = peopleData;
+        }
+      } catch (err) {
+        console.error('Supabase people error:', err.message);
+      }
     }
 
-    // Enrich volunteers with event counts (including supply drives) and donation info
+    // Build Supabase people into the same shape as mock volunteers
+    const supabaseEmails = new Set();
+    const realPeople = supabasePeople.map(p => {
+      if (p.primary_email) supabaseEmails.add(p.primary_email.toLowerCase());
+
+      const personDonations = allDonations.filter(
+        d => d.person_id === p.id || (p.primary_email && d.donor_email && d.donor_email.toLowerCase() === p.primary_email.toLowerCase())
+      );
+      const totalDonated = personDonations.reduce((sum, d) => sum + d.amount, 0);
+
+      return {
+        id: p.id,
+        name: [p.first_name, p.last_name].filter(Boolean).join(' ') || p.organization_name || 'Unknown',
+        email: p.primary_email,
+        phone: p.primary_phone,
+        organization: p.organization_name,
+        type: p.type === 'Organization' ? 'organization' : 'individual',
+        notes: p.notes,
+        roles: p.roles || [],
+        total_events: 0,
+        completed_events: 0,
+        upcoming_events: 0,
+        total_donated: totalDonated,
+        donation_count: personDonations.length,
+        last_event: null,
+        next_event: null,
+        created_at: p.created_at,
+        _source: 'supabase',
+      };
+    });
+
+    // Enrich mock volunteers with event counts and donation info
     const enrichedVolunteers = mockVolunteers.map(volunteer => {
-      // Connection Night events
       const volunteerEvents = mockEvents.filter(e => e.volunteer_id === volunteer.id);
       const completedEvents = volunteerEvents.filter(e => e.status === 'completed');
       const upcomingEvents = volunteerEvents.filter(e => ['pending', 'approved'].includes(e.status));
 
-      // Supply Drive events
       const volunteerSupplyDrives = mockSupplyDrives.filter(e => e.volunteer_id === volunteer.id);
       const completedSupplyDrives = volunteerSupplyDrives.filter(e => e.status === 'completed');
       const upcomingSupplyDrives = volunteerSupplyDrives.filter(e => ['pending', 'approved'].includes(e.status));
 
-      // Combine counts
       const allCompleted = [...completedEvents, ...completedSupplyDrives];
       const allUpcoming = [...upcomingEvents, ...upcomingSupplyDrives];
 
-      // Donation info — match by email or volunteer_id
       const volunteerDonations = allDonations.filter(
         d => d.donor_email === volunteer.email || d.volunteer_id === volunteer.id
       );
       const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
       const donationCount = volunteerDonations.length;
 
-      // Compute roles
       const roles = ['volunteer'];
       if (donationCount > 0) roles.push('donor');
 
@@ -977,17 +1019,17 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
       };
     });
 
-    // Build donor-only people from donations not linked to any volunteer
+    // Build donor-only people from donations not linked to any volunteer or Supabase person
     const volunteerEmails = new Set(mockVolunteers.map(v => v.email));
     const donorOnlyEmails = new Set();
     const donorOnlyPeople = [];
     allDonations
-      .filter(d => !d.volunteer_id && !volunteerEmails.has(d.donor_email))
+      .filter(d => !d.volunteer_id && !d.person_id && !volunteerEmails.has(d.donor_email) && !supabaseEmails.has((d.donor_email || '').toLowerCase()))
       .forEach(d => {
         if (!donorOnlyEmails.has(d.donor_email)) {
           donorOnlyEmails.add(d.donor_email);
           const allDonationsForDonor = allDonations.filter(
-            dd => dd.donor_email === d.donor_email && !dd.volunteer_id && !volunteerEmails.has(dd.donor_email)
+            dd => dd.donor_email === d.donor_email && !dd.volunteer_id && !dd.person_id && !volunteerEmails.has(dd.donor_email) && !supabaseEmails.has((dd.donor_email || '').toLowerCase())
           );
           const totalDonated = allDonationsForDonor.reduce((sum, dd) => sum + dd.amount, 0);
           const isTest = allDonationsForDonor.every(dd => dd._test);
@@ -1014,7 +1056,7 @@ app.get('/api/admin/volunteers', authMiddleware, async (req, res) => {
         }
       });
 
-    res.json({ volunteers: [...enrichedVolunteers, ...donorOnlyPeople] });
+    res.json({ volunteers: [...realPeople, ...enrichedVolunteers, ...donorOnlyPeople] });
   } catch (error) {
     console.error('Error fetching volunteers:', error);
     res.status(500).json({ error: 'Failed to fetch volunteers' });
@@ -1047,7 +1089,7 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // Handle donor-only people (prefixed with "donor-")
+    // Handle donor-only people (legacy synthetic IDs)
     if (id.startsWith('donor-')) {
       const donorEmail = id.replace('donor-', '');
       const donorDonations = allDonations
@@ -1076,41 +1118,115 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
           donation_count: donorDonations.length,
           events: [],
           donations: donorDonations,
+          interactions: [],
           created_at: first.created_at,
           ...(isTest ? { _test: true } : {}),
         },
       });
     }
 
+    // Try Supabase people table for UUID-style IDs
+    if (supabase && id.includes('-') && id.length > 10) {
+      try {
+        const { data: person, error: personError } = await supabase
+          .from('people')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (!personError && person) {
+          // Fetch related donations
+          const personDonations = allDonations
+            .filter(d => d.person_id === person.id || (person.primary_email && d.donor_email && d.donor_email.toLowerCase() === person.primary_email.toLowerCase()))
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          const totalDonated = personDonations.reduce((sum, d) => sum + d.amount, 0);
+
+          // Fetch related connection nights
+          let personEvents = [];
+          const { data: cnData } = await supabase
+            .from('connection_nights')
+            .select('*')
+            .eq('person_id', id)
+            .order('created_at', { ascending: false });
+          if (cnData) {
+            personEvents = cnData.map(e => ({ ...e, event_type: 'connection-night' }));
+          }
+
+          // Fetch related supply drives
+          let personSupplyDrives = [];
+          const { data: sdData } = await supabase
+            .from('supply_drives')
+            .select('*')
+            .eq('person_id', id)
+            .order('created_at', { ascending: false });
+          if (sdData) {
+            personSupplyDrives = sdData.map(e => ({ ...e, event_type: 'supply-drive' }));
+          }
+
+          // Fetch interactions (activity log)
+          let personInteractions = [];
+          const { data: intData } = await supabase
+            .from('interactions')
+            .select('*')
+            .eq('person_id', id)
+            .order('occurred_at', { ascending: false });
+          if (intData) {
+            personInteractions = intData;
+          }
+
+          const allEvents = [...personEvents, ...personSupplyDrives]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+          return res.json({
+            volunteer: {
+              id: person.id,
+              name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.organization_name || 'Unknown',
+              email: person.primary_email,
+              phone: person.primary_phone,
+              organization: person.organization_name,
+              type: person.type === 'Organization' ? 'organization' : 'individual',
+              notes: person.notes,
+              roles: person.roles || [],
+              total_donated: totalDonated,
+              donation_count: personDonations.length,
+              events: allEvents,
+              donations: personDonations,
+              interactions: personInteractions,
+              created_at: person.created_at,
+              _source: 'supabase',
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Supabase person lookup error:', err.message);
+      }
+    }
+
+    // Fall back to mock volunteers
     const volunteer = mockVolunteers.find(v => v.id === id);
     if (!volunteer) {
       return res.status(404).json({ error: 'Volunteer not found' });
     }
 
-    // Get Connection Night events
     const volunteerEvents = mockEvents
       .filter(e => e.volunteer_id === id)
       .map(e => ({ ...e, event_type: 'connection-night' }))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Get Supply Drive events
     const volunteerSupplyDrives = mockSupplyDrives
       .filter(e => e.volunteer_id === id)
       .map(e => ({ ...e, event_type: 'supply-drive' }))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Combine and sort all events
     const allEvents = [...volunteerEvents, ...volunteerSupplyDrives]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Get donations — match by email or volunteer_id
     const volunteerDonations = allDonations
       .filter(d => d.donor_email === volunteer.email || d.volunteer_id === id)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const totalDonated = volunteerDonations.reduce((sum, d) => sum + d.amount, 0);
 
-    // Compute roles
     const roles = ['volunteer'];
     if (volunteerDonations.length > 0) roles.push('donor');
 
@@ -1122,6 +1238,7 @@ app.get('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
         donation_count: volunteerDonations.length,
         events: allEvents,
         donations: volunteerDonations,
+        interactions: [],
       },
     });
   } catch (error) {
@@ -1136,12 +1253,64 @@ app.patch('/api/admin/volunteers/:id', authMiddleware, async (req, res) => {
   const { notes, name, email, phone, organization } = req.body;
 
   try {
+    // Try Supabase people table for UUID-style IDs
+    if (supabase && id.includes('-') && id.length > 10 && !id.startsWith('v') && !id.startsWith('donor-')) {
+      const updateData = {};
+      if (notes !== undefined) updateData.notes = notes;
+      if (name !== undefined) {
+        const nameParts = (name || '').trim().split(/\s+/);
+        updateData.first_name = nameParts[0] || null;
+        updateData.last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+      }
+      if (email !== undefined) updateData.primary_email = email ? email.toLowerCase().trim() : null;
+      if (phone !== undefined) updateData.primary_phone = phone;
+      if (organization !== undefined) updateData.organization_name = organization;
+
+      const { data: updated, error } = await supabase
+        .from('people')
+        .update(updateData)
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (error) {
+        return res.status(404).json({ error: 'Person not found' });
+      }
+
+      // Log interaction when notes change
+      if (notes !== undefined) {
+        await supabase.from('interactions').insert({
+          person_id: id,
+          type: 'note',
+          subject: 'Notes updated',
+          body: notes,
+          created_by: 'admin',
+        });
+      }
+
+      return res.json({
+        success: true,
+        volunteer: {
+          id: updated.id,
+          name: [updated.first_name, updated.last_name].filter(Boolean).join(' ') || updated.organization_name || 'Unknown',
+          email: updated.primary_email,
+          phone: updated.primary_phone,
+          organization: updated.organization_name,
+          type: updated.type === 'Organization' ? 'organization' : 'individual',
+          notes: updated.notes,
+          roles: updated.roles || [],
+          created_at: updated.created_at,
+          _source: 'supabase',
+        },
+      });
+    }
+
+    // Fall back to mock volunteers
     const volunteer = mockVolunteers.find(v => v.id === id);
     if (!volunteer) {
       return res.status(404).json({ error: 'Volunteer not found' });
     }
 
-    // Update fields if provided
     if (notes !== undefined) volunteer.notes = notes;
     if (name !== undefined) volunteer.name = name;
     if (email !== undefined) volunteer.email = email;
@@ -1162,7 +1331,21 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
 
-    const totalVolunteers = mockVolunteers.length;
+    // Count real people from Supabase + mock fallback
+    let totalVolunteers = mockVolunteers.length;
+    if (supabase) {
+      try {
+        const { count, error } = await supabase
+          .from('people')
+          .select('*', { count: 'exact', head: true });
+        if (!error && count !== null) {
+          totalVolunteers = count + mockVolunteers.length;
+        }
+      } catch (err) {
+        console.error('Supabase people count error:', err.message);
+      }
+    }
+
     const totalEvents = mockEvents.length;
     const completedEvents = mockEvents.filter(e => e.status === 'completed').length;
     const pendingEvents = mockEvents.filter(e => e.status === 'pending').length;
@@ -1238,6 +1421,7 @@ app.get('/api/admin/donations', authMiddleware, async (req, res) => {
           ...d,
           payment_intent_id: d.stripe_payment_intent_id,
           amount: parseFloat(d.amount),
+          person_id: d.person_id || null,
         }));
       }
     }

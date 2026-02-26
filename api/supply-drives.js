@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
+import { findOrCreatePerson } from './_people.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -65,6 +66,39 @@ export default async function handler(req, res) {
       if (error) {
         console.error('Supabase insert error:', error);
         return res.status(500).json({ error: 'Failed to save supply drive' });
+      }
+
+      // Link to person record
+      try {
+        const person = await findOrCreatePerson(supabase, {
+          email: contact_email,
+          name: contact_name,
+          phone: contact_phone,
+          role: 'volunteer',
+        });
+
+        if (person) {
+          await supabase
+            .from('supply_drives')
+            .update({ person_id: person.id })
+            .eq('id', data.id);
+
+          await supabase.from('interactions').insert({
+            person_id: person.id,
+            type: 'form_submission',
+            subject: `Supply Drive submission: ${location_name || 'Drop-off'}`,
+            metadata: {
+              supply_drive_id: data.id,
+              location: location_name,
+              drop_off_date,
+              items: selected_items,
+            },
+            direction: 'inbound',
+            created_by: 'supply-drives',
+          });
+        }
+      } catch (personErr) {
+        console.error('Person linking error:', personErr.message);
       }
 
       return res.status(200).json({ success: true, id: data.id });

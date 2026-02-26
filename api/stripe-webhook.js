@@ -4,6 +4,7 @@
 // Events to listen for: payment_intent.succeeded
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { findOrCreatePerson } from './_people.js';
 
 // Vercel config: disable body parsing so we can verify the raw signature
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
@@ -329,6 +330,44 @@ export default async function handler(req, res) {
           console.error('Supabase donation upsert failed:', upsertError.message);
         } else {
           console.log('Supabase: recorded donation', paymentIntent.id);
+        }
+
+        // Link to person record
+        try {
+          const person = await findOrCreatePerson(supabase, {
+            email: donor_email,
+            name: donor_name,
+            phone: donor_phone,
+            address: donor_address,
+            city: paymentIntent.metadata.donor_city,
+            state: paymentIntent.metadata.donor_state,
+            zip: paymentIntent.metadata.donor_zip,
+            role: 'donor',
+          });
+
+          if (person) {
+            // Set person_id on the donation row
+            await supabase
+              .from('donations')
+              .update({ person_id: person.id })
+              .eq('stripe_payment_intent_id', paymentIntent.id);
+
+            // Log interaction
+            await supabase.from('interactions').insert({
+              person_id: person.id,
+              type: 'donation',
+              subject: `$${(paymentIntent.amount / 100).toFixed(2)} ${donation_type || 'one-time'} donation`,
+              metadata: {
+                stripe_payment_intent_id: paymentIntent.id,
+                amount: paymentIntent.amount / 100,
+                donation_type: donation_type || 'one-time',
+              },
+              direction: 'inbound',
+              created_by: 'stripe-webhook',
+            });
+          }
+        } catch (personErr) {
+          console.error('Person linking error:', personErr.message);
         }
       } catch (supabaseErr) {
         console.error('Supabase integration error:', supabaseErr.message);

@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
+import { findOrCreatePerson } from './_people.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -319,6 +320,39 @@ export default async function handler(req, res) {
 
       if (!insertError && dbData) {
         insertedData = dbData;
+
+        // Link to person record
+        try {
+          const person = await findOrCreatePerson(supabase, {
+            email: requestData.contact.email,
+            name: requestData.contact.name,
+            phone: requestData.contact.phone,
+            organization: requestData.group.isIndividual ? null : requestData.group.name,
+            role: 'volunteer',
+          });
+
+          if (person) {
+            await supabase
+              .from('connection_nights')
+              .update({ person_id: person.id })
+              .eq('id', dbData.id);
+
+            await supabase.from('interactions').insert({
+              person_id: person.id,
+              type: 'form_submission',
+              subject: `Connection Night request: ${requestData.group.name}`,
+              metadata: {
+                connection_night_id: dbData.id,
+                location: requestData.location.name,
+                date: requestData.timeSlot.day,
+              },
+              direction: 'inbound',
+              created_by: 'connection-nights',
+            });
+          }
+        } catch (personErr) {
+          console.error('Person linking error:', personErr.message);
+        }
       }
     }
 
