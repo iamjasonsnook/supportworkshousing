@@ -197,12 +197,59 @@ function handleLogin(req, res) {
   return res.status(200).json({ success: true, token });
 }
 
-function handleGetEvents(req, res) {
-  const eventsWithType = mockEvents.map(e => ({ ...e, event_type: 'connection-night' }));
-  return res.status(200).json({ events: eventsWithType, supplyDrives: mockSupplyDrives });
+async function handleGetEvents(req, res) {
+  const supabase = getSupabase();
+
+  // Fetch real data from Supabase
+  let supabaseEvents = [];
+  let supabaseSupplyDrives = [];
+  if (supabase) {
+    try {
+      const { data: cnData } = await supabase
+        .from('connection_nights')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (cnData) {
+        supabaseEvents = cnData.map(e => ({ ...e, event_type: 'connection-night' }));
+      }
+    } catch (err) {
+      console.error('Supabase connection_nights error:', err.message);
+    }
+
+    try {
+      const { data: sdData } = await supabase
+        .from('supply_drives')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (sdData) {
+        supabaseSupplyDrives = sdData.map(e => ({ ...e, event_type: 'supply-drive' }));
+      }
+    } catch (err) {
+      console.error('Supabase supply_drives error:', err.message);
+    }
+  }
+
+  // Merge with mock data
+  const mockEventsWithType = mockEvents.map(e => ({ ...e, event_type: 'connection-night' }));
+  const allEvents = [...supabaseEvents, ...mockEventsWithType];
+  const allSupplyDrives = [...supabaseSupplyDrives, ...mockSupplyDrives];
+
+  return res.status(200).json({ events: allEvents, supplyDrives: allSupplyDrives });
 }
 
-function handleApproveEvent(req, res, id) {
+async function handleApproveEvent(req, res, id) {
+  const supabase = getSupabase();
+  if (supabase && id.includes('-') && id.length > 10) {
+    try {
+      await supabase.from('connection_nights')
+        .update({ status: 'approved', approved_by: 'admin', approved_at: new Date().toISOString() })
+        .eq('id', id);
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Supabase approve error:', err.message);
+    }
+  }
+  // Fallback to mock
   const event = mockEvents.find(e => e.id === id);
   if (event) {
     event.status = 'approved';
@@ -210,8 +257,20 @@ function handleApproveEvent(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
-function handleDenyEvent(req, res, id) {
+async function handleDenyEvent(req, res, id) {
   const { reason } = req.body || {};
+  const supabase = getSupabase();
+  if (supabase && id.includes('-') && id.length > 10) {
+    try {
+      await supabase.from('connection_nights')
+        .update({ status: 'denied', denial_reason: reason || null, approved_by: 'admin', approved_at: new Date().toISOString() })
+        .eq('id', id);
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Supabase deny error:', err.message);
+    }
+  }
+  // Fallback to mock
   const event = mockEvents.find(e => e.id === id);
   if (event) {
     event.status = 'denied';
@@ -220,7 +279,19 @@ function handleDenyEvent(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
-function handleApproveSupplyDrive(req, res, id) {
+async function handleApproveSupplyDrive(req, res, id) {
+  const supabase = getSupabase();
+  if (supabase && id.includes('-') && id.length > 10) {
+    try {
+      await supabase.from('supply_drives')
+        .update({ status: 'approved' })
+        .eq('id', id);
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Supabase approve supply drive error:', err.message);
+    }
+  }
+  // Fallback to mock
   const sd = mockSupplyDrives.find(e => e.id === id);
   if (sd) {
     sd.status = 'approved';
@@ -229,8 +300,20 @@ function handleApproveSupplyDrive(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
-function handleDenySupplyDrive(req, res, id) {
+async function handleDenySupplyDrive(req, res, id) {
   const { reason } = req.body || {};
+  const supabase = getSupabase();
+  if (supabase && id.includes('-') && id.length > 10) {
+    try {
+      await supabase.from('supply_drives')
+        .update({ status: 'denied', denial_reason: reason || null })
+        .eq('id', id);
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Supabase deny supply drive error:', err.message);
+    }
+  }
+  // Fallback to mock
   const sd = mockSupplyDrives.find(e => e.id === id);
   if (sd) {
     sd.status = 'denied';
@@ -239,7 +322,19 @@ function handleDenySupplyDrive(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
-function handleCompleteSupplyDrive(req, res, id) {
+async function handleCompleteSupplyDrive(req, res, id) {
+  const supabase = getSupabase();
+  if (supabase && id.includes('-') && id.length > 10) {
+    try {
+      await supabase.from('supply_drives')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', id);
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Supabase complete supply drive error:', err.message);
+    }
+  }
+  // Fallback to mock
   const sd = mockSupplyDrives.find(e => e.id === id);
   if (sd) {
     sd.status = 'completed';
@@ -675,10 +770,28 @@ async function handleGetStats(req, res) {
     }
   }
 
-  const totalEvents = mockEvents.length;
-  const completedEvents = mockEvents.filter(e => e.status === 'completed').length;
-  const pendingEvents = mockEvents.filter(e => e.status === 'pending').length;
-  const approvedEvents = mockEvents.filter(e => e.status === 'approved').length;
+  // Event stats: combine Supabase + mock
+  let totalEvents = mockEvents.length;
+  let completedEvents = mockEvents.filter(e => e.status === 'completed').length;
+  let pendingEvents = mockEvents.filter(e => e.status === 'pending').length;
+  let approvedEvents = mockEvents.filter(e => e.status === 'approved').length;
+
+  const supabaseForEvents = getSupabase();
+  if (supabaseForEvents) {
+    try {
+      const { data: cnStats } = await supabaseForEvents
+        .from('connection_nights')
+        .select('status, group_size, created_at');
+      if (cnStats) {
+        totalEvents += cnStats.length;
+        completedEvents += cnStats.filter(e => e.status === 'completed').length;
+        pendingEvents += cnStats.filter(e => e.status === 'pending').length;
+        approvedEvents += cnStats.filter(e => e.status === 'approved').length;
+      }
+    } catch (err) {
+      console.error('Supabase event stats error:', err.message);
+    }
+  }
 
   const eventsThisMonth = mockEvents.filter(e => {
     const eventDate = new Date(e.created_at);

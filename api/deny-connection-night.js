@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
+import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -87,7 +88,6 @@ export default async function handler(req, res) {
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    const resendApiKey = process.env.RESEND_API_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase configuration');
@@ -275,28 +275,17 @@ export default async function handler(req, res) {
         throw new Error('Failed to update request status');
       }
 
-      // Send denial email
-      if (resendApiKey) {
-        try {
-          const denialEmail = getDenialEmail(requestData, reason);
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-              to: [requestData.contact_email],
-              cc: [ADMIN_EMAIL],
-              subject: denialEmail.subject,
-              html: denialEmail.html,
-            }),
-          });
-        } catch (emailError) {
-          console.error('Email send error:', emailError);
-          // Don't fail the denial if email fails
-        }
+      // Send denial email via EmailJS
+      try {
+        const denialEmail = getDenialEmail(requestData, reason);
+        await sendEmail({
+          to: requestData.contact_email,
+          subject: denialEmail.subject,
+          html: denialEmail.html,
+        });
+      } catch (emailError) {
+        console.error('Email send error:', emailError);
+        // Don't fail the denial if email fails
       }
 
       // Return success page

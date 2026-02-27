@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
+import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -257,7 +258,6 @@ export default async function handler(req, res) {
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    const resendApiKey = process.env.RESEND_API_KEY;
     const appUrl = process.env.APP_URL || 'https://supportworkshousing.org';
 
     const requestData = req.body;
@@ -311,7 +311,7 @@ export default async function handler(req, res) {
             activity_details: requestData.event.activityDetails,
             property_notes: requestData.event.propertyNotes,
             mission_advancement_email: ADMIN_EMAIL,
-            property_manager_email: requestData.recipients?.propertyManager,
+            property_manager_email: requestData.recipients?.propertyManager || ADMIN_EMAIL,
             status: 'pending',
           },
         ])
@@ -356,50 +356,29 @@ export default async function handler(req, res) {
       }
     }
 
-    // Send emails using Resend
-    if (resendApiKey) {
-      try {
-        // Send volunteer receipt email
-        const volunteerEmail = getVolunteerReceiptEmail(insertedData);
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-            to: [insertedData.contact_email],
-            subject: volunteerEmail.subject,
-            html: volunteerEmail.html,
-          }),
-        });
+    // Send emails via EmailJS
+    try {
+      // Send volunteer receipt email
+      const volunteerEmail = getVolunteerReceiptEmail(insertedData);
+      await sendEmail({
+        to: insertedData.contact_email,
+        subject: volunteerEmail.subject,
+        html: volunteerEmail.html,
+      });
 
-        // Send mission advancement email to ${ADMIN_EMAIL}
-        const missionEmail = getMissionAdvancementEmail(insertedData, insertedData.confirmation_token, appUrl);
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-            to: [ADMIN_EMAIL],
-            subject: missionEmail.subject,
-            html: missionEmail.html,
-          }),
-        });
+      // Send mission advancement email to admin
+      const missionEmail = getMissionAdvancementEmail(insertedData, insertedData.confirmation_token, appUrl);
+      await sendEmail({
+        to: ADMIN_EMAIL,
+        subject: missionEmail.subject,
+        html: missionEmail.html,
+        replyTo: insertedData.contact_email,
+      });
 
-        console.log('Emails sent successfully to volunteer and ${ADMIN_EMAIL}');
-      } catch (emailError) {
-        console.error('Email send error:', emailError);
-        // Don't fail the request if email fails
-      }
-    } else {
-      console.log('No RESEND_API_KEY configured - emails not sent');
-      console.log('Would send to: ${ADMIN_EMAIL}');
-      console.log('Request data:', JSON.stringify(insertedData, null, 2));
+      console.log('Emails sent successfully to volunteer and admin');
+    } catch (emailError) {
+      console.error('Email send error:', emailError);
+      // Don't fail the request if email fails
     }
 
     return res.status(200).json({

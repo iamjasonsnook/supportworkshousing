@@ -56,6 +56,7 @@ function DonateForm() {
   // Stripe state
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [subscriptionId, setSubscriptionId] = useState(null);
   const [cardBrand, setCardBrand] = useState(null);
   const [confirmedPayment, setConfirmedPayment] = useState(null);
   const [cardComplete, setCardComplete] = useState({
@@ -197,6 +198,7 @@ function DonateForm() {
 
         setClientSecret(data.clientSecret);
         setPaymentIntentId(data.paymentIntentId);
+        if (data.subscriptionId) setSubscriptionId(data.subscriptionId);
         setCurrentStep(2);
       } catch (error) {
         console.error('PaymentIntent creation failed:', error);
@@ -321,6 +323,7 @@ function DonateForm() {
       });
 
       const templateParams = {
+        to_email: 'jsnook@supportworkshousing.org',
         email_subject: `Donation Received: $${donationAmount} from ${formData.firstName} ${formData.lastName}`,
         email_html: emailHtml,
         reply_to: formData.email,
@@ -354,6 +357,7 @@ function DonateForm() {
     setCurrentStep(0);
     setClientSecret(null);
     setPaymentIntentId(null);
+    setSubscriptionId(null);
     setCardBrand(null);
     setConfirmedPayment(null);
     setCardComplete({ cardNumber: false, cardExpiry: false, cardCvc: false });
@@ -398,9 +402,9 @@ function DonateForm() {
           <div className="donate-container">
             <div className="donate-card">
               <div className="donate-success-details">
-                <div className="donate-success-amount">${displayAmount}</div>
+                <div className="donate-success-amount">${displayAmount}{formData.donationType === 'monthly' ? '/mo' : ''}</div>
                 <p className="donate-success-type">
-                  {formData.donationType === 'monthly' ? 'Monthly donation' : 'One-time donation'}
+                  {formData.donationType === 'monthly' ? 'Monthly donation set up successfully' : 'One-time donation complete'}
                 </p>
               </div>
 

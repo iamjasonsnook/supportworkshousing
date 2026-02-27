@@ -1,7 +1,9 @@
 // Vercel Serverless Function for Stripe webhook events
 // This is the authoritative confirmation that a payment succeeded.
 // Configure in Stripe Dashboard > Developers > Webhooks
-// Events to listen for: payment_intent.succeeded
+// Events to listen for: payment_intent.succeeded, invoice.payment_succeeded,
+// invoice.payment_failed, customer.subscription.created,
+// customer.subscription.updated, customer.subscription.deleted
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { findOrCreatePerson } from './_people.js';
@@ -80,106 +82,8 @@ export default async function handler(req, res) {
     }
 
     // ---- Email notification ----
-    // Send via Resend (server-side, more reliable than client-side EmailJS)
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    if (RESEND_API_KEY) {
-      try {
-        const { donor_name, donor_email, donation_type } = paymentIntent.metadata;
-        const amount = (paymentIntent.amount / 100).toFixed(2);
-        const typeText = donation_type === 'monthly' ? 'Monthly' : 'One-time';
-
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <donations@supportworkshousing.org>',
-            to: [ADMIN_EMAIL],
-            reply_to: donor_email,
-            subject: `Donation Confirmed: $${amount} from ${donor_name}`,
-            html: `
-              <h2>Donation Confirmed via Stripe</h2>
-              <p><strong>Amount:</strong> $${amount} (${typeText})</p>
-              <p><strong>Card:</strong> •••• •••• •••• ${cardLast4} (${cardBrand})</p>
-              <p><strong>Donor:</strong> ${donor_name}</p>
-              <p><strong>Email:</strong> ${donor_email}</p>
-              <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
-              <p style="font-size: 12px; color: #6B7280;">🔒 Processed securely by Stripe • Transaction ID: ${paymentIntent.id}</p>
-            `,
-          }),
-        });
-        // Send donor thank-you / receipt email
-        const thankYouResp = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <donations@supportworkshousing.org>',
-            to: [donor_email],
-            subject: `Thank You for Your ${typeText} Donation!`,
-            html: `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
-  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff;">
-    <div style="background-color: #10B981; padding: 24px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Thank You for Your Generosity!</h1>
-    </div>
-    <div style="padding: 24px;">
-      <p style="margin: 0 0 16px 0; font-size: 16px; color: #333; line-height: 1.6;">
-        Dear ${donor_name},
-      </p>
-      <p style="margin: 0 0 16px 0; font-size: 14px; color: #333; line-height: 1.6;">
-        Thank you for your ${typeText.toLowerCase()} donation of <strong>$${amount}</strong> to SupportWorks Housing. Your generosity helps us create stable communities and provide comprehensive support services to Virginians rebuilding their lives.
-      </p>
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr>
-          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px; width: 110px;">Amount</td>
-          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;"><strong>$${amount}</strong> (${typeText})</td>
-        </tr>
-        <tr>
-          <td style="padding: 12px 0; border-bottom: 1px solid #eee; color: #666; font-size: 14px;">Card</td>
-          <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; ${cardLast4} (${cardBrand})</td>
-        </tr>
-        <tr>
-          <td style="padding: 12px 0; color: #666; font-size: 14px;">Transaction</td>
-          <td style="padding: 12px 0; font-size: 14px; font-size: 12px; color: #999;">${paymentIntent.id}</td>
-        </tr>
-      </table>
-      <p style="margin: 16px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">
-        If you have any questions about your donation, please contact us at
-        <a href="mailto:${ADMIN_EMAIL}" style="color: #10B981;">${ADMIN_EMAIL}</a>.
-      </p>
-    </div>
-    <div style="padding: 20px 24px; background-color: #10B981; color: #ffffff;">
-      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.5; text-align: center;">
-        SupportWorks Housing provides stable, affordable housing combined with comprehensive support services to help Virginians rebuild their lives and achieve lasting independence.
-      </p>
-      <p style="margin: 0; font-size: 12px; text-align: center; opacity: 0.8;">
-        SupportWorks Housing &bull; <a href="https://supportworkshousing.org" style="color: #ffffff;">supportworkshousing.org</a>
-      </p>
-    </div>
-  </div>
-</body>
-</html>`,
-          }),
-        });
-        if (!thankYouResp.ok) {
-          const thankYouResult = await thankYouResp.json();
-          console.error('Thank-you email failed:', thankYouResult);
-        }
-      } catch (emailErr) {
-        console.error('Webhook email notification failed:', emailErr.message);
-      }
-    }
+    // Admin notification is sent client-side by Donate.jsx via EmailJS.
+    // Stripe's built-in receipt_email handles donor receipt automatically.
 
     // ---- Bloomerang CRM ----
     // Record the donation server-side (more reliable than client-side)
@@ -500,6 +404,179 @@ export default async function handler(req, res) {
         }
       } catch (supabaseErr) {
         console.error('Supabase integration error:', supabaseErr.message);
+      }
+    }
+  }
+
+  // ---- Subscription events for monthly donations ----
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object;
+    // Only handle subscription invoices (not one-off invoices)
+    if (invoice.subscription && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        const metadata = invoice.subscription_details?.metadata || invoice.metadata || {};
+        const donorName = metadata.donor_name || 'Anonymous';
+        const donorEmail = metadata.donor_email || invoice.customer_email || '';
+        const amount = invoice.amount_paid / 100;
+
+        // Upsert donation record
+        await supabase.from('donations').upsert({
+          stripe_payment_intent_id: invoice.payment_intent,
+          amount,
+          donation_type: 'monthly',
+          donor_name: donorName,
+          donor_email: donorEmail,
+          donor_phone: metadata.donor_phone || null,
+          donor_address: metadata.donor_address || null,
+        }, { onConflict: 'stripe_payment_intent_id' });
+
+        // Link to recurring_donation
+        const { data: recurring } = await supabase
+          .from('recurring_donations')
+          .select('id, person_id')
+          .eq('stripe_subscription_id', invoice.subscription)
+          .maybeSingle();
+
+        if (recurring) {
+          await supabase.from('donations')
+            .update({ recurring_donation_id: recurring.id, person_id: recurring.person_id })
+            .eq('stripe_payment_intent_id', invoice.payment_intent);
+
+          // Log interaction
+          if (recurring.person_id) {
+            await supabase.from('interactions').insert({
+              person_id: recurring.person_id,
+              type: 'donation',
+              subject: `$${amount.toFixed(2)} monthly donation (recurring)`,
+              metadata: { stripe_payment_intent_id: invoice.payment_intent, amount, donation_type: 'monthly' },
+              direction: 'inbound',
+              created_by: 'stripe-webhook',
+            });
+          }
+        } else {
+          // Try person linking by email
+          const person = await findOrCreatePerson(supabase, {
+            email: donorEmail, name: donorName,
+            phone: metadata.donor_phone, role: 'donor',
+          });
+          if (person) {
+            await supabase.from('donations')
+              .update({ person_id: person.id })
+              .eq('stripe_payment_intent_id', invoice.payment_intent);
+          }
+        }
+
+        console.log('Subscription invoice recorded:', invoice.id);
+      } catch (err) {
+        console.error('invoice.payment_succeeded error:', err.message);
+      }
+    }
+  }
+
+  if (event.type === 'customer.subscription.created') {
+    const subscription = event.data.object;
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        const metadata = subscription.metadata || {};
+        const amount = subscription.items?.data?.[0]?.price?.unit_amount
+          ? subscription.items.data[0].price.unit_amount / 100
+          : 0;
+
+        // Find person by email
+        const donorEmail = metadata.donor_email || '';
+        let personId = null;
+        if (donorEmail) {
+          const person = await findOrCreatePerson(supabase, {
+            email: donorEmail,
+            name: metadata.donor_name,
+            phone: metadata.donor_phone,
+            role: 'donor',
+          });
+          if (person) {
+            personId = person.id;
+            // Store stripe_customer_id on person
+            await supabase.from('people')
+              .update({ stripe_customer_id: subscription.customer })
+              .eq('id', person.id);
+          }
+        }
+
+        await supabase.from('recurring_donations').insert({
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: subscription.customer,
+          person_id: personId,
+          amount,
+          frequency: 'monthly',
+          status: 'active',
+        });
+
+        console.log('Recurring donation created:', subscription.id);
+      } catch (err) {
+        console.error('customer.subscription.created error:', err.message);
+      }
+    }
+  }
+
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object;
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        const statusMap = {
+          active: 'active',
+          past_due: 'past_due',
+          canceled: 'cancelled',
+          incomplete: 'incomplete',
+          incomplete_expired: 'cancelled',
+          trialing: 'active',
+          unpaid: 'past_due',
+          paused: 'paused',
+        };
+        await supabase.from('recurring_donations')
+          .update({ status: statusMap[subscription.status] || subscription.status })
+          .eq('stripe_subscription_id', subscription.id);
+
+        console.log('Recurring donation updated:', subscription.id, subscription.status);
+      } catch (err) {
+        console.error('customer.subscription.updated error:', err.message);
+      }
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        await supabase.from('recurring_donations')
+          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscription.id);
+
+        console.log('Recurring donation cancelled:', subscription.id);
+      } catch (err) {
+        console.error('customer.subscription.deleted error:', err.message);
+      }
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object;
+    if (invoice.subscription && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        await supabase.from('recurring_donations')
+          .update({ status: 'past_due' })
+          .eq('stripe_subscription_id', invoice.subscription);
+
+        console.log('Recurring donation past_due:', invoice.subscription);
+      } catch (err) {
+        console.error('invoice.payment_failed error:', err.message);
       }
     }
   }

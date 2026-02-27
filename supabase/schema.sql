@@ -75,24 +75,8 @@ CREATE TRIGGER update_connection_nights_updated_at
 -- Enable Row Level Security (RLS)
 ALTER TABLE connection_nights ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow public inserts (for form submissions)
-CREATE POLICY "Allow public insert" ON connection_nights
-  FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
--- Create policy to allow public read access with token (for approve/deny pages)
-CREATE POLICY "Allow public read with token" ON connection_nights
-  FOR SELECT
-  TO anon
-  USING (true);
-
--- Create policy to allow public updates with token (for approve/deny actions)
-CREATE POLICY "Allow public update with token" ON connection_nights
-  FOR UPDATE
-  TO anon
-  USING (true)
-  WITH CHECK (true);
-
--- Note: In production, you'd want more restrictive policies,
--- but for simplicity we're allowing public access with token verification in the API layer
+-- Service-role-only access (all API endpoints use service_role key)
+CREATE POLICY "Service role full access" ON connection_nights
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');

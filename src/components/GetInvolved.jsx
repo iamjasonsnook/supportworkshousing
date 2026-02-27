@@ -311,18 +311,33 @@ function GetInvolved({
     });
 
     const templateParams = {
+      to_email: 'jsnook@supportworkshousing.org',
       email_subject: `Connection Night Request: ${cnFormData.groupName} - ${selectedTimeSlot?.day}`,
       email_html: emailHtml,
       reply_to: cnFormData.contactEmail,
     };
 
     try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+      // Save to database via API (also sends server-side emails)
+      await fetch(`${API_BASE}/api/connection-nights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: { id: cnFormData.locationId, name: selectedLocation.name, address: selectedLocation.address },
+          timeSlot: { id: cnFormData.timeSlotId, day: selectedTimeSlot?.day, time: selectedTimeSlot?.time },
+          group: { isIndividual: false, name: cnFormData.groupName, size: cnFormData.groupSize },
+          contact: { name: cnFormData.contactName, email: cnFormData.contactEmail, phone: cnFormData.contactPhone },
+          event: {
+            foodPlan: cnFormData.foodPlan,
+            activityPlan: cnFormData.activityPlan,
+            activityDetails: cnFormData.activityPlan === 'other' ? cnFormData.otherActivity : null,
+          },
+        }),
+      });
+
+      // Client-side EmailJS as backup admin notification
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
+        .catch(err => console.error('EmailJS backup error (non-blocking):', err));
 
       window.gtag?.('event', 'generate_lead', {
         event_category: 'connection_night',
@@ -332,8 +347,8 @@ function GetInvolved({
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error('EmailJS error:', error);
-      setSubmitError(error.text || 'An error occurred. Please try again.');
+      console.error('Submission error:', error);
+      setSubmitError(error.text || error.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -390,6 +405,7 @@ function GetInvolved({
       });
 
       const templateParams = {
+        to_email: 'jsnook@supportworkshousing.org',
         email_subject: `Supply Drive Drop-Off: ${sdFormData.contactName} - ${selectedDate?.day}`,
         email_html: emailHtml,
         reply_to: sdFormData.contactEmail,

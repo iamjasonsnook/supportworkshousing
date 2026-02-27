@@ -1,5 +1,6 @@
-// Vercel Serverless Function for sending emails via Resend
+// Vercel Serverless Function for sending emails via EmailJS
 import { setCorsHeaders } from './_cors.js';
+import { sendEmail } from './_email.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -12,12 +13,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
   const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || 'jsnook@supportworkshousing.org';
-
-  if (!RESEND_API_KEY) {
-    return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
-  }
 
   try {
     const { type } = req.body;
@@ -269,52 +265,29 @@ export default async function handler(req, res) {
 </html>`;
     }
 
-    // Send admin notification via Resend
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'SupportWorks Housing <donations@supportworkshousing.org>',
-        to: RECIPIENT_EMAIL,
-        reply_to: replyTo,
-        subject: subject,
-        html: htmlContent,
-      }),
+    // Send admin notification via EmailJS
+    await sendEmail({
+      to: RECIPIENT_EMAIL,
+      subject,
+      html: htmlContent,
+      replyTo,
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error('Resend admin email error:', result);
-      return res.status(500).json({ error: result.message || 'Failed to send email' });
-    }
-
-    // Send receipt email to submitter (non-blocking — don't fail if this errors)
+    // Send receipt email to submitter (non-blocking)
     const { contactEmail } = req.body;
     if (contactEmail) {
       try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <donations@supportworkshousing.org>',
-            to: [contactEmail],
-            subject: receiptSubject,
-            html: receiptHtml,
-          }),
+        await sendEmail({
+          to: contactEmail,
+          subject: receiptSubject,
+          html: receiptHtml,
         });
       } catch (receiptErr) {
         console.error('Receipt email failed (non-blocking):', receiptErr);
       }
     }
 
-    return res.status(200).json({ success: true, id: result.id });
+    return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Server error:', error);
     return res.status(500).json({ error: 'Internal server error', details: error.message });

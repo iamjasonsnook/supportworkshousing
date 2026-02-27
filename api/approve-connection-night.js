@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
+import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -175,7 +176,6 @@ export default async function handler(req, res) {
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    const resendApiKey = process.env.RESEND_API_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase configuration');
@@ -229,46 +229,26 @@ export default async function handler(req, res) {
       throw new Error('Failed to update request status');
     }
 
-    // Send approval emails
-    if (resendApiKey) {
-      try {
-        // Send to volunteer
-        const volunteerEmail = getApprovalEmail(requestData);
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-            to: [requestData.contact_email],
-            cc: [ADMIN_EMAIL],
-            subject: volunteerEmail.subject,
-            html: volunteerEmail.html,
-          }),
-        });
+    // Send approval emails via EmailJS
+    try {
+      // Send to volunteer
+      const volunteerEmail = getApprovalEmail(requestData);
+      await sendEmail({
+        to: requestData.contact_email,
+        subject: volunteerEmail.subject,
+        html: volunteerEmail.html,
+      });
 
-        // Send to property manager
-        const propertyManagerEmail = getPropertyManagerEmail(requestData);
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'SupportWorks Housing <noreply@supportworkshousing.org>',
-            to: [requestData.property_manager_email],
-            cc: [ADMIN_EMAIL],
-            subject: propertyManagerEmail.subject,
-            html: propertyManagerEmail.html,
-          }),
-        });
-      } catch (emailError) {
-        console.error('Email send error:', emailError);
-        // Don't fail the approval if email fails
-      }
+      // Send to property manager
+      const propertyManagerEmail = getPropertyManagerEmail(requestData);
+      await sendEmail({
+        to: requestData.property_manager_email || ADMIN_EMAIL,
+        subject: propertyManagerEmail.subject,
+        html: propertyManagerEmail.html,
+      });
+    } catch (emailError) {
+      console.error('Email send error:', emailError);
+      // Don't fail the approval if email fails
     }
 
     // Return success page

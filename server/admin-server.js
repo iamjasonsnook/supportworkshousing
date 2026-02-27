@@ -761,27 +761,41 @@ app.post('/api/admin/login', (req, res) => {
 // Get events (includes both Connection Nights and Supply Drives)
 app.get('/api/admin/events', authMiddleware, async (req, res) => {
   try {
+    // Fetch real data from Supabase
+    let supabaseEvents = [];
+    let supabaseSupplyDrives = [];
     if (supabase) {
-      const { data, error } = await supabase
-        .from('connection_nights')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data: cnData } = await supabase
+          .from('connection_nights')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (cnData) {
+          supabaseEvents = cnData.map(e => ({ ...e, event_type: 'connection-night' }));
+        }
+      } catch (err) {
+        console.error('Supabase connection_nights error:', err.message);
+      }
 
-      if (error) throw error;
-      res.json({ events: data || [], supplyDrives: [] });
-    } else {
-      // Return mock data - include both event types
-      // Add event_type to connection nights for clarity
-      const eventsWithType = mockEvents.map(e => ({
-        ...e,
-        event_type: 'connection-night',
-      }));
-
-      res.json({
-        events: eventsWithType,
-        supplyDrives: mockSupplyDrives,
-      });
+      try {
+        const { data: sdData } = await supabase
+          .from('supply_drives')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (sdData) {
+          supabaseSupplyDrives = sdData.map(e => ({ ...e, event_type: 'supply-drive' }));
+        }
+      } catch (err) {
+        console.error('Supabase supply_drives error:', err.message);
+      }
     }
+
+    // Merge with mock data
+    const mockEventsWithType = mockEvents.map(e => ({ ...e, event_type: 'connection-night' }));
+    const allEvents = [...supabaseEvents, ...mockEventsWithType];
+    const allSupplyDrives = [...supabaseSupplyDrives, ...mockSupplyDrives];
+
+    res.json({ events: allEvents, supplyDrives: allSupplyDrives });
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -862,6 +876,12 @@ app.post('/api/admin/supply-drives/:id/approve', authMiddleware, async (req, res
   const { id } = req.params;
 
   try {
+    if (supabase && id.includes('-') && id.length > 10) {
+      await supabase.from('supply_drives')
+        .update({ status: 'approved' })
+        .eq('id', id);
+      return res.json({ success: true });
+    }
     const supplyDrive = mockSupplyDrives.find(e => e.id === id);
     if (supplyDrive) {
       supplyDrive.status = 'approved';
@@ -880,6 +900,12 @@ app.post('/api/admin/supply-drives/:id/deny', authMiddleware, async (req, res) =
   const { reason } = req.body;
 
   try {
+    if (supabase && id.includes('-') && id.length > 10) {
+      await supabase.from('supply_drives')
+        .update({ status: 'denied', denial_reason: reason || null })
+        .eq('id', id);
+      return res.json({ success: true });
+    }
     const supplyDrive = mockSupplyDrives.find(e => e.id === id);
     if (supplyDrive) {
       supplyDrive.status = 'denied';
@@ -897,6 +923,12 @@ app.post('/api/admin/supply-drives/:id/complete', authMiddleware, async (req, re
   const { id } = req.params;
 
   try {
+    if (supabase && id.includes('-') && id.length > 10) {
+      await supabase.from('supply_drives')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', id);
+      return res.json({ success: true });
+    }
     const supplyDrive = mockSupplyDrives.find(e => e.id === id);
     if (supplyDrive) {
       supplyDrive.status = 'completed';
@@ -1346,21 +1378,63 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
       }
     }
 
-    const totalEvents = mockEvents.length;
-    const completedEvents = mockEvents.filter(e => e.status === 'completed').length;
-    const pendingEvents = mockEvents.filter(e => e.status === 'pending').length;
-    const approvedEvents = mockEvents.filter(e => e.status === 'approved').length;
+    let totalEvents = mockEvents.length;
+    let completedEvents = mockEvents.filter(e => e.status === 'completed').length;
+    let pendingEvents = mockEvents.filter(e => e.status === 'pending').length;
+    let approvedEvents = mockEvents.filter(e => e.status === 'approved').length;
 
     // Events this month (using created_at as proxy)
-    const eventsThisMonth = mockEvents.filter(e => {
+    let eventsThisMonth = mockEvents.filter(e => {
       const eventDate = new Date(e.created_at);
       return eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear;
     }).length;
 
     // Total volunteer hours (estimated: 2 hours per completed event * group size avg)
-    const totalVolunteerHours = mockEvents
+    let totalVolunteerHours = mockEvents
       .filter(e => e.status === 'completed')
       .reduce((sum, e) => sum + (e.group_size * 2), 0);
+
+    // Include Supabase connection_nights + supply_drives in event counts
+    if (supabase) {
+      try {
+        const { data: cnData, error: cnError } = await supabase
+          .from('connection_nights')
+          .select('status, group_size, created_at');
+        if (!cnError && cnData) {
+          totalEvents += cnData.length;
+          completedEvents += cnData.filter(e => e.status === 'completed').length;
+          pendingEvents += cnData.filter(e => e.status === 'pending').length;
+          approvedEvents += cnData.filter(e => e.status === 'approved').length;
+          eventsThisMonth += cnData.filter(e => {
+            const d = new Date(e.created_at);
+            return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+          }).length;
+          totalVolunteerHours += cnData
+            .filter(e => e.status === 'completed')
+            .reduce((sum, e) => sum + ((e.group_size || 5) * 2), 0);
+        }
+      } catch (err) {
+        console.error('Supabase connection_nights stats error:', err.message);
+      }
+
+      try {
+        const { data: sdData, error: sdError } = await supabase
+          .from('supply_drives')
+          .select('status, created_at');
+        if (!sdError && sdData) {
+          totalEvents += sdData.length;
+          completedEvents += sdData.filter(e => e.status === 'completed').length;
+          pendingEvents += sdData.filter(e => e.status === 'pending').length;
+          approvedEvents += sdData.filter(e => e.status === 'approved').length;
+          eventsThisMonth += sdData.filter(e => {
+            const d = new Date(e.created_at);
+            return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+          }).length;
+        }
+      } catch (err) {
+        console.error('Supabase supply_drives stats error:', err.message);
+      }
+    }
 
     // Total residents served (estimated: 15 residents per event)
     const residentsServed = completedEvents * 15;
