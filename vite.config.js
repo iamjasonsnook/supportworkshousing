@@ -64,7 +64,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), vercelApiPlugin()],
-    // Use '/' for Vercel, '/supportworkshousing/' for GitHub Pages
-    base: process.env.VERCEL ? '/' : (process.env.VITE_BASE_PATH || '/supportworkshousing/'),
+    base: '/',
   };
 })

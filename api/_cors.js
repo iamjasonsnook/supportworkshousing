@@ -1,6 +1,5 @@
 // Shared CORS configuration for all API endpoints
 const ALLOWED_ORIGINS = [
-  'https://iamjasonsnook.github.io',
   'https://supportworkshousing.vercel.app',
   'https://supportworkshousing.org',
   'https://www.supportworkshousing.org',

@@ -101,11 +101,8 @@ function NotFound() {
 }
 
 function App() {
-  // Match the base path from vite.config.js
-  const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
-
   return (
-    <BrowserRouter basename={basename}>
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<Admin />} />

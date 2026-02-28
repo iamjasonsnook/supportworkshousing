@@ -818,7 +818,7 @@ app.post('/api/admin/events/:id/approve', authMiddleware, async (req, res) => {
 
       if (error) throw error;
 
-      // TODO: Send approval email via Resend
+      // Email notifications handled by Vercel API (api/approve-connection-night.js) in production
 
       res.json({ success: true });
     } else {
@@ -853,7 +853,7 @@ app.post('/api/admin/events/:id/deny', authMiddleware, async (req, res) => {
 
       if (error) throw error;
 
-      // TODO: Send denial email via Resend
+      // Email notifications handled by Vercel API (api/deny-connection-night.js) in production
 
       res.json({ success: true });
     } else {

@@ -10,40 +10,24 @@ npm run dev          # Start development server
 npm run build        # Build for production
 npm run preview      # Preview production build
 npm run lint         # Run ESLint
+npm test             # Run unit tests
 ```
 
 ## Deployment
 
-This project uses separate staging and production branches with automated GitHub Pages deployment:
+The site is deployed on **Vercel** with automatic deployments from the `main` branch.
 
-### Branches
+- **Production URL:** https://supportworkshousing.org
+- **Vercel preview:** https://supportworkshousing.vercel.app
 
-- **`production`** - Production environment (clean, DNS-ready)
-  - Deploys to: `https://iamjasonsnook.github.io/supportworkshousing/`
-  - Base path: `/` (configured for custom domain)
-  - Auto-deploys on push via `.github/workflows/deploy-production.yml`
-
-- **`staging`** - Testing and experimentation
-  - Deploys to: `https://iamjasonsnook.github.io/supportworkshousing/staging/`
-  - Base path: `/supportworkshousing/staging/`
-  - Auto-deploys on push via `.github/workflows/deploy-staging.yml`
-
-### Workflow
-
-1. **Development**: Make changes in feature branches
-2. **Testing**: Merge to `staging` branch to test on staging site
-3. **Production**: When ready, merge `staging` to `production` for live deployment
-
-### Custom Domain Setup
-
-To point your custom domain to production:
-1. Add a CNAME record pointing to `iamjasonsnook.github.io`
-2. Configure custom domain in GitHub repository settings
-3. Production branch is configured with base path `/` for clean URLs
+API endpoints are Vercel serverless functions located in the `api/` directory. For local development, `npm run admin` starts an Express server that mirrors the production API.
 
 ## Tech Stack
 
-- React 19.2.0
-- Vite 7.2.4
+- React 19
+- Vite 7
 - React Router DOM
 - Lucide React (icons)
+- Stripe (payments)
+- Supabase (database)
+- EmailJS (transactional email)

@@ -1,4 +1,3 @@
-import { Facebook, Instagram, Twitter, Youtube, Linkedin } from 'lucide-react';
 import './Footer.css';
 
 function Footer() {
@@ -16,14 +15,6 @@ function Footer() {
     { city: 'Fax', phone: '(804) 788-6827' },
   ];
 
-  const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Youtube, href: '#', label: 'YouTube' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-  ];
-
   return (
     <footer className="footer">
       <div className="container">
@@ -35,13 +26,6 @@ function Footer() {
             <p className="footer-tagline">
               Ending homelessness in Virginia through permanent housing and comprehensive support services.
             </p>
-            <div className="footer-social">
-              {socialLinks.map((link) => (
-                <a key={link.label} href={link.href} className="social-link" aria-label={link.label}>
-                  <link.icon size={20} />
-                </a>
-              ))}
-            </div>
           </div>
 
           <div className="footer-links">
