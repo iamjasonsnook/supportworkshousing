@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -86,6 +86,20 @@ function HomePage() {
   );
 }
 
+function NotFound() {
+  return (
+    <>
+      <Header />
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', padding: '2rem' }}>
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: '#9B1B5D' }}>404</h1>
+        <p style={{ fontSize: '1.25rem', marginBottom: '2rem', color: '#666' }}>Page not found</p>
+        <Link to="/" style={{ color: '#9B1B5D', textDecoration: 'underline', fontSize: '1.1rem' }}>Back to Home</Link>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
 function App() {
   // Match the base path from vite.config.js
   const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -95,6 +109,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

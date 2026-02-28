@@ -1,7 +1,7 @@
 // Shared email template builder
 // This generates the full HTML email so we control everything in code
 
-const LOGO_URL = 'https://iamjasonsnook.github.io/supportworkshousing/images/logo-white.svg';
+const LOGO_URL = 'https://supportworkshousing.org/images/logo-white.svg';
 
 // Helper to generate table row HTML
 export const tableRow = (label, value, isLast = false) => `
