@@ -329,10 +329,34 @@ function DonateForm() {
         reply_to: formData.email,
       };
 
-      // Fire EmailJS as fallback admin notification (non-blocking).
-      // Primary admin + donor thank-you emails are sent by the Stripe webhook (api/stripe-webhook.js).
+      // Fire EmailJS admin notification (non-blocking).
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
-        .catch(err => console.error('EmailJS fallback error (non-blocking):', err));
+        .catch(err => console.error('EmailJS admin notification error (non-blocking):', err));
+
+      // Accounting notification with expected payout
+      const grossAmount = Number(donationAmount);
+      const stripeFee = (grossAmount * 0.022) + 0.30;
+      const expectedPayout = (grossAmount - stripeFee).toFixed(2);
+      const acctContentHtml =
+        tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong>`) +
+        tableRow('Donation Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
+        tableRow('Stripe Fee', `−$${stripeFee.toFixed(2)} (2.2% + $0.30)`) +
+        tableRow('Expected Payout', `<strong style="color: #16a34a;">$${expectedPayout}</strong>`, true);
+
+      const acctEmailHtml = buildEmailHTML({
+        title: 'Donation Payout Notification',
+        intro: 'A new donation has been processed. Below are the details and expected payout to the operating account.',
+        contentHtml: acctContentHtml,
+      });
+
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, {
+        to_email: 'accountsreceivable@supportworkshousing.org',
+        email_subject: `Donation Payout: $${expectedPayout} expected from $${donationAmount} donation`,
+        email_html: acctEmailHtml,
+        reply_to: ADMIN_EMAIL,
+        cc: 'kclifford@supportworkshousing.org',
+      }, EMAILJS_PUBLIC_KEY)
+        .catch(err => console.error('EmailJS accounting notification error (non-blocking):', err));
 
       // Bloomerang CRM recording is handled by the Stripe webhook (api/stripe-webhook.js)
 
