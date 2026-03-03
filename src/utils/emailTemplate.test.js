@@ -37,7 +37,7 @@ describe('buildEmailHTML', () => {
 
   it('includes the production logo URL', () => {
     const html = buildEmailHTML({ title: 'T', intro: 'I', contentHtml: '' });
-    expect(html).toContain('https://supportworkshousing.org/images/logo-white.svg');
+    expect(html).toContain('https://supportworkshousing.vercel.app/images/logo-white.png');
   });
 
   it('includes the footer with the organization link', () => {
