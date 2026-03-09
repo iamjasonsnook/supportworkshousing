@@ -26,3 +26,31 @@ export async function sendEmail({ to, subject, html, replyTo }) {
 
   return response;
 }
+
+// Resend helper — supports immediate and scheduled sending via scheduledAt (ISO 8601)
+export async function sendEmailViaResend({ to, subject, html, replyTo, scheduledAt }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
+
+  const from = process.env.RESEND_FROM_EMAIL || 'SupportWorks Housing <team@supportworkshousing.org>';
+
+  const body = { from, to: Array.isArray(to) ? to : [to], subject, html };
+  if (replyTo) body.reply_to = replyTo;
+  if (scheduledAt) body.scheduled_at = scheduledAt;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Resend send failed (${response.status}): ${text}`);
+  }
+
+  return response.json();
+}

@@ -15,7 +15,7 @@ const getVolunteerReceiptEmail = (data) => {
   const groupType = data.is_individual ? 'Individual' : 'Group/Organization';
 
   return {
-    subject: 'Connection Night Request Received - SupportWorks Housing',
+    subject: 'Community Connections Request Received - SupportWorks Housing',
     html: `
       <!DOCTYPE html>
       <html>
@@ -36,19 +36,19 @@ const getVolunteerReceiptEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Thank You for Volunteering!</h1>
+            <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
             <p>Dear ${data.contact_name},</p>
 
-            <p>Thank you for your interest in hosting a Connection Night at SupportWorks Housing! We've received your request and our team will review it shortly.</p>
+            <p>Thank you for your interest in hosting a Community Connection at SupportWorks Housing! We've received your request and a SupportWorks team member will be in touch to confirm.</p>
 
             <div class="info-box">
               <p style="margin-top: 0;"><strong>What happens next?</strong></p>
               <ol style="margin: 10px 0; padding-left: 20px;">
-                <li>Our Mission Advancement team will review your request</li>
+                <li>A SupportWorks team member will review your request and confirm</li>
                 <li>Once approved, you'll receive a confirmation email</li>
-                <li>Three days before the event, everyone will receive a reminder</li>
+                <li>Three days before the event, you'll receive a reminder</li>
               </ol>
             </div>
 
@@ -99,7 +99,7 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
   const denyUrl = `${appUrl}/api/deny-connection-night?token=${confirmationToken}`;
 
   return {
-    subject: `New Connection Night Request - ${data.group_name}`,
+    subject: `New Community Connections Request - ${data.group_name}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -123,11 +123,11 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>New Connection Night Request</h1>
+            <h1>New Community Connections Request</h1>
           </div>
           <div class="content">
             <div class="alert-box">
-              <strong>Action Required:</strong> Please review and approve or deny this Connection Night request.
+              <strong>Action Required:</strong> Please review and approve or deny this Community Connections request.
             </div>
 
             <h2 style="color: #9B1B5D;">Request Details</h2>

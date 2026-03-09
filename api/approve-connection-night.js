@@ -3,7 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
-import { sendEmail } from './_email.js';
+import { sendEmail, sendEmailViaResend } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -12,7 +12,7 @@ const getApprovalEmail = (data) => {
   const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
 
   return {
-    subject: 'Connection Night Request Approved! - SupportWorks Housing',
+    subject: 'Community Connection Confirmed! - SupportWorks Housing',
     html: `
       <!DOCTYPE html>
       <html>
@@ -32,18 +32,18 @@ const getApprovalEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Your Connection Night is Confirmed!</h1>
+            <h1>🎉 Your Community Connection is Confirmed!</h1>
           </div>
           <div class="content">
             <p>Dear ${data.contact_name},</p>
 
             <div class="success-box">
-              <p style="margin: 0;"><strong>Great news!</strong> Your Connection Night request has been approved by our team.</p>
+              <p style="margin: 0;"><strong>Great news!</strong> Your Community Connection request has been confirmed by our team.</p>
             </div>
 
             <p>We're excited to have you host this event and create meaningful connections within our community!</p>
 
-            <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
+            <h2 style="color: #9B1B5D;">Your Community Connection Details</h2>
             <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
             <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
             <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
@@ -106,13 +106,13 @@ const getPropertyManagerEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Connection Night Scheduled</h1>
+            <h1>Community Connection Scheduled</h1>
           </div>
           <div class="content">
             <p>Hello,</p>
 
             <div class="info-box">
-              <p style="margin: 0;"><strong>A Connection Night has been scheduled at your property.</strong></p>
+              <p style="margin: 0;"><strong>A Community Connection has been scheduled at your property.</strong></p>
             </div>
 
             <h2 style="color: #9B1B5D;">Event Details</h2>
@@ -155,6 +155,82 @@ const getPropertyManagerEmail = (data) => {
     `,
   };
 };
+
+// Parse "Thursday, March 14" → Date 3 days before at 9 AM UTC
+const getReminderScheduledAt = (timeSlotDay) => {
+  try {
+    const now = new Date();
+    let eventDate = new Date(`${timeSlotDay}, ${now.getFullYear()}`);
+    if (isNaN(eventDate.getTime())) return null;
+    if (eventDate < now) eventDate.setFullYear(now.getFullYear() + 1);
+
+    const reminderDate = new Date(eventDate);
+    reminderDate.setDate(reminderDate.getDate() - 3);
+    reminderDate.setUTCHours(13, 0, 0, 0); // 9 AM ET / 1 PM UTC
+
+    // Only schedule if reminder is in the future
+    if (reminderDate <= now) return null;
+    return reminderDate.toISOString();
+  } catch {
+    return null;
+  }
+};
+
+const getReminderEmailHtml = ({ recipientName, groupName, contactName, contactEmail, contactPhone, eventInfo, locationInfo, groupSize, isAdmin, adminEmail }) => `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+      .header h1 { margin: 0; font-size: 24px; }
+      .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
+      .info-box { background-color: #FDF2F4; border-left: 4px solid #9B1B5D; padding: 15px; margin: 20px 0; border-radius: 4px; }
+      .info-row { margin: 10px 0; }
+      .info-label { font-weight: 600; color: #1A1A1A; }
+      .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>⏰ Community Connection in 3 Days!</h1>
+      </div>
+      <div class="content">
+        <p>Hi ${recipientName},</p>
+        ${isAdmin
+          ? `<p>Just a reminder that a Community Connection is coming up in 3 days.</p>`
+          : `<p>Your Community Connection at SupportWorks Housing is just 3 days away! Here are your confirmed event details.</p>`
+        }
+        <div class="info-box">
+          <div class="info-row"><span class="info-label">Date & Time:</span> ${eventInfo}</div>
+          <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
+          <div class="info-row"><span class="info-label">Group Size:</span> ${groupSize} people</div>
+          ${isAdmin ? `
+          <div class="info-row"><span class="info-label">Group:</span> ${groupName}</div>
+          <div class="info-row"><span class="info-label">Contact:</span> ${contactName} — <a href="mailto:${contactEmail}" style="color: #9B1B5D;">${contactEmail}</a> — ${contactPhone}</div>
+          ` : ''}
+        </div>
+        ${!isAdmin ? `
+        <h3 style="color: #1A1A1A;">Day-of Reminders</h3>
+        <ul style="line-height: 2;">
+          <li>Please arrive 15 minutes early to coordinate with property staff</li>
+          <li>Check in with the property manager upon arrival</li>
+          <li>Bring any food, materials, or activities you planned</li>
+        </ul>
+        <p>If you need to make any changes, please contact us at <a href="mailto:${adminEmail}" style="color: #9B1B5D;">${adminEmail}</a>.</p>
+        ` : ''}
+        <p>Thank you for making a difference in our community!</p>
+        <p><strong>SupportWorks Housing Team</strong></p>
+      </div>
+      <div class="footer">
+        <p>SupportWorks Housing | Creating Stable Communities</p>
+      </div>
+    </div>
+  </body>
+  </html>
+`;
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -249,6 +325,56 @@ export default async function handler(req, res) {
     } catch (emailError) {
       console.error('Email send error:', emailError);
       // Don't fail the approval if email fails
+    }
+
+    // Schedule 3-day reminder emails via Resend
+    try {
+      const reminderScheduledAt = getReminderScheduledAt(requestData.time_slot_day);
+      if (reminderScheduledAt) {
+        const eventInfo = `${requestData.time_slot_day}, ${requestData.time_slot_time}`;
+        const locationInfo = `${requestData.location_name} — ${requestData.location_address}`;
+
+        const volunteerReminderHtml = getReminderEmailHtml({
+          recipientName: requestData.contact_name,
+          eventInfo,
+          locationInfo,
+          groupSize: requestData.group_size,
+          isAdmin: false,
+          adminEmail: ADMIN_EMAIL,
+        });
+
+        const adminReminderHtml = getReminderEmailHtml({
+          recipientName: 'Jason',
+          groupName: requestData.group_name,
+          contactName: requestData.contact_name,
+          contactEmail: requestData.contact_email,
+          contactPhone: requestData.contact_phone,
+          eventInfo,
+          locationInfo,
+          groupSize: requestData.group_size,
+          isAdmin: true,
+          adminEmail: ADMIN_EMAIL,
+        });
+
+        await sendEmailViaResend({
+          to: requestData.contact_email,
+          subject: `Reminder: Your Community Connection is in 3 Days!`,
+          html: volunteerReminderHtml,
+          scheduledAt: reminderScheduledAt,
+        });
+
+        await sendEmailViaResend({
+          to: ADMIN_EMAIL,
+          subject: `Reminder: Community Connection in 3 Days — ${requestData.group_name}`,
+          html: adminReminderHtml,
+          scheduledAt: reminderScheduledAt,
+        });
+
+        console.log(`Reminder emails scheduled for ${reminderScheduledAt}`);
+      }
+    } catch (reminderError) {
+      console.error('Reminder scheduling error:', reminderError);
+      // Don't fail the approval if reminder scheduling fails
     }
 
     // Return success page

@@ -289,7 +289,6 @@
 .gi-other-input {
   flex: 1;
   border: none;
-  border-bottom: 2px solid var(--color-primary);
   background: transparent;
   font-size: 0.95rem;
   font-weight: 500;
@@ -616,6 +615,7 @@
 @media (max-width: 768px) {
   .get-involved {
     padding: 32px 0;
+    scroll-margin-top: 80px;
   }
 
   .gi-opportunity-grid {

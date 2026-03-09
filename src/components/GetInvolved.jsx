@@ -65,6 +65,7 @@ const supplyCategories = [
       'Pasta',
       'Rice',
       'Peanut butter',
+      'Jelly',
       'Cereal',
       'Canned tuna/chicken',
       'Cooking oil',
@@ -106,7 +107,6 @@ function GetInvolved({
     contactEmail: '',
     contactPhone: '',
     selectedItems: [],
-    otherItems: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -127,8 +127,8 @@ function GetInvolved({
     fetchBookedDates();
   }, []);
 
-  // Generate Friday drop-off dates for the next 2 months
-  const generateFridayDates = () => {
+  // Generate Tuesday drop-off dates for the next 2 months
+  const generateTuesdayDates = () => {
     const dates = [];
     const today = new Date();
     const startDate = new Date(today);
@@ -140,12 +140,12 @@ function GetInvolved({
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      if (currentDate.getDay() === 5) { // Friday
+      if (currentDate.getDay() === 2) { // Tuesday
         const month = currentDate.toLocaleDateString('en-US', { month: 'long' });
         const day = currentDate.getDate();
         dates.push({
-          id: `fri-${month.toLowerCase().slice(0, 3)}-${day}`,
-          day: `Friday, ${month} ${day}`,
+          id: `tue-${month.toLowerCase().slice(0, 3)}-${day}`,
+          day: `Tuesday, ${month} ${day}`,
           time: '9:00 AM - 5:00 PM'
         });
       }
@@ -155,7 +155,7 @@ function GetInvolved({
     return dates;
   };
 
-  const fridayDates = generateFridayDates();
+  const tuesdayDates = generateTuesdayDates();
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePhone = (phone) => phone.replace(/\D/g, '').length >= 10;
@@ -225,8 +225,8 @@ function GetInvolved({
     }
 
     if (step === 3) {
-      if (sdFormData.selectedItems.length === 0 && !sdFormData.otherItems.trim()) {
-        newErrors.selectedItems = 'Please select at least one item or describe what you\'ll bring';
+      if (sdFormData.selectedItems.length === 0) {
+        newErrors.selectedItems = 'Please select at least one item';
       }
     }
 
@@ -285,38 +285,6 @@ function GetInvolved({
     const locationSlots = timeSlotsByLocation[cnFormData.locationId] || [];
     const selectedTimeSlot = locationSlots.find(slot => slot.id === cnFormData.timeSlotId);
 
-    const foodPlanText = cnFormData.foodPlan === 'bring' ? 'Bring food' : 'Cater/deliver food';
-    const activityPlanMap = {
-      'board-games': 'Board games',
-      'bingo': 'Bingo',
-      'trivia': 'Trivia',
-      'crafts': 'Crafts',
-      'other': cnFormData.otherActivity.trim() || 'Other'
-    };
-    const activityPlanText = activityPlanMap[cnFormData.activityPlan] || cnFormData.activityPlan;
-
-    const contentHtml =
-      tableRow('Group', `<strong>${cnFormData.groupName}</strong>`) +
-      tableRow('Date & Time', `${selectedTimeSlot?.day}, ${selectedTimeSlot?.time}`) +
-      tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
-      tableRow('Contact', `${cnFormData.contactName}<br><a href="mailto:${cnFormData.contactEmail}" style="color: #9B1B5D;">${cnFormData.contactEmail}</a><br>${cnFormData.contactPhone}`) +
-      tableRow('Group Size', `${cnFormData.groupSize} people`) +
-      tableRow('Food Plan', foodPlanText) +
-      tableRow('Activity', activityPlanText, true);
-
-    const emailHtml = buildEmailHTML({
-      title: 'Connection Night Request',
-      intro: 'A volunteer group has submitted a request to host a Connection Night at one of our properties. Connection Nights bring together volunteers and residents for an evening of food, fellowship, and community activities.',
-      contentHtml,
-    });
-
-    const templateParams = {
-      to_email: 'jsnook@supportworkshousing.org',
-      email_subject: `Connection Night Request: ${cnFormData.groupName} - ${selectedTimeSlot?.day}`,
-      email_html: emailHtml,
-      reply_to: cnFormData.contactEmail,
-    };
-
     try {
       // Save to database via API (also sends server-side emails)
       await fetch(`${API_BASE}/api/connection-nights`, {
@@ -334,10 +302,6 @@ function GetInvolved({
           },
         }),
       });
-
-      // Client-side EmailJS as backup admin notification
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
-        .catch(err => console.error('EmailJS backup error (non-blocking):', err));
 
       window.gtag?.('event', 'generate_lead', {
         event_category: 'connection_night',
@@ -362,7 +326,7 @@ function GetInvolved({
     setSubmitError(null);
 
     const selectedLocation = locations.find(loc => loc.id === sdFormData.locationId);
-    const selectedDate = fridayDates.find(d => d.id === sdFormData.dropOffDate);
+    const selectedDate = tuesdayDates.find(d => d.id === sdFormData.dropOffDate);
 
     try {
       // Submit to our API for admin tracking
@@ -379,7 +343,6 @@ function GetInvolved({
           contact_email: sdFormData.contactEmail,
           contact_phone: sdFormData.contactPhone,
           selected_items: sdFormData.selectedItems,
-          other_items: sdFormData.otherItems,
         })
       });
 
@@ -388,15 +351,11 @@ function GetInvolved({
         ? sdFormData.selectedItems.map(item => `• ${item}`).join('<br>')
         : 'None selected';
 
-      const otherItemsHtml = sdFormData.otherItems
-        ? `<br><em style="color: #666;">Other: ${sdFormData.otherItems}</em>`
-        : '';
-
       const contentHtml =
         tableRow('Contact', `<strong>${sdFormData.contactName}</strong><br><a href="mailto:${sdFormData.contactEmail}" style="color: #9B1B5D;">${sdFormData.contactEmail}</a><br>${sdFormData.contactPhone}`) +
         tableRow('Date & Time', `${selectedDate?.day}, ${selectedDate?.time}`) +
         tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
-        tableRow('Items', `${itemsList}${otherItemsHtml}`, true);
+        tableRow('Items', itemsList, true);
 
       const emailHtml = buildEmailHTML({
         title: 'Supply Drive Drop-Off',
@@ -456,7 +415,6 @@ function GetInvolved({
       contactEmail: '',
       contactPhone: '',
       selectedItems: [],
-      otherItems: '',
     });
     setErrors({});
   };
@@ -483,7 +441,7 @@ function GetInvolved({
                   </div>
                   <div>
                     <h3>Request Submitted!</h3>
-                    <p>Thank you for your {opportunityType === 'connection-night' ? 'Connection Night' : 'Supply Drive'} submission</p>
+                    <p>Thank you for your {opportunityType === 'connection-night' ? 'Community Connections' : 'Supply Drive'} submission</p>
                   </div>
                 </div>
 
@@ -537,7 +495,7 @@ function GetInvolved({
               <div className="gi-opportunity-icon">
                 <Utensils size={40} />
               </div>
-              <h3>Connection Nights</h3>
+              <h3>Community Connections</h3>
               <p>Host an evening of food, fun, and fellowship with our residents. Bring your group for dinner and activities.</p>
               <span className="gi-opportunity-cta">
                 Schedule a Night <ChevronRight size={18} />
@@ -572,8 +530,8 @@ function GetInvolved({
 
   // Supply drive dates
   const sdStartIdx = datePage * 5;
-  const visibleFridays = fridayDates.slice(sdStartIdx, sdStartIdx + 5);
-  const hasMoreFridays = fridayDates.length > sdStartIdx + 5;
+  const visibleTuesdays = tuesdayDates.slice(sdStartIdx, sdStartIdx + 5);
+  const hasMoreTuesdays = tuesdayDates.length > sdStartIdx + 5;
 
   const totalSteps = 4;
 
@@ -588,10 +546,10 @@ function GetInvolved({
               <Package size={32} color="#9B1B5D" />
             )}
           </div>
-          <h2>{opportunityType === 'connection-night' ? 'Host a Connection Night' : 'Schedule a Supply Drop-Off'}</h2>
+          <h2>{opportunityType === 'connection-night' ? 'Host a Community Connection' : 'Schedule a Supply Drop-Off'}</h2>
           <p>
             {opportunityType === 'connection-night'
-              ? 'Sign up your volunteer group to host an evening of community at one of our properties.'
+              ? 'Sign up your volunteer group to host a Community Connection at one of our properties.'
               : 'Schedule a time to drop off donated supplies at one of our properties.'}
           </p>
         </div>
@@ -614,7 +572,7 @@ function GetInvolved({
                       <div className="gi-step-icon"><Calendar size={24} color="#9B1B5D" /></div>
                       <div>
                         <h3>Choose Location & Time</h3>
-                        <p>Select where and when you'd like to host your Connection Night</p>
+                        <p>Select where and when you'd like to host your Community Connection</p>
                       </div>
                     </div>
 
@@ -761,7 +719,7 @@ function GetInvolved({
                       <div className="gi-step-icon"><ChefHat size={24} color="#9B1B5D" /></div>
                       <div>
                         <h3>Meal & Activity Plan</h3>
-                        <p>Share your plans for food and activities during the Connection Night</p>
+                        <p>Share your plans for food and activities during the Community Connection</p>
                       </div>
                     </div>
 
@@ -885,9 +843,9 @@ function GetInvolved({
 
                     {sdFormData.locationId && (
                       <div className="gi-form-group">
-                        <label><Calendar size={18} /> Available Drop-Off Dates (Fridays)</label>
+                        <label><Calendar size={18} /> Available Drop-Off Dates (Tuesdays)</label>
                         <div className="gi-time-slots">
-                          {visibleFridays.map(date => (
+                          {visibleTuesdays.map(date => (
                             <button
                               key={date.id}
                               type="button"
@@ -898,7 +856,7 @@ function GetInvolved({
                               <span>{date.time}</span>
                             </button>
                           ))}
-                          {hasMoreFridays && (
+                          {hasMoreTuesdays && (
                             <button type="button" className="gi-time-slot gi-more-dates" onClick={() => setDatePage(prev => prev + 1)}>
                               <strong>More Dates</strong>
                               <ChevronRight size={20} />
@@ -997,17 +955,6 @@ function GetInvolved({
                       </div>
                     ))}
 
-                    <div className="gi-form-group">
-                      <label htmlFor="sd-otherItems">Other Items (optional)</label>
-                      <textarea
-                        id="sd-otherItems"
-                        placeholder="Describe any other items you'd like to donate..."
-                        value={sdFormData.otherItems}
-                        onChange={(e) => updateSDField('otherItems', e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-
                     {errors.selectedItems && <span className="gi-error">{errors.selectedItems}</span>}
                   </div>
                 )}
@@ -1029,7 +976,7 @@ function GetInvolved({
                         <div className="gi-review-item"><strong>Address:</strong> <span>{selectedLocation?.address}</span></div>
                         <div className="gi-review-item">
                           <strong>Date & Time:</strong>
-                          <span>{fridayDates.find(d => d.id === sdFormData.dropOffDate)?.day}, {fridayDates.find(d => d.id === sdFormData.dropOffDate)?.time}</span>
+                          <span>{tuesdayDates.find(d => d.id === sdFormData.dropOffDate)?.day}, {tuesdayDates.find(d => d.id === sdFormData.dropOffDate)?.time}</span>
                         </div>
                       </div>
 
@@ -1048,9 +995,6 @@ function GetInvolved({
                               <span key={item} className="gi-review-item-tag">{item}</span>
                             ))}
                           </div>
-                        )}
-                        {sdFormData.otherItems && (
-                          <div className="gi-review-item"><strong>Other:</strong> <span>{sdFormData.otherItems}</span></div>
                         )}
                       </div>
                     </div>

@@ -9,7 +9,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
 const getDenialEmail = (data, reason) => {
   return {
-    subject: 'Connection Night Request Update - SupportWorks Housing',
+    subject: 'Community Connections Request Update - SupportWorks Housing',
     html: `
       <!DOCTYPE html>
       <html>
@@ -27,12 +27,12 @@ const getDenialEmail = (data, reason) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Connection Night Request Update</h1>
+            <h1>Community Connections Request Update</h1>
           </div>
           <div class="content">
             <p>Dear ${data.contact_name},</p>
 
-            <p>Thank you for your interest in hosting a Connection Night at SupportWorks Housing.</p>
+            <p>Thank you for your interest in hosting a Community Connection at SupportWorks Housing.</p>
 
             <div class="info-box">
               <p style="margin: 0;"><strong>We're unable to accommodate your request at this time.</strong></p>
@@ -220,7 +220,7 @@ export default async function handler(req, res) {
         </head>
         <body>
           <div class="container">
-            <h1>Deny Connection Night Request</h1>
+            <h1>Deny Community Connections Request</h1>
             <p class="subtitle">Please review the request details and provide a reason for denial (optional).</p>
 
             <div class="details">

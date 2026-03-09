@@ -48,8 +48,8 @@ function HomePage() {
 
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay();
-      // 2 = Tuesday, 3 = Wednesday, 4 = Thursday
-      if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4) {
+      // 4 = Thursday (dinner), 6 = Saturday (lunch)
+      if (dayOfWeek === 4 || dayOfWeek === 6) {
         const month = currentDate.toLocaleDateString('en-US', { month: 'long' });
         const day = currentDate.getDate();
         const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
@@ -57,7 +57,7 @@ function HomePage() {
         dates.push({
           id: `${dayName.toLowerCase().slice(0, 3)}-${month.toLowerCase().slice(0, 3)}-${day}`,
           day: `${dayName}, ${month} ${day}`,
-          time: '6:00 PM - 8:00 PM'
+          time: dayOfWeek === 4 ? '6:00 PM - 8:00 PM' : '12:00 PM - 2:00 PM'
         });
       }
       currentDate.setDate(currentDate.getDate() + 1);
@@ -75,11 +75,11 @@ function HomePage() {
       <Header />
       <main>
         <Hero />
-        <Impact />
         <About />
+        <Impact />
         <Stories />
-        <Donate />
         <GetInvolved timeSlotsByLocation={connectionNightsTimeSlots} />
+        <Donate />
       </main>
       <Footer />
     </>

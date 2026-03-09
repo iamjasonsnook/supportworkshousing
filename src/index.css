@@ -121,6 +121,7 @@ ul {
 
 .section {
   padding: var(--section-padding) 0;
+  scroll-margin-top: 72px;
 }
 
 /* Button Styles */
@@ -186,6 +187,7 @@ ul {
 
   .section {
     padding: var(--section-padding-mobile) 0;
+    scroll-margin-top: 64px;
   }
 
   .container {
