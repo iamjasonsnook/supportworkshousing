@@ -451,9 +451,6 @@ function GetInvolved({
                     <li>Check your email for a confirmation with your request details</li>
                     <li>Our team will review your submission</li>
                     <li>Once approved, you'll receive a confirmation email</li>
-                    {opportunityType === 'connection-night' && (
-                      <li>Three days before the event, you'll receive a reminder</li>
-                    )}
                   </ol>
                 </div>
               </div>

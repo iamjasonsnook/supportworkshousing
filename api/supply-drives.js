@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
-import { sendEmail, sendEmailViaResend } from './_email.js';
+import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -39,7 +39,7 @@ const getVolunteerReceiptEmail = (data) => ({
             <p style="margin-top: 0;"><strong>What happens next?</strong></p>
             <ol style="margin: 10px 0; padding-left: 20px;">
               <li>A SupportWorks team member will review and confirm your drop-off</li>
-              <li>Three days before your drop-off, you'll receive a reminder</li>
+              <li>You'll receive a confirmation email once your drop-off is approved</li>
             </ol>
           </div>
 
@@ -137,76 +137,6 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
   };
 };
 
-const getReminderEmailHtml = ({ recipientName, data, isAdmin }) => `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <style>
-      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
-      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-      .header h1 { margin: 0; font-size: 24px; }
-      .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-      .info-box { background-color: #FDF2F4; border-left: 4px solid #9B1B5D; padding: 15px; margin: 20px 0; border-radius: 4px; }
-      .info-row { margin: 10px 0; }
-      .info-label { font-weight: 600; color: #1A1A1A; }
-      .items-list { margin: 10px 0; padding-left: 20px; }
-      .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1>⏰ Supply Drop-Off in 3 Days!</h1>
-      </div>
-      <div class="content">
-        <p>Hi ${recipientName},</p>
-        ${isAdmin
-          ? `<p>Just a reminder that a supply drop-off is coming up in 3 days.</p>`
-          : `<p>Your supply drop-off at SupportWorks Housing is just 3 days away!</p>`
-        }
-        <div class="info-box">
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
-          <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-          ${isAdmin ? `
-          <div class="info-row"><span class="info-label">Donor:</span> ${data.contact_name} — <a href="mailto:${data.contact_email}" style="color: #9B1B5D;">${data.contact_email}</a> — ${data.contact_phone}</div>
-          ` : ''}
-        </div>
-        ${data.selected_items && data.selected_items.length > 0 ? `
-        <div class="info-row"><span class="info-label">Items:</span></div>
-        <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
-        ` : ''}
-        ${!isAdmin ? `<p>If anything has changed, please contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>` : ''}
-        <p>Thank you for supporting our residents!</p>
-        <p><strong>SupportWorks Housing Team</strong></p>
-      </div>
-      <div class="footer">
-        <p>SupportWorks Housing | Creating Stable Communities</p>
-      </div>
-    </div>
-  </body>
-  </html>
-`;
-
-// Parse "Tuesday, March 14" → scheduled ISO timestamp at 9 AM ET (1 PM UTC) 3 days before
-const getReminderScheduledAt = (dropOffDate) => {
-  try {
-    const now = new Date();
-    let eventDate = new Date(`${dropOffDate}, ${now.getFullYear()}`);
-    if (isNaN(eventDate.getTime())) return null;
-    if (eventDate < now) eventDate.setFullYear(now.getFullYear() + 1);
-
-    const reminderDate = new Date(eventDate);
-    reminderDate.setDate(reminderDate.getDate() - 3);
-    reminderDate.setUTCHours(13, 0, 0, 0); // 9 AM ET / 1 PM UTC
-
-    if (reminderDate <= now) return null;
-    return reminderDate.toISOString();
-  } catch {
-    return null;
-  }
-};
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -331,30 +261,6 @@ export default async function handler(req, res) {
     });
   } catch (emailError) {
     console.error('Email send error:', emailError);
-  }
-
-  // Schedule 3-day reminder via Resend
-  try {
-    const reminderScheduledAt = getReminderScheduledAt(drop_off_date);
-    if (reminderScheduledAt) {
-      await sendEmailViaResend({
-        to: contact_email,
-        subject: `Reminder: Your Supply Drop-Off is in 3 Days!`,
-        html: getReminderEmailHtml({ recipientName: contact_name, data: emailData, isAdmin: false }),
-        scheduledAt: reminderScheduledAt,
-      });
-
-      await sendEmailViaResend({
-        to: ADMIN_EMAIL,
-        subject: `Reminder: Supply Drop-Off in 3 Days — ${contact_name}`,
-        html: getReminderEmailHtml({ recipientName: 'Jason', data: emailData, isAdmin: true }),
-        scheduledAt: reminderScheduledAt,
-      });
-
-      console.log(`Supply drive reminders scheduled for ${reminderScheduledAt}`);
-    }
-  } catch (reminderError) {
-    console.error('Reminder scheduling error:', reminderError);
   }
 
   return res.status(200).json({ success: true, id: savedId });
