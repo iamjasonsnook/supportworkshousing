@@ -105,24 +105,26 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
       <html>
       <head>
         <style>
-          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #4A4A4A; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 24px; }
+          .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header img { display: block; margin: 0 auto 12px; height: 36px; }
+          .header h1 { margin: 0; font-size: 22px; }
           .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
           .alert-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
           .info-row { margin: 10px 0; }
-          .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; }
+          .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; vertical-align: top; }
           .actions { text-align: center; margin: 30px 0; }
-          .button { display: inline-block; padding: 14px 32px; text-decoration: none; border-radius: 50px; margin: 0 10px; font-weight: 600; }
-          .button-approve { background-color: #10B981; color: white; }
-          .button-deny { background-color: #EF4444; color: white; }
-          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
+          .button { display: inline-block; padding: 14px 32px; text-decoration: none; border-radius: 50px; margin: 0 10px; font-weight: 600; color: white !important; }
+          .button-approve { background-color: #10B981; }
+          .button-deny { background-color: #EF4444; }
+          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" />
             <h1>New Community Connections Request</h1>
           </div>
           <div class="content">
@@ -133,7 +135,8 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
             <h2 style="color: #9B1B5D;">Request Details</h2>
 
             <h3 style="color: #1A1A1A; font-size: 16px;">Location & Time</h3>
-            <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
+            <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
+            <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
             <div class="info-row"><span class="info-label">Time Slot:</span> ${timeInfo}</div>
             ${data.alternate_date_time ? `<div class="info-row"><span class="info-label">Alternate Time:</span> ${data.alternate_date_time}</div>` : ''}
 
