@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Users, ChefHat, CheckCircle, ArrowLeft, ArrowRight, MapPin, Phone, Mail, User, Hash, ChevronRight, Utensils, Package, Heart, Truck } from 'lucide-react';
-import emailjs from '@emailjs/browser';
-import { buildEmailHTML, tableRow } from '../utils/emailTemplate';
 import './GetInvolved.css';
 
 // EmailJS Configuration
-const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
-const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
-const EMAILJS_TEMPLATE = 'universal';
 
 // Format phone number as (xxx)xxx-xxxx
 const formatPhone = (value) => {
@@ -345,37 +340,6 @@ function GetInvolved({
           selected_items: sdFormData.selectedItems,
         })
       });
-
-      // Format items as bullet list for email
-      const itemsList = sdFormData.selectedItems.length > 0
-        ? sdFormData.selectedItems.map(item => `• ${item}`).join('<br>')
-        : 'None selected';
-
-      const contentHtml =
-        tableRow('Contact', `<strong>${sdFormData.contactName}</strong><br><a href="mailto:${sdFormData.contactEmail}" style="color: #9B1B5D;">${sdFormData.contactEmail}</a><br>${sdFormData.contactPhone}`) +
-        tableRow('Date & Time', `${selectedDate?.day}, ${selectedDate?.time}`) +
-        tableRow('Location', `${selectedLocation?.name}<br><span style="color: #666;">${selectedLocation?.address}</span>`) +
-        tableRow('Items', itemsList, true);
-
-      const emailHtml = buildEmailHTML({
-        title: 'Supply Drive Drop-Off',
-        intro: 'A donor has scheduled a supply drop-off for our residents. These in-kind donations help provide essential items like toiletries, cleaning supplies, and household goods to families in our housing program.',
-        contentHtml,
-      });
-
-      const templateParams = {
-        to_email: 'jsnook@supportworkshousing.org',
-        email_subject: `Supply Drive Drop-Off: ${sdFormData.contactName} - ${selectedDate?.day}`,
-        email_html: emailHtml,
-        reply_to: sdFormData.contactEmail,
-      };
-
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
 
       window.gtag?.('event', 'generate_lead', {
         event_category: 'supply_drive',
