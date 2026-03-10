@@ -221,7 +221,7 @@ const getApprovalEmail = (data) => {
             <p style="margin-top: 20px;">SupportWorks Housing Team</p>
           </div>
           <div class="footer">
-            <p>SupportWorks Housing | Creating Stable Communities</p>
+            <p>SupportWorks Housing | Making Homelessness History</p>
           </div>
         </div>
       </body>
