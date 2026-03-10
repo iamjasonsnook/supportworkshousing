@@ -67,8 +67,7 @@ const getVolunteerReceiptEmail = (data) => ({
 });
 
 const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
-  const approveUrl = `${appUrl}/api/approve-supply-drive?token=${confirmationToken}`;
-  const denyUrl = `${appUrl}/api/deny-supply-drive?token=${confirmationToken}`;
+  const portalUrl = `${appUrl}/admin`;
 
   return {
     subject: `New Supply Drive Drop-Off - ${data.contact_name} on ${data.drop_off_date}`,
@@ -77,20 +76,16 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
       <html>
       <head>
         <style>
-          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #4A4A4A; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 24px; }
+          .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header h1 { margin: 0; font-size: 22px; }
           .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
           .alert-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
           .info-row { margin: 10px 0; }
-          .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; }
+          .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; vertical-align: top; }
           .items-list { margin: 10px 0; padding-left: 20px; }
-          .actions { text-align: center; margin: 30px 0; }
-          .button { display: inline-block; padding: 14px 32px; text-decoration: none; border-radius: 50px; margin: 0 10px; font-weight: 600; }
-          .button-approve { background-color: #10B981; color: white; }
-          .button-deny { background-color: #EF4444; color: white; }
-          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
+          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
         </style>
       </head>
       <body>
@@ -100,7 +95,7 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
           </div>
           <div class="content">
             <div class="alert-box">
-              <strong>Action Required:</strong> Please review and approve or deny this supply drop-off request.
+              <strong>Action Required:</strong> A new supply drop-off request needs your review. <a href="${portalUrl}" style="color: #9B1B5D;">Log in to the admin portal</a> to approve or deny.
             </div>
 
             <h2 style="color: #9B1B5D;">Drop-Off Details</h2>
@@ -117,18 +112,9 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Items to Donate</h3>
             <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
             ` : ''}
-
-            <div class="actions">
-              <a href="${approveUrl}" class="button button-approve">✓ Approve Drop-Off</a>
-              <a href="${denyUrl}" class="button button-deny">✗ Deny Drop-Off</a>
-            </div>
-
-            <p style="text-align: center; color: #6B7280; font-size: 14px; margin-top: 20px;">
-              Click a button above to approve or deny. The donor will be notified automatically.
-            </p>
           </div>
           <div class="footer">
-            <p>SupportWorks Housing | Mission Advancement</p>
+            <p>SupportWorks Housing | Making Homelessness History</p>
           </div>
         </div>
       </body>
