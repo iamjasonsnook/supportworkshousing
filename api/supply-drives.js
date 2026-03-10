@@ -29,6 +29,7 @@ const getVolunteerReceiptEmail = (data) => ({
     <body>
       <div class="container">
         <div class="header">
+          <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
           <h1>Thank You for Your Donation!</h1>
         </div>
         <div class="content">
@@ -67,7 +68,7 @@ const getVolunteerReceiptEmail = (data) => ({
 });
 
 const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
-  const portalUrl = `${appUrl}/admin`;
+  const portalUrl = 'https://supportworkshousing.vercel.app/admin';
 
   return {
     subject: `New Supply Drive Drop-Off - ${data.contact_name} on ${data.drop_off_date}`,
@@ -91,6 +92,7 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>New Supply Drive Drop-Off</h1>
           </div>
           <div class="content">

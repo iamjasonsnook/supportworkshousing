@@ -15,8 +15,9 @@ const getApprovalEmail = (data) => ({
       <style>
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #10B981; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header h1 { margin: 0; font-size: 24px; }
+        .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
+        .header h1 { margin: 0; font-size: 22px; }
         .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
         .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
         .info-row { margin: 10px 0; }
@@ -28,7 +29,8 @@ const getApprovalEmail = (data) => ({
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Your Drop-Off is Confirmed!</h1>
+          <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+          <h1>Your Drop-Off is Confirmed!</h1>
         </div>
         <div class="content">
           <p>Dear ${data.contact_name},</p>
@@ -52,7 +54,7 @@ const getApprovalEmail = (data) => ({
           <p>SupportWorks Housing Team</p>
         </div>
         <div class="footer">
-          <p>SupportWorks Housing | Creating Stable Communities</p>
+          <p>SupportWorks Housing | Making Homelessness History</p>
         </div>
       </div>
     </body>

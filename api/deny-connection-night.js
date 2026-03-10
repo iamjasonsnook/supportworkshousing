@@ -27,6 +27,7 @@ const getDenialEmail = (data, reason) => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Community Connections Request Update</h1>
           </div>
           <div class="content">
@@ -56,7 +57,7 @@ const getDenialEmail = (data, reason) => {
             <p style="margin-top: 20px;">SupportWorks Housing Team</p>
           </div>
           <div class="footer">
-            <p>SupportWorks Housing | Creating Stable Communities</p>
+            <p>SupportWorks Housing | Making Homelessness History</p>
           </div>
         </div>
       </body>

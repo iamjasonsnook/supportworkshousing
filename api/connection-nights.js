@@ -36,6 +36,7 @@ const getVolunteerReceiptEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
@@ -92,7 +93,7 @@ const getVolunteerReceiptEmail = (data) => {
 const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
   const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
   const groupType = data.is_individual ? 'Individual' : 'Group/Organization';
-  const portalUrl = `${appUrl}/admin`;
+  const portalUrl = 'https://supportworkshousing.vercel.app/admin';
 
   return {
     subject: `New Community Connections Request - ${data.group_name}`,
@@ -115,6 +116,7 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>New Community Connections Request</h1>
           </div>
           <div class="content">
