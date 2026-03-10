@@ -225,7 +225,7 @@ async function handleGetEvents(req, res) {
         .select('*')
         .order('created_at', { ascending: false });
       if (sdData) {
-        supabaseSupplyDrives = sdData.map(e => ({ ...e, event_type: 'supply-drive' }));
+        supabaseSupplyDrives = sdData.map(e => ({ ...e, event_type: 'supply-drive', items: e.selected_items }));
       }
     } catch (err) {
       console.error('Supabase supply_drives error:', err.message);
