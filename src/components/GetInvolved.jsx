@@ -507,7 +507,7 @@ function GetInvolved({
                 <Package size={40} />
               </div>
               <h3>Supply Drives</h3>
-              <p>Donate essential items like toiletries, cleaning supplies, linens, and non-perishable food for our residents.</p>
+              <p>Donate toiletries, cleaning supplies, linens, and non-perishable food for our residents.</p>
               <span className="gi-opportunity-cta">
                 Schedule a Drop-Off <ChevronRight size={18} />
               </span>
