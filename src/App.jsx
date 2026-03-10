@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Impact from './components/Impact';
@@ -13,6 +15,14 @@ import './App.css';
 
 function HomePage() {
   const location = useLocation();
+  const [bookedDates, setBookedDates] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/booked-dates`)
+      .then(r => r.json())
+      .then(data => setBookedDates(data.bookedDates || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Handle hash-based scrolling (e.g., /#donate, /#volunteer)
@@ -67,7 +77,7 @@ function HomePage() {
   };
 
   const connectionNightsTimeSlots = {
-    'clay-house': generateConnectionNightsDates()
+    'clay-house': generateConnectionNightsDates().filter(slot => !bookedDates.includes(slot.day))
   };
 
   return (

@@ -297,7 +297,7 @@ function Admin() {
   };
 
   const handleApprove = async (event) => {
-    if (!confirm(`Approve Connection Night for ${event.group_name}?`)) return;
+    if (!confirm(`Approve Community Connection for ${event.group_name}?`)) return;
 
     setActionLoading(event.id);
     try {
@@ -318,7 +318,7 @@ function Admin() {
   };
 
   const handleDeny = async (event) => {
-    const reason = prompt(`Deny Connection Night for ${event.group_name}?\n\nEnter a reason (optional):`);
+    const reason = prompt(`Deny Community Connection for ${event.group_name}?\n\nEnter a reason (optional):`);
     if (reason === null) return;
 
     setActionLoading(event.id);
@@ -1025,7 +1025,7 @@ function Admin() {
                   <div className="event-title">
                     <div className="event-type-badge">
                       {isSupplyDrive ? <Package size={16} /> : <Users size={16} />}
-                      <span>{isSupplyDrive ? 'Supply Drive' : 'Connection Night'}</span>
+                      <span>{isSupplyDrive ? 'Supply Drive' : 'Community Connections'}</span>
                     </div>
                     <h3>{isSupplyDrive ? (item.organization || item.contact_name) : item.group_name}</h3>
                     {getStatusBadge(item.status)}
