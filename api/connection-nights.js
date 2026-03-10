@@ -36,7 +36,6 @@ const getVolunteerReceiptEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 36px;" />
             <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
@@ -91,12 +90,9 @@ const getVolunteerReceiptEmail = (data) => {
 };
 
 const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
-  const locationInfo = `${data.location_name} - ${data.location_address}`;
   const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
   const groupType = data.is_individual ? 'Individual' : 'Group/Organization';
-
-  const approveUrl = `${appUrl}/api/approve-connection-night?token=${confirmationToken}`;
-  const denyUrl = `${appUrl}/api/deny-connection-night?token=${confirmationToken}`;
+  const portalUrl = `${appUrl}/admin`;
 
   return {
     subject: `New Community Connections Request - ${data.group_name}`,
@@ -108,28 +104,22 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
           body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #4A4A4A; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header img { display: block; margin: 0 auto 12px; height: 36px; }
           .header h1 { margin: 0; font-size: 22px; }
           .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
           .alert-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
           .info-row { margin: 10px 0; }
           .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; vertical-align: top; }
-          .actions { text-align: center; margin: 30px 0; }
-          .button { display: inline-block; padding: 14px 32px; text-decoration: none; border-radius: 50px; margin: 0 10px; font-weight: 600; color: white !important; }
-          .button-approve { background-color: #10B981; }
-          .button-deny { background-color: #EF4444; }
           .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" />
             <h1>New Community Connections Request</h1>
           </div>
           <div class="content">
             <div class="alert-box">
-              <strong>Action Required:</strong> Please review and approve or deny this Community Connections request.
+              <strong>Action Required:</strong> A new Community Connections request needs your review. <a href="${portalUrl}" style="color: #9B1B5D;">Log in to the admin portal</a> to approve or deny.
             </div>
 
             <h2 style="color: #9B1B5D;">Request Details</h2>
@@ -151,18 +141,9 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Event Plan</h3>
             <div class="info-row"><span class="info-label">Food Plan:</span> ${data.food_plan === 'bring' ? 'Bring food' : data.food_plan === 'cater' ? 'Cater/deliver food' : 'Request guidance'}</div>
             ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${data.food_details}</div>` : ''}
-            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan}</div>
+            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : ''}</div>
             ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
             ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${data.property_notes}</div>` : ''}
-
-            <div class="actions">
-              <a href="${approveUrl}" class="button button-approve">✓ Approve Request</a>
-              <a href="${denyUrl}" class="button button-deny">✗ Deny Request</a>
-            </div>
-
-            <p style="text-align: center; color: #6B7280; font-size: 14px; margin-top: 20px;">
-              Click the button above to approve or deny this request. The volunteer will be notified automatically.
-            </p>
           </div>
           <div class="footer">
             <p>SupportWorks Housing | Making Homelessness History</p>
