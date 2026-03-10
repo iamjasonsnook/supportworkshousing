@@ -59,7 +59,7 @@ const getVolunteerReceiptEmail = (data) => ({
           <p><strong>SupportWorks Housing Team</strong></p>
         </div>
         <div class="footer">
-          <p>SupportWorks Housing | Creating Stable Communities</p>
+          <p>SupportWorks Housing | Making Homelessness History</p>
         </div>
       </div>
     </body>
