@@ -493,7 +493,7 @@ function GetInvolved({
                 <Utensils size={40} />
               </div>
               <h3>Community Connections</h3>
-              <p>Host a meal of food, fun, and fellowship with our residents. Bring your group for lunch or dinner and activities.</p>
+              <p>Bring your group for a meal and meaningful connection with our residents.</p>
               <span className="gi-opportunity-cta">
                 Schedule a Night <ChevronRight size={18} />
               </span>
