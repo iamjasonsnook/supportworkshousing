@@ -12,6 +12,9 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from '../_cors.js';
+import { sendEmail } from '../_email.js';
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
 // ─── Supabase helper ────────────────────────────────────────────────────────
 
@@ -240,20 +243,77 @@ async function handleGetEvents(req, res) {
 async function handleApproveEvent(req, res, id) {
   const supabase = getSupabase();
   if (supabase && id.includes('-') && id.length > 10) {
-    try {
-      await supabase.from('connection_nights')
-        .update({ status: 'approved', approved_by: 'admin', approved_at: new Date().toISOString() })
-        .eq('id', id);
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error('Supabase approve error:', err.message);
+    // Fetch record first so we can send confirmation email
+    const { data: eventData, error: fetchError } = await supabase
+      .from('connection_nights').select('*').eq('id', id).single();
+    if (fetchError || !eventData) {
+      return res.status(404).json({ error: 'Event not found' });
     }
+
+    const { error: updateError } = await supabase.from('connection_nights')
+      .update({ status: 'approved', approved_by: ADMIN_EMAIL, approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (updateError) {
+      console.error('Supabase approve error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to approve event' });
+    }
+
+    // Send volunteer confirmation email
+    try {
+      const appUrl = process.env.APP_URL || 'https://supportworkshousing.vercel.app';
+      const locationInfo = `${eventData.location_name} - ${eventData.location_address}`;
+      const timeInfo = `${eventData.time_slot_day}, ${eventData.time_slot_time}`;
+      await sendEmail({
+        to: eventData.contact_email,
+        subject: 'Your Community Connection is Confirmed! - SupportWorks Housing',
+        html: `<!DOCTYPE html><html><head><style>
+          body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #4A4A4A; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
+          .header h1 { margin: 0; font-size: 22px; }
+          .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
+          .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .info-row { margin: 10px 0; }
+          .info-label { font-weight: 600; color: #1A1A1A; }
+          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
+        </style></head><body>
+        <div class="container">
+          <div class="header">
+            <img src="${appUrl}/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <h1>Your Community Connection is Confirmed!</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${eventData.contact_name},</p>
+            <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your Community Connection has been confirmed by our team.</p></div>
+            <p>We're excited to have you create meaningful connections with our residents!</p>
+            <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
+            <div class="info-row"><span class="info-label">Location:</span> ${eventData.location_name}</div>
+            <div class="info-row"><span class="info-label">Address:</span> ${eventData.location_address}</div>
+            <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
+            <div class="info-row"><span class="info-label">Group Size:</span> ${eventData.group_size} people</div>
+            <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
+            <ul style="line-height: 2;">
+              <li>The property manager has been notified and will be ready to welcome you</li>
+              <li>Please arrive 15 minutes early to coordinate with property staff</li>
+              <li>Bring any materials or food you planned for the event</li>
+            </ul>
+            <p style="margin-top: 30px;">If you have any questions, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+            <p><strong>Thank you for making a difference!</strong></p>
+            <p>SupportWorks Housing Team</p>
+          </div>
+          <div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div>
+        </div></body></html>`,
+      });
+    } catch (emailErr) {
+      console.error('Confirmation email error:', emailErr.message);
+    }
+
+    return res.status(200).json({ success: true });
   }
   // Fallback to mock
   const event = mockEvents.find(e => e.id === id);
-  if (event) {
-    event.status = 'approved';
-  }
+  if (event) event.status = 'approved';
   return res.status(200).json({ success: true });
 }
 
@@ -261,14 +321,14 @@ async function handleDenyEvent(req, res, id) {
   const { reason } = req.body || {};
   const supabase = getSupabase();
   if (supabase && id.includes('-') && id.length > 10) {
-    try {
-      await supabase.from('connection_nights')
-        .update({ status: 'denied', denial_reason: reason || null, approved_by: 'admin', approved_at: new Date().toISOString() })
-        .eq('id', id);
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error('Supabase deny error:', err.message);
+    const { error: updateError } = await supabase.from('connection_nights')
+      .update({ status: 'denied', denial_reason: reason || null, approved_by: ADMIN_EMAIL, approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (updateError) {
+      console.error('Supabase deny error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to deny event' });
     }
+    return res.status(200).json({ success: true });
   }
   // Fallback to mock
   const event = mockEvents.find(e => e.id === id);
@@ -282,14 +342,67 @@ async function handleDenyEvent(req, res, id) {
 async function handleApproveSupplyDrive(req, res, id) {
   const supabase = getSupabase();
   if (supabase && id.includes('-') && id.length > 10) {
-    try {
-      await supabase.from('supply_drives')
-        .update({ status: 'approved' })
-        .eq('id', id);
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error('Supabase approve supply drive error:', err.message);
+    const { data: driveData, error: fetchError } = await supabase
+      .from('supply_drives').select('*').eq('id', id).single();
+    if (fetchError || !driveData) {
+      return res.status(404).json({ error: 'Supply drive not found' });
     }
+
+    const { error: updateError } = await supabase.from('supply_drives')
+      .update({ status: 'approved', approved_by: ADMIN_EMAIL, approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (updateError) {
+      console.error('Supabase approve supply drive error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to approve supply drive' });
+    }
+
+    // Send volunteer confirmation email
+    try {
+      const appUrl = process.env.APP_URL || 'https://supportworkshousing.vercel.app';
+      await sendEmail({
+        to: driveData.contact_email,
+        subject: 'Your Supply Drop-Off is Confirmed! - SupportWorks Housing',
+        html: `<!DOCTYPE html><html><head><style>
+          body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #4A4A4A; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
+          .header h1 { margin: 0; font-size: 22px; }
+          .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
+          .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .info-row { margin: 10px 0; }
+          .info-label { font-weight: 600; color: #1A1A1A; }
+          .items-list { margin: 10px 0; padding-left: 20px; }
+          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
+        </style></head><body>
+        <div class="container">
+          <div class="header">
+            <img src="${appUrl}/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <h1>Your Drop-Off is Confirmed!</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${driveData.contact_name},</p>
+            <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p></div>
+            <p>Thank you for donating essential items to support our residents!</p>
+            <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
+            <div class="info-row"><span class="info-label">Location:</span> ${driveData.location_name}</div>
+            <div class="info-row"><span class="info-label">Address:</span> ${driveData.location_address}</div>
+            <div class="info-row"><span class="info-label">Date & Time:</span> ${driveData.drop_off_date}, ${driveData.drop_off_time}</div>
+            ${driveData.selected_items && driveData.selected_items.length > 0 ? `
+            <div class="info-row"><span class="info-label">Items:</span></div>
+            <ul class="items-list">${driveData.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
+            <p style="margin-top: 30px;">If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+            <p><strong>Thank you for making a difference!</strong></p>
+            <p>SupportWorks Housing Team</p>
+          </div>
+          <div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div>
+        </div></body></html>`,
+      });
+    } catch (emailErr) {
+      console.error('Confirmation email error:', emailErr.message);
+    }
+
+    return res.status(200).json({ success: true });
   }
   // Fallback to mock
   const sd = mockSupplyDrives.find(e => e.id === id);
@@ -304,14 +417,14 @@ async function handleDenySupplyDrive(req, res, id) {
   const { reason } = req.body || {};
   const supabase = getSupabase();
   if (supabase && id.includes('-') && id.length > 10) {
-    try {
-      await supabase.from('supply_drives')
-        .update({ status: 'denied', denial_reason: reason || null })
-        .eq('id', id);
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error('Supabase deny supply drive error:', err.message);
+    const { error: updateError } = await supabase.from('supply_drives')
+      .update({ status: 'denied', denial_reason: reason || null, approved_by: ADMIN_EMAIL, approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (updateError) {
+      console.error('Supabase deny supply drive error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to deny supply drive' });
     }
+    return res.status(200).json({ success: true });
   }
   // Fallback to mock
   const sd = mockSupplyDrives.find(e => e.id === id);
