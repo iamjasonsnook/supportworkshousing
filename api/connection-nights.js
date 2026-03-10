@@ -36,6 +36,7 @@ const getVolunteerReceiptEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 36px;" />
             <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
@@ -48,7 +49,6 @@ const getVolunteerReceiptEmail = (data) => {
               <ol style="margin: 10px 0; padding-left: 20px;">
                 <li>A SupportWorks team member will review your request and confirm</li>
                 <li>Once approved, you'll receive a confirmation email</li>
-                <li>Three days before the event, you'll receive a reminder</li>
               </ol>
             </div>
 
@@ -70,7 +70,7 @@ const getVolunteerReceiptEmail = (data) => {
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Event Plan</h3>
             <div class="info-row"><span class="info-label">Food Plan:</span> ${data.food_plan === 'bring' ? 'Bring food' : data.food_plan === 'cater' ? 'Cater/deliver food' : 'Request guidance'}</div>
             ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${data.food_details}</div>` : ''}
-            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan}</div>
+            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : ''}</div>
             ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
             ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${data.property_notes}</div>` : ''}
 
@@ -81,7 +81,7 @@ const getVolunteerReceiptEmail = (data) => {
             <p style="margin-top: 20px;"><strong>SupportWorks Housing Team</strong></p>
           </div>
           <div class="footer">
-            <p>SupportWorks Housing | Creating Stable Communities</p>
+            <p>SupportWorks Housing | Making Homelessness History</p>
           </div>
         </div>
       </body>
@@ -165,7 +165,7 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
             </p>
           </div>
           <div class="footer">
-            <p>SupportWorks Housing | Mission Advancement</p>
+            <p>SupportWorks Housing | Making Homelessness History</p>
           </div>
         </div>
       </body>
