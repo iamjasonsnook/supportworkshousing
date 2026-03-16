@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import emailjs from '@emailjs/browser';
-import { buildEmailHTML, tableRow } from '../utils/emailTemplate';
 import './Donate.css';
 
 // Stripe Configuration
@@ -12,11 +10,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 const ADMIN_EMAIL = 'jsnook@supportworkshousing.org';
 
 const API_BASE = '';
-
-// EmailJS Configuration
-const EMAILJS_SERVICE_ID = 'service_EmailJSBrevo';
-const EMAILJS_PUBLIC_KEY = '76TcHTUs1bvcN68kM';
-const EMAILJS_TEMPLATE = 'universal';
 
 // Stripe Elements styling to match existing inputs
 const CARD_ELEMENT_OPTIONS = {
@@ -58,6 +51,8 @@ function DonateForm() {
   const [paymentIntentId, setPaymentIntentId] = useState(null);
   const [subscriptionId, setSubscriptionId] = useState(null);
   const [cardBrand, setCardBrand] = useState(null);
+  const [cardLast4Preview, setCardLast4Preview] = useState(null);
+  const [previewPaymentMethodId, setPreviewPaymentMethodId] = useState(null);
   const [confirmedPayment, setConfirmedPayment] = useState(null);
   const [cardComplete, setCardComplete] = useState({
     cardNumber: false,
@@ -199,6 +194,10 @@ function DonateForm() {
         setClientSecret(data.clientSecret);
         setPaymentIntentId(data.paymentIntentId);
         if (data.subscriptionId) setSubscriptionId(data.subscriptionId);
+        window.gtag?.('event', 'add_payment_info', {
+          currency: 'USD',
+          value: Number(formData.customAmount || formData.amount),
+        });
         setCurrentStep(2);
       } catch (error) {
         console.error('PaymentIntent creation failed:', error);
@@ -209,6 +208,30 @@ function DonateForm() {
       return;
     }
 
+    // Get card last4 when moving to review step
+    if (currentStep === 2 && stripe && elements) {
+      try {
+        const cardElement = elements.getElement(CardNumberElement);
+        const { paymentMethod, error } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: { name: formData.cardName },
+        });
+        if (!error && paymentMethod) {
+          setCardLast4Preview(paymentMethod.card.last4);
+          setPreviewPaymentMethodId(paymentMethod.id);
+        }
+      } catch (e) {
+        // Non-critical — proceed without last4
+      }
+    }
+
+    if (currentStep === 2) {
+      window.gtag?.('event', 'donation_payment_entered', {
+        currency: 'USD',
+        value: Number(formData.customAmount || formData.amount),
+      });
+    }
     setCurrentStep(prev => Math.min(prev + 1, 3));
   };
 
@@ -249,7 +272,7 @@ function DonateForm() {
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
         {
-          payment_method: {
+          payment_method: previewPaymentMethodId || {
             card: elements.getElement(CardNumberElement),
             billing_details: {
               name: formData.cardName,
@@ -300,63 +323,27 @@ function DonateForm() {
         brand: confirmedBrand,
       });
 
-      // Payment succeeded — send email notification
+      // Payment succeeded — send server-side notification emails (non-blocking)
       const donationAmount = formData.customAmount || formData.amount;
-      const donationTypeText = formData.donationType === 'monthly' ? 'Monthly' : 'One-time';
-
-      const brandDisplay = formatCardBrand(confirmedBrand);
-      const contentHtml =
-        tableRow('Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
-        tableRow('Card', `•••• •••• •••• ${cardLast4} (${brandDisplay})`) +
-        tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong><br><a href="mailto:${formData.email}" style="color: #9B1B5D;">${formData.email}</a>${formData.phone ? '<br>' + formData.phone : ''}`) +
-        (formData.address ? tableRow('Address', `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`) : '') +
-        `<tr>
-          <td colspan="2" style="padding: 16px 0 0; font-size: 12px; color: #6B7280; text-align: center;">
-            🔒 Processed securely by Stripe • Transaction ID: ${paymentIntent.id}
-          </td>
-        </tr>`;
-
-      const emailHtml = buildEmailHTML({
-        title: 'Donation Received',
-        intro: 'A new donation has been processed through Stripe on the SupportWorks Housing website.',
-        contentHtml,
-      });
-
-      const templateParams = {
-        to_email: 'jsnook@supportworkshousing.org',
-        email_subject: `Donation Received: $${donationAmount} from ${formData.firstName} ${formData.lastName}`,
-        email_html: emailHtml,
-        reply_to: formData.email,
-      };
-
-      // Fire EmailJS admin notification (non-blocking).
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, templateParams, EMAILJS_PUBLIC_KEY)
-        .catch(err => console.error('EmailJS admin notification error (non-blocking):', err));
-
-      // Accounting notification with expected payout
-      const grossAmount = Number(donationAmount);
-      const stripeFee = (grossAmount * 0.022) + 0.30;
-      const expectedPayout = (grossAmount - stripeFee).toFixed(2);
-      const acctContentHtml =
-        tableRow('Donor', `<strong>${formData.firstName} ${formData.lastName}</strong>`) +
-        tableRow('Donation Amount', `<strong>$${donationAmount}</strong> (${donationTypeText})`) +
-        tableRow('Stripe Fee', `−$${stripeFee.toFixed(2)} (2.2% + $0.30)`) +
-        tableRow('Expected Payout', `<strong style="color: #16a34a;">$${expectedPayout}</strong>`, true);
-
-      const acctEmailHtml = buildEmailHTML({
-        title: 'Donation Payout Notification',
-        intro: 'A new donation has been processed. Below are the details and expected payout to the operating account.',
-        contentHtml: acctContentHtml,
-      });
-
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE, {
-        to_email: 'accountsreceivable@supportworkshousing.org',
-        email_subject: `Donation Payout: $${expectedPayout} expected from $${donationAmount} donation`,
-        email_html: acctEmailHtml,
-        reply_to: ADMIN_EMAIL,
-        cc: 'kclifford@supportworkshousing.org',
-      }, EMAILJS_PUBLIC_KEY)
-        .catch(err => console.error('EmailJS accounting notification error (non-blocking):', err));
+      fetch(`${API_BASE}/api/send-donation-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: donationAmount,
+          donationType: formData.donationType,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip: formData.zip,
+          cardBrand: formatCardBrand(confirmedBrand),
+          cardLast4,
+          transactionId: paymentIntent.id,
+        }),
+      }).catch(err => console.error('Donation notification error (non-blocking):', err));
 
       // Bloomerang CRM recording is handled by the Stripe webhook (api/stripe-webhook.js)
 
@@ -383,6 +370,8 @@ function DonateForm() {
     setPaymentIntentId(null);
     setSubscriptionId(null);
     setCardBrand(null);
+    setCardLast4Preview(null);
+    setPreviewPaymentMethodId(null);
     setConfirmedPayment(null);
     setCardComplete({ cardNumber: false, cardExpiry: false, cardCvc: false });
     setCardErrors({ cardNumber: null, cardExpiry: null, cardCvc: null });
@@ -431,15 +420,6 @@ function DonateForm() {
                   {formData.donationType === 'monthly' ? 'Monthly donation set up successfully' : 'One-time donation complete'}
                 </p>
               </div>
-
-              {confirmedPayment && (
-                <div className="donate-review-section" style={{ marginBottom: 16 }}>
-                  <div className="donate-review-item">
-                    <strong>Card:</strong>
-                    <span>•••• •••• •••• {confirmedPayment.last4} ({formatCardBrand(confirmedPayment.brand)})</span>
-                  </div>
-                </div>
-              )}
 
               <div className="donate-next-steps">
                 <h4>What happens next?</h4>
@@ -840,7 +820,7 @@ function DonateForm() {
                     )}
                     <div className="donate-review-item">
                       <strong>Card:</strong>
-                      <span>{formData.cardName} ({formatCardBrand(cardBrand)})</span>
+                      <span>{formData.cardName} · {formatCardBrand(cardBrand)}{cardLast4Preview ? ` •••• ${cardLast4Preview}` : ''}</span>
                     </div>
                   </div>
 

@@ -6,6 +6,7 @@ import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
 
 const getVolunteerReceiptEmail = (data) => ({
   subject: 'Supply Drive Drop-Off Confirmed - SupportWorks Housing',
@@ -29,7 +30,7 @@ const getVolunteerReceiptEmail = (data) => ({
     <body>
       <div class="container">
         <div class="header">
-          <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
           <h1>Thank You for Your Donation!</h1>
         </div>
         <div class="content">
@@ -68,7 +69,7 @@ const getVolunteerReceiptEmail = (data) => ({
 });
 
 const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
-  const portalUrl = 'https://supportworkshousing.vercel.app/admin';
+  const portalUrl = 'https://supportworkshousing.org/admin';
 
   return {
     subject: `New Supply Drive Drop-Off - ${data.contact_name} on ${data.drop_off_date}`,
@@ -92,7 +93,7 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>New Supply Drive Drop-Off</h1>
           </div>
           <div class="content">

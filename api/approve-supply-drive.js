@@ -29,7 +29,7 @@ const getApprovalEmail = (data) => ({
     <body>
       <div class="container">
         <div class="header">
-          <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
           <h1>Your Drop-Off is Confirmed!</h1>
         </div>
         <div class="content">

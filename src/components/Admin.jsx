@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart } from 'lucide-react';
+import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, BarChart2 } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -11,7 +11,8 @@ function Admin() {
   const [events, setEvents] = useState([]);
   const [supplyDrives, setSupplyDrives] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(['pending', 'approved']);
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'connection-night', 'supply-drive'
   const [actionLoading, setActionLoading] = useState(null);
   const [calendarView, setCalendarView] = useState('month'); // 'week' or 'month'
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -37,7 +38,15 @@ function Admin() {
   const [donationFilter, setDonationFilter] = useState('all'); // 'all', 'one-time', 'monthly'
   const [donationSearch, setDonationSearch] = useState('');
   const [donationSort, setDonationSort] = useState('newest'); // 'newest', 'oldest', 'highest', 'lowest'
-  const [showTestData, setShowTestData] = useState(true);
+  const [showTestData, setShowTestData] = useState(false);
+
+  // GA4 Analytics state
+  const [ga4Data, setGa4Data] = useState(null);
+  const [ga4Loading, setGa4Loading] = useState(false);
+  const [ga4Error, setGa4Error] = useState('');
+  const [ga4Range, setGa4Range] = useState('30');
+  const [ga4Fetched, setGa4Fetched] = useState(false);
+
   const togglePeopleFilter = (filter) => {
     setPeopleFilters(prev =>
       prev.includes(filter)
@@ -213,6 +222,30 @@ function Admin() {
       }
     } catch (err) {
       console.error('Failed to fetch donations:', err);
+    }
+  };
+
+  const fetchGa4Data = async (range) => {
+    setGa4Loading(true);
+    setGa4Error('');
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/ga4-report?range=${range}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        handleLogout();
+        return;
+      }
+
+      const data = await response.json();
+      setGa4Data(data);
+      setGa4Fetched(true);
+    } catch (err) {
+      setGa4Error('Failed to load analytics data.');
+    } finally {
+      setGa4Loading(false);
     }
   };
 
@@ -536,7 +569,7 @@ function Admin() {
     const eventsOnDate = getEventsForDate(date);
     if (eventsOnDate.length > 0) {
       setSelectedDate(date);
-      setFilter('all');
+      setFilter([]);
     }
   };
 
@@ -545,12 +578,13 @@ function Admin() {
     const filteredEvts = showTestData ? events : events.filter(e => !e._test);
     const filteredDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
 
+    // Build base item list respecting type filter
+    let evtItems = typeFilter !== 'supply-drive' ? filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })) : [];
+    let driveItems = typeFilter !== 'connection-night' ? filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })) : [];
+
     if (selectedDate) {
-      // When date is selected, show all items for that date
-      const allItems = [
-        ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
-        ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
-      ];
+      const allItems = [...evtItems, ...driveItems]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       return allItems.filter(item => {
         const itemDate = parseEventDate(item);
         if (!itemDate) return false;
@@ -558,33 +592,29 @@ function Admin() {
       });
     }
 
-    // Combine events and supply drives for display
-    const allItems = [
-      ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
-      ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
-    ];
+    const allItems = [...evtItems, ...driveItems]
+      .sort((a, b) => (parseEventDate(a) || 0) - (parseEventDate(b) || 0));
 
-    if (filter !== 'all') {
-      return allItems.filter(e => e.status === filter);
+    if (filter.length > 0) {
+      return allItems.filter(e => filter.includes(e.status));
     }
 
     return allItems;
-  }, [events, supplyDrives, filter, selectedDate, showTestData]);
+  }, [events, supplyDrives, filter, typeFilter, selectedDate, showTestData]);
 
   // Calculate stats based on timeframe
   // Estimated values for supply drive items (for in-kind donation records)
   const itemValues = {
-    // Cleaning Supplies (~$5-8 each)
-    'All-purpose cleaner': 6, 'Dish soap': 4, 'Laundry detergent': 12,
-    'Disinfecting wipes': 5, 'Trash bags': 8, 'Paper towels': 8, 'Sponges': 3,
+    // Cleaning Supplies
+    'Dish soap': 4, 'Laundry detergent': 12, 'Trash bags': 8, 'Paper towels': 8, 'Sponges': 3,
     // Toiletries (~$3-8 each)
     'Toilet paper': 10, 'Shampoo': 6, 'Conditioner': 6, 'Body wash/soap': 5,
     'Toothpaste': 4, 'Toothbrushes': 3, 'Deodorant': 5, 'Feminine hygiene products': 8,
     // Linens (~$15-30 each)
-    'Bath towels': 12, 'Washcloths': 5, 'Twin sheets': 25, 'Pillows': 15, 'Blankets': 20,
+    'Bath towels': 12, 'Washcloths': 5, 'Twin sheets': 25, 'Pillows': 15, 'Blankets': 20, 'Bathmat': 12, 'Shower curtain': 15,
     // Non-Perishable Food (~$2-5 each)
     'Canned vegetables': 2, 'Canned soup': 3, 'Pasta': 2, 'Rice': 4,
-    'Peanut butter': 5, 'Cereal': 5, 'Canned tuna/chicken': 3, 'Cooking oil': 6,
+    'Peanut butter': 5, 'Jelly': 4, 'Cereal': 5, 'Canned tuna/chicken': 3, 'Cooking oil': 6,
   };
   const defaultItemValue = 8; // Default value for unlisted items
 
@@ -874,6 +904,16 @@ function Admin() {
           <DollarSign size={18} />
           Donations
         </button>
+        <button
+          className={`admin-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('analytics');
+            if (!ga4Fetched) fetchGa4Data(ga4Range);
+          }}
+        >
+          <BarChart2 size={18} />
+          Analytics
+        </button>
       </div>
 
       <div className="admin-content">
@@ -965,6 +1005,27 @@ function Admin() {
         <div className="admin-toolbar">
           <div className="admin-filters">
             <Filter size={18} />
+            <button
+              className={`filter-btn ${typeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setTypeFilter('all')}
+            >
+              All Types
+            </button>
+            <button
+              className={`filter-btn ${typeFilter === 'connection-night' ? 'active' : ''}`}
+              onClick={() => setTypeFilter('connection-night')}
+            >
+              <Users size={14} />
+              Connections
+            </button>
+            <button
+              className={`filter-btn ${typeFilter === 'supply-drive' ? 'active' : ''}`}
+              onClick={() => setTypeFilter('supply-drive')}
+            >
+              <Package size={14} />
+              Supply Drives
+            </button>
+            <span className="filter-divider" />
             {selectedDate && (
               <button
                 className="filter-btn active"
@@ -974,35 +1035,23 @@ function Admin() {
               </button>
             )}
             <button
-              className={`filter-btn ${filter === 'all' && !selectedDate ? 'active' : ''}`}
-              onClick={() => { setFilter('all'); setSelectedDate(null); }}
+              className={`filter-btn ${filter.length === 0 && !selectedDate ? 'active' : ''}`}
+              onClick={() => { setFilter([]); setSelectedDate(null); }}
             >
               All ({allCalendarItems.length})
             </button>
-            <button
-              className={`filter-btn ${filter === 'pending' && !selectedDate ? 'active' : ''}`}
-              onClick={() => { setFilter('pending'); setSelectedDate(null); }}
-            >
-              Pending ({allCalendarItems.filter(e => e.status === 'pending').length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'approved' && !selectedDate ? 'active' : ''}`}
-              onClick={() => { setFilter('approved'); setSelectedDate(null); }}
-            >
-              Approved ({allCalendarItems.filter(e => e.status === 'approved').length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'completed' && !selectedDate ? 'active' : ''}`}
-              onClick={() => { setFilter('completed'); setSelectedDate(null); }}
-            >
-              Completed ({allCalendarItems.filter(e => e.status === 'completed').length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'denied' && !selectedDate ? 'active' : ''}`}
-              onClick={() => { setFilter('denied'); setSelectedDate(null); }}
-            >
-              Denied ({allCalendarItems.filter(e => e.status === 'denied').length})
-            </button>
+            {['pending', 'approved', 'completed', 'denied'].map(status => (
+              <button
+                key={status}
+                className={`filter-btn ${filter.includes(status) && !selectedDate ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedDate(null);
+                  setFilter(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
+                }}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)} ({allCalendarItems.filter(e => e.status === status).length})
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1011,7 +1060,7 @@ function Admin() {
         ) : displayedEvents.length === 0 ? (
           <div className="admin-empty">
             <Calendar size={48} />
-            <p>No {filter !== 'all' ? filter : ''} events found</p>
+            <p>No {filter.length > 0 ? filter.join('/') : ''} events found</p>
           </div>
         ) : (
           <div className="admin-events">
@@ -1033,8 +1082,8 @@ function Admin() {
                   <span className="event-date">Submitted {formatDate(item.created_at)}</span>
                 </div>
 
-                <div className="event-details">
-                  <div className="event-detail">
+                <div className={`event-details${isSupplyDrive ? ' event-details-supply' : ''}`}>
+                  <div className="event-detail event-detail-date">
                     <Calendar size={16} />
                     <span>{isSupplyDrive ? `${item.drop_off_date}, ${item.drop_off_time}` : `${item.time_slot_day}, ${item.time_slot_time}`}</span>
                   </div>
@@ -1059,7 +1108,7 @@ function Admin() {
                 </div>
 
                 {isSupplyDrive ? (
-                  <div className="event-info">
+                  <div className="event-info" style={{ alignItems: 'center' }}>
                     <div className="info-item">
                       <strong>Contact:</strong> {item.contact_name}
                     </div>
@@ -1071,11 +1120,6 @@ function Admin() {
                         ))}
                       </div>
                     </div>
-                    {item.notes && (
-                      <div className="info-item">
-                        <strong>Notes:</strong> {item.notes}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="event-info">
@@ -1722,6 +1766,111 @@ function Admin() {
             </div>
           );
         })()}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="analytics-tab">
+            <div className="analytics-header">
+              <h2><BarChart2 size={20} /> Conversion Funnels</h2>
+              <div className="analytics-range-selector">
+                {['7', '30', '90'].map((r) => (
+                  <button
+                    key={r}
+                    className={`range-btn ${ga4Range === r ? 'active' : ''}`}
+                    onClick={() => {
+                      setGa4Range(r);
+                      fetchGa4Data(r);
+                    }}
+                  >
+                    {r}d
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {ga4Loading && (
+              <div className="analytics-loading">
+                <RefreshCw size={20} className="spin" />
+                Loading analytics data…
+              </div>
+            )}
+
+            {!ga4Loading && ga4Error && (
+              <div className="analytics-error">{ga4Error}</div>
+            )}
+
+            {!ga4Loading && ga4Data && !ga4Data.configured && (
+              <div className="analytics-setup-msg">
+                <BarChart2 size={32} />
+                <h3>GA4 Not Configured</h3>
+                <p>{ga4Data.message}</p>
+                <ol>
+                  <li>Go to console.cloud.google.com → enable "Google Analytics Data API"</li>
+                  <li>Create a service account and download the JSON key</li>
+                  <li>In GA4: Admin → Property access management → add service account email as Viewer</li>
+                  <li>Add to Vercel: <code>GA4_PROPERTY_ID</code>, <code>GA4_SERVICE_ACCOUNT_EMAIL</code>, <code>GA4_PRIVATE_KEY</code></li>
+                </ol>
+              </div>
+            )}
+
+            {!ga4Loading && ga4Data?.configured && (
+              <>
+                <div className="analytics-overview">
+                  <div className="overview-metric">
+                    <span className="overview-value">{ga4Data.overview.activeUsers.toLocaleString()}</span>
+                    <span className="overview-label">Active Users (7d)</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="overview-value">{ga4Data.overview.sessions.toLocaleString()}</span>
+                    <span className="overview-label">Sessions (7d)</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="overview-value">{ga4Data.overview.pageViews.toLocaleString()}</span>
+                    <span className="overview-label">Page Views (7d)</span>
+                  </div>
+                </div>
+
+                <div className="analytics-funnels">
+                  {[
+                    { title: 'Donations', color: '#9B1B5D', steps: ga4Data.funnels.donations },
+                    { title: 'Community Connections', color: '#2563EB', steps: ga4Data.funnels.connectionNights },
+                    { title: 'Supply Drives', color: '#059669', steps: ga4Data.funnels.supplyDrives },
+                  ].map(({ title, color, steps }) => {
+                    const topCount = steps[0]?.count || 0;
+                    return (
+                      <div key={title} className="analytics-funnel-card">
+                        <h3 style={{ color }}>{title}</h3>
+                        <div className="funnel-steps">
+                          {steps.map((step, i) => {
+                            const pct = topCount > 0 ? Math.round((step.count / topCount) * 100) : 0;
+                            const dropOff = i > 0 && steps[i - 1].count > 0
+                              ? Math.round(((steps[i - 1].count - step.count) / steps[i - 1].count) * 100)
+                              : null;
+                            return (
+                              <div key={step.event} className="funnel-step">
+                                <div className="funnel-step-label">{step.step}</div>
+                                <div className="funnel-bar-wrap">
+                                  <div
+                                    className="funnel-bar"
+                                    style={{ width: `${pct}%`, backgroundColor: color }}
+                                  />
+                                </div>
+                                <div className="funnel-step-count">{step.count.toLocaleString()}</div>
+                                {dropOff !== null && (
+                                  <div className="funnel-dropoff">−{dropOff}%</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

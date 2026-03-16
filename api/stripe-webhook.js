@@ -110,7 +110,7 @@ export default async function handler(req, res) {
         let accountId = null;
 
         // 1. Check if we already have a bloomerang_id cached in our people table
-        if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+        if (SUPABASE_URL && SUPABASE_SERVICE_KEY && donor_email) {
           try {
             const sbCheck = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
             const { data: cached } = await sbCheck

@@ -7,6 +7,7 @@ import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
 
 // Email templates
 const getVolunteerReceiptEmail = (data) => {
@@ -36,7 +37,7 @@ const getVolunteerReceiptEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
@@ -93,7 +94,7 @@ const getVolunteerReceiptEmail = (data) => {
 const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
   const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
   const groupType = data.is_individual ? 'Individual' : 'Group/Organization';
-  const portalUrl = 'https://supportworkshousing.vercel.app/admin';
+  const portalUrl = 'https://supportworkshousing.org/admin';
 
   return {
     subject: `New Community Connections Request - ${data.group_name}`,
@@ -116,7 +117,7 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>New Community Connections Request</h1>
           </div>
           <div class="content">
@@ -382,4 +383,3 @@ export default async function handler(req, res) {
 }
 
 // Export email template functions for use in other endpoints
-export { getApprovalEmail };

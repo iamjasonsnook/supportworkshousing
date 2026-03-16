@@ -20,10 +20,8 @@ const supplyCategories = [
   {
     name: 'Cleaning Supplies',
     items: [
-      'All-purpose cleaner',
       'Dish soap',
       'Laundry detergent',
-      'Disinfecting wipes',
       'Trash bags',
       'Paper towels',
       'Sponges',
@@ -50,6 +48,8 @@ const supplyCategories = [
       'Twin sheets',
       'Pillows',
       'Blankets',
+      'Bathmat',
+      'Shower curtain',
     ]
   },
   {
@@ -78,7 +78,7 @@ function GetInvolved({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [datePage, setDatePage] = useState(0);
-  const [bookedDates, setBookedDates] = useState([]);
+
 
   // Connection Night form data
   const [cnFormData, setCnFormData] = useState({
@@ -106,21 +106,6 @@ function GetInvolved({
 
   const [errors, setErrors] = useState({});
 
-  // Fetch booked dates on mount
-  useEffect(() => {
-    const fetchBookedDates = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/booked-dates`);
-        if (response.ok) {
-          const data = await response.json();
-          setBookedDates(data.bookedDates || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch booked dates:', err);
-      }
-    };
-    fetchBookedDates();
-  }, []);
 
   // Generate Tuesday drop-off dates for the next 2 months
   const generateTuesdayDates = () => {
@@ -236,6 +221,10 @@ function GetInvolved({
 
     if (isValid) {
       const maxSteps = opportunityType === 'connection-night' ? 4 : 4;
+      const prefix = opportunityType === 'connection-night' ? 'cn' : 'sd';
+      if (currentStep < maxSteps) {
+        window.gtag?.('event', `${prefix}_step${currentStep}_complete`);
+      }
       setCurrentStep(prev => Math.min(prev + 1, maxSteps));
     }
   };
@@ -282,7 +271,7 @@ function GetInvolved({
 
     try {
       // Save to database via API (also sends server-side emails)
-      await fetch(`${API_BASE}/api/connection-nights`, {
+      const cnResponse = await fetch(`${API_BASE}/api/connection-nights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -297,8 +286,12 @@ function GetInvolved({
           },
         }),
       });
+      if (!cnResponse.ok) {
+        const errData = await cnResponse.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error (${cnResponse.status})`);
+      }
 
-      window.gtag?.('event', 'generate_lead', {
+      window.gtag?.('event', 'cn_generate_lead', {
         event_category: 'connection_night',
         event_label: cnFormData.groupName,
         value: Number(cnFormData.groupSize),
@@ -325,7 +318,7 @@ function GetInvolved({
 
     try {
       // Submit to our API for admin tracking
-      await fetch(`${API_BASE}/api/supply-drives`, {
+      const sdResponse = await fetch(`${API_BASE}/api/supply-drives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,8 +333,12 @@ function GetInvolved({
           selected_items: sdFormData.selectedItems,
         })
       });
+      if (!sdResponse.ok) {
+        const errData = await sdResponse.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error (${sdResponse.status})`);
+      }
 
-      window.gtag?.('event', 'generate_lead', {
+      window.gtag?.('event', 'sd_generate_lead', {
         event_category: 'supply_drive',
         event_label: sdFormData.contactName,
         value: sdFormData.selectedItems.length,
@@ -349,7 +346,7 @@ function GetInvolved({
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error('EmailJS error:', error);
+      console.error('Submission error:', error);
       setSubmitError(error.text || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -451,7 +448,7 @@ function GetInvolved({
           <div className="gi-opportunity-grid">
             <button
               className="gi-opportunity-card"
-              onClick={() => { setOpportunityType('connection-night'); setCurrentStep(1); }}
+              onClick={() => { setOpportunityType('connection-night'); setCurrentStep(1); window.gtag?.('event', 'cn_form_start'); }}
             >
               <div className="gi-opportunity-icon">
                 <Utensils size={40} />
@@ -465,7 +462,7 @@ function GetInvolved({
 
             <button
               className="gi-opportunity-card"
-              onClick={() => { setOpportunityType('supply-drive'); setCurrentStep(1); }}
+              onClick={() => { setOpportunityType('supply-drive'); setCurrentStep(1); window.gtag?.('event', 'sd_form_start'); }}
             >
               <div className="gi-opportunity-icon">
                 <Package size={40} />
@@ -483,8 +480,7 @@ function GetInvolved({
   }
 
   const selectedLocation = locations.find(loc => loc.id === (opportunityType === 'connection-night' ? cnFormData.locationId : sdFormData.locationId));
-  const allTimeSlots = cnFormData.locationId ? timeSlotsByLocation[cnFormData.locationId] || [] : [];
-  const availableTimeSlots = allTimeSlots.filter(slot => !bookedDates.includes(slot.day));
+  const availableTimeSlots = cnFormData.locationId ? timeSlotsByLocation[cnFormData.locationId] || [] : [];
   const startIdx = datePage * 5;
   const visibleSlots = availableTimeSlots.slice(startIdx, startIdx + 5);
   const hasMoreDates = availableTimeSlots.length > startIdx + 5;

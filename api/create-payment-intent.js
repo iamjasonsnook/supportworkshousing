@@ -107,6 +107,7 @@ export default async function handler(req, res) {
       amount: cents,
       currency: 'usd',
       receipt_email: email,
+      description: 'Thank you for your donation to SupportWorks Housing!',
       metadata: donorMetadata,
     };
 

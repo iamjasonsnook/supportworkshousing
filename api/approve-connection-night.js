@@ -6,6 +6,9 @@ import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
+
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const getApprovalEmail = (data) => {
   const locationInfo = `${data.location_name} - ${data.location_address}`;
@@ -33,7 +36,7 @@ const getApprovalEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Your Community Connection is Confirmed!</h1>
           </div>
           <div class="content">
@@ -109,7 +112,7 @@ const getPropertyManagerEmail = (data) => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Community Connection Scheduled</h1>
           </div>
           <div class="content">
@@ -213,7 +216,7 @@ export default async function handler(req, res) {
           <body>
             <div class="container">
               <h1>Already Processed</h1>
-              <p>This request has already been ${requestData.status}.</p>
+              <p>This request has already been ${escHtml(requestData.status)}.</p>
             </div>
           </body>
         </html>
@@ -318,16 +321,16 @@ export default async function handler(req, res) {
 
           <div class="details">
             <div class="detail-row">
-              <span class="detail-label">Group:</span> ${requestData.group_name}
+              <span class="detail-label">Group:</span> ${escHtml(requestData.group_name)}
             </div>
             <div class="detail-row">
-              <span class="detail-label">Contact:</span> ${requestData.contact_name}
+              <span class="detail-label">Contact:</span> ${escHtml(requestData.contact_name)}
             </div>
             <div class="detail-row">
-              <span class="detail-label">Location:</span> ${requestData.location_name}
+              <span class="detail-label">Location:</span> ${escHtml(requestData.location_name)}
             </div>
             <div class="detail-row">
-              <span class="detail-label">Time:</span> ${requestData.time_slot_day}, ${requestData.time_slot_time}
+              <span class="detail-label">Time:</span> ${escHtml(requestData.time_slot_day)}, ${escHtml(requestData.time_slot_time)}
             </div>
           </div>
 

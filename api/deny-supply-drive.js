@@ -5,6 +5,9 @@ import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
+const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
+
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const getDenialEmail = (data, reason) => ({
   subject: 'Supply Drop-Off Request Update - SupportWorks Housing',
@@ -25,7 +28,7 @@ const getDenialEmail = (data, reason) => ({
     <body>
       <div class="container">
         <div class="header">
-          <img src="https://supportworkshousing.vercel.app/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
           <h1>Supply Drop-Off Request Update</h1>
         </div>
         <div class="content">
@@ -89,7 +92,7 @@ export default async function handler(req, res) {
         </style></head>
         <body><div class="container">
           <h1>Already Processed</h1>
-          <p>This request has already been ${requestData.status}.</p>
+          <p>This request has already been ${escHtml(requestData.status)}.</p>
         </div></body></html>
       `);
     }
@@ -116,9 +119,9 @@ export default async function handler(req, res) {
           <h1>Deny Supply Drop-Off Request</h1>
           <p class="subtitle">Review the request details and provide an optional reason for denial.</p>
           <div class="details">
-            <div class="detail-row"><span class="detail-label">Donor:</span> ${requestData.contact_name}</div>
-            <div class="detail-row"><span class="detail-label">Location:</span> ${requestData.location_name}</div>
-            <div class="detail-row"><span class="detail-label">Date:</span> ${requestData.drop_off_date}, ${requestData.drop_off_time}</div>
+            <div class="detail-row"><span class="detail-label">Donor:</span> ${escHtml(requestData.contact_name)}</div>
+            <div class="detail-row"><span class="detail-label">Location:</span> ${escHtml(requestData.location_name)}</div>
+            <div class="detail-row"><span class="detail-label">Date:</span> ${escHtml(requestData.drop_off_date)}, ${escHtml(requestData.drop_off_time)}</div>
           </div>
           <form method="POST" action="?token=${token}">
             <label for="reason">Reason for Denial (Optional)</label>
@@ -161,9 +164,9 @@ export default async function handler(req, res) {
           <h1>Request Denied</h1>
           <p>The donor has been notified.</p>
           <div class="details">
-            <div class="detail-row"><span class="detail-label">Donor:</span> ${requestData.contact_name}</div>
-            <div class="detail-row"><span class="detail-label">Location:</span> ${requestData.location_name}</div>
-            ${reason ? `<div class="detail-row"><span class="detail-label">Reason:</span> ${reason}</div>` : ''}
+            <div class="detail-row"><span class="detail-label">Donor:</span> ${escHtml(requestData.contact_name)}</div>
+            <div class="detail-row"><span class="detail-label">Location:</span> ${escHtml(requestData.location_name)}</div>
+            ${reason ? `<div class="detail-row"><span class="detail-label">Reason:</span> ${escHtml(reason)}</div>` : ''}
           </div>
         </div></body></html>
       `);

@@ -150,14 +150,14 @@ const mockEvents = [
 ];
 
 const mockSupplyDrives = [
-  { id: 'sd1', volunteer_id: 'v8', event_type: 'supply-drive', contact_name: 'Jennifer Lee', contact_email: 'jennifer.lee@capitalone.com', contact_phone: '(804) 555-6789', organization: 'Capital One Cares Team', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, February 7', drop_off_time: '9:00 AM - 5:00 PM', items: ['All-purpose cleaner', 'Dish soap', 'Paper towels', 'Toilet paper', 'Shampoo', 'Body wash/soap'], notes: 'We have about 50 care packages to drop off.', status: 'completed', created_at: '2026-01-20T10:00:00Z', completed_at: '2026-02-07T14:00:00Z', _test: true },
+  { id: 'sd1', volunteer_id: 'v8', event_type: 'supply-drive', contact_name: 'Jennifer Lee', contact_email: 'jennifer.lee@capitalone.com', contact_phone: '(804) 555-6789', organization: 'Capital One Cares Team', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, February 7', drop_off_time: '9:00 AM - 5:00 PM', items: ['Dish soap', 'Paper towels', 'Toilet paper', 'Shampoo', 'Body wash/soap'], notes: 'We have about 50 care packages to drop off.', status: 'completed', created_at: '2026-01-20T10:00:00Z', completed_at: '2026-02-07T14:00:00Z', _test: true },
   { id: 'sd2', volunteer_id: 'v10', event_type: 'supply-drive', contact_name: 'Nancy White', contact_email: 'nwhite@midlothianwc.org', contact_phone: '(804) 555-8901', organization: "Midlothian Women's Club", location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, February 14', drop_off_time: '9:00 AM - 5:00 PM', items: ['Bath towels', 'Washcloths', 'Twin sheets', 'Pillows', 'Blankets'], notes: 'Collected linens from our annual drive.', status: 'approved', created_at: '2026-02-01T11:00:00Z', _test: true },
   { id: 'sd3', volunteer_id: 'v16', event_type: 'supply-drive', contact_name: 'Rachel Kim', contact_email: 'rachel.kim@gmail.com', contact_phone: '(804) 555-4567', organization: null, location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, February 21', drop_off_time: '9:00 AM - 5:00 PM', items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Peanut butter', 'Cereal'], notes: 'Personal donation - cleaning out my pantry of extras.', status: 'pending', created_at: '2026-02-02T09:00:00Z', _test: true },
   { id: 'sd4', volunteer_id: 'v1', event_type: 'supply-drive', contact_name: 'Sarah Johnson', contact_email: 'sarah@gracecc.org', contact_phone: '(804) 555-1234', organization: 'Grace Community Church', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 3', drop_off_time: '9:00 AM - 5:00 PM', items: ['Toilet paper', 'Paper towels', 'Trash bags', 'Laundry detergent', 'Dish soap'], notes: 'New year cleaning supply drive from our congregation.', status: 'completed', created_at: '2025-12-20T10:00:00Z', completed_at: '2026-01-03T14:00:00Z', _test: true },
   { id: 'sd5', volunteer_id: 'v15', event_type: 'supply-drive', contact_name: 'Michael Brown', contact_email: 'mbrown@dominionenergy.com', contact_phone: '(804) 555-3456', organization: 'Dominion Energy Volunteers', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 10', drop_off_time: '9:00 AM - 5:00 PM', items: ['Bath towels', 'Washcloths', 'Twin sheets', 'Pillows', 'Blankets'], notes: 'Corporate donation drive - linens collection.', status: 'completed', created_at: '2025-12-28T14:00:00Z', completed_at: '2026-01-10T15:30:00Z', _test: true },
   { id: 'sd6', volunteer_id: 'v7', event_type: 'supply-drive', contact_name: 'Maria Santos', contact_email: 'msantos@stmarysrva.org', contact_phone: '(804) 555-5678', organization: "St. Mary's Catholic Church", location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 17', drop_off_time: '9:00 AM - 5:00 PM', items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Peanut butter', 'Cereal'], notes: 'Parish food drive collection.', status: 'completed', created_at: '2026-01-05T10:00:00Z', completed_at: '2026-01-17T11:00:00Z', _test: true },
   { id: 'sd7', volunteer_id: 'v17', event_type: 'supply-drive', contact_name: 'James Wilson', contact_email: 'jwilson.volunteer@yahoo.com', contact_phone: '(804) 555-5678', organization: null, location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 24', drop_off_time: '9:00 AM - 5:00 PM', items: ['Toothpaste', 'Toothbrushes', 'Deodorant', 'Shampoo', 'Conditioner', 'Body wash/soap'], notes: 'Personal toiletry donation.', status: 'completed', created_at: '2026-01-12T11:00:00Z', completed_at: '2026-01-24T10:30:00Z', _test: true },
-  { id: 'sd8', volunteer_id: 'v5', event_type: 'supply-drive', contact_name: 'Lisa Martinez', contact_email: 'lmartinez@henrico.k12.va.us', contact_phone: '(804) 555-3456', organization: 'Henrico High School Key Club', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 31', drop_off_time: '9:00 AM - 5:00 PM', items: ['All-purpose cleaner', 'Disinfecting wipes', 'Sponges', 'Trash bags', 'Paper towels'], notes: 'Student council cleaning supply drive.', status: 'completed', created_at: '2026-01-18T09:00:00Z', completed_at: '2026-01-31T14:00:00Z', _test: true },
+  { id: 'sd8', volunteer_id: 'v5', event_type: 'supply-drive', contact_name: 'Lisa Martinez', contact_email: 'lmartinez@henrico.k12.va.us', contact_phone: '(804) 555-3456', organization: 'Henrico High School Key Club', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, January 31', drop_off_time: '9:00 AM - 5:00 PM', items: ['Sponges', 'Trash bags', 'Paper towels'], notes: 'Student council cleaning supply drive.', status: 'completed', created_at: '2026-01-18T09:00:00Z', completed_at: '2026-01-31T14:00:00Z', _test: true },
   { id: 'sd9', volunteer_id: 'v9', event_type: 'supply-drive', contact_name: 'Brian Thompson', contact_email: 'bthompson@uvaalumni.org', contact_phone: '(804) 555-7890', organization: 'UVA Alumni Chapter', location_name: 'New Clay House', location_address: '707 N Harrison St, Richmond, VA 23220', drop_off_date: 'Friday, February 28', drop_off_time: '9:00 AM - 5:00 PM', items: ['Canned vegetables', 'Canned soup', 'Pasta', 'Rice', 'Cooking oil', 'Cereal'], notes: 'Alumni association food drive.', status: 'pending', created_at: '2026-02-01T14:00:00Z', _test: true },
 ];
 
@@ -173,6 +173,177 @@ const mockDonations = [
   { id: 'd9', payment_intent_id: 'pi_3Cd4e5f6g7h8i9j0k1', amount: 150, donation_type: 'one-time', donor_name: 'Priya Patel', donor_email: 'priya.patel@gmail.com', donor_phone: '(804) 555-9999', donor_address: '42 Riverside Dr, Richmond, VA 23225', volunteer_id: null, created_at: '2026-02-01T10:45:00Z', _test: true },
   { id: 'd10', payment_intent_id: 'pi_5Ef6g7h8i9j0k1l2m3', amount: 25, donation_type: 'one-time', donor_name: 'William & Margaret Hayes', donor_email: 'wmhayes@verizon.net', donor_phone: '(804) 555-1010', donor_address: '15 Church Hill Rd, Richmond, VA 23223', volunteer_id: null, created_at: '2026-02-08T18:00:00Z', _test: true },
 ];
+
+// ─── GA4 helpers ─────────────────────────────────────────────────────────────
+
+let ga4TokenCache = null;
+
+async function getGa4AccessToken() {
+  if (ga4TokenCache && ga4TokenCache.expiresAt > Date.now() + 60_000) {
+    return ga4TokenCache.token;
+  }
+
+  const email = process.env.GA4_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = (process.env.GA4_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+  if (!email || !privateKey) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: email,
+    scope: 'https://www.googleapis.com/auth/analytics.readonly',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+  const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const headerPayload = `${encode(header)}.${encode(payload)}`;
+
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(headerPayload);
+  const signature = sign.sign(privateKey, 'base64url');
+  const jwt = `${headerPayload}.${signature}`;
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+
+  if (!tokenRes.ok) return null;
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) return null;
+
+  ga4TokenCache = {
+    token: tokenData.access_token,
+    expiresAt: Date.now() + (tokenData.expires_in || 3600) * 1000,
+  };
+  return ga4TokenCache.token;
+}
+
+async function runGa4EventReport(accessToken, propertyId, startDate, endDate, eventNames) {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        filter: { fieldName: 'eventName', inListFilter: { values: eventNames } },
+      },
+    }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function runGa4MetricsReport(accessToken, propertyId, startDate, endDate) {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }],
+    }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function handleGa4Report(req, res) {
+  const propertyId = process.env.GA4_PROPERTY_ID;
+  const email = process.env.GA4_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GA4_PRIVATE_KEY;
+
+  if (!propertyId || !email || !privateKey) {
+    return res.status(200).json({
+      configured: false,
+      message: 'GA4 not configured. Add GA4_PROPERTY_ID, GA4_SERVICE_ACCOUNT_EMAIL, and GA4_PRIVATE_KEY to your environment variables.',
+    });
+  }
+
+  const rangeParam = (req.url || '').match(/[?&]range=(\d+)/)?.[1];
+  const range = parseInt(rangeParam) || 30;
+  const endDate = 'today';
+  const startDate = `${range}daysAgo`;
+
+  let accessToken;
+  try {
+    accessToken = await getGa4AccessToken();
+  } catch (err) {
+    console.error('GA4 auth error:', err.message);
+    return res.status(200).json({ configured: false, message: 'Failed to authenticate with Google.' });
+  }
+
+  if (!accessToken) {
+    return res.status(200).json({ configured: false, message: 'Failed to authenticate with Google.' });
+  }
+
+  const funnelEvents = [
+    'cn_form_start', 'cn_step1_complete', 'cn_step2_complete', 'cn_step3_complete', 'cn_generate_lead',
+    'sd_form_start', 'sd_step1_complete', 'sd_step2_complete', 'sd_step3_complete', 'sd_generate_lead',
+    'begin_checkout', 'add_payment_info', 'donation_payment_entered', 'purchase',
+  ];
+
+  const [funnelReport, overviewReport] = await Promise.all([
+    runGa4EventReport(accessToken, propertyId, startDate, endDate, funnelEvents),
+    runGa4MetricsReport(accessToken, propertyId, '7daysAgo', endDate),
+  ]);
+
+  // Build event count map
+  const eventCounts = {};
+  if (funnelReport?.rows) {
+    for (const row of funnelReport.rows) {
+      const name = row.dimensionValues[0].value;
+      eventCounts[name] = parseInt(row.metricValues[0].value) || 0;
+    }
+  }
+
+  // Parse overview
+  const overviewRow = overviewReport?.rows?.[0];
+  const overview = {
+    activeUsers: parseInt(overviewRow?.metricValues?.[0]?.value) || 0,
+    sessions: parseInt(overviewRow?.metricValues?.[1]?.value) || 0,
+    pageViews: parseInt(overviewRow?.metricValues?.[2]?.value) || 0,
+  };
+
+  const c = (name) => eventCounts[name] || 0;
+
+  return res.status(200).json({
+    configured: true,
+    range,
+    overview,
+    funnels: {
+      donations: [
+        { step: 'Amount selected', event: 'begin_checkout', count: c('begin_checkout') },
+        { step: 'Personal info', event: 'add_payment_info', count: c('add_payment_info') },
+        { step: 'Payment entered', event: 'donation_payment_entered', count: c('donation_payment_entered') },
+        { step: 'Donated', event: 'purchase', count: c('purchase') },
+      ],
+      connectionNights: [
+        { step: 'Form started', event: 'cn_form_start', count: c('cn_form_start') },
+        { step: 'Step 1 complete', event: 'cn_step1_complete', count: c('cn_step1_complete') },
+        { step: 'Step 2 complete', event: 'cn_step2_complete', count: c('cn_step2_complete') },
+        { step: 'Step 3 complete', event: 'cn_step3_complete', count: c('cn_step3_complete') },
+        { step: 'Submitted', event: 'cn_generate_lead', count: c('cn_generate_lead') },
+      ],
+      supplyDrives: [
+        { step: 'Form started', event: 'sd_form_start', count: c('sd_form_start') },
+        { step: 'Step 1 complete', event: 'sd_step1_complete', count: c('sd_step1_complete') },
+        { step: 'Step 2 complete', event: 'sd_step2_complete', count: c('sd_step2_complete') },
+        { step: 'Step 3 complete', event: 'sd_step3_complete', count: c('sd_step3_complete') },
+        { step: 'Submitted', event: 'sd_generate_lead', count: c('sd_generate_lead') },
+      ],
+    },
+  });
+}
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
@@ -260,7 +431,7 @@ async function handleApproveEvent(req, res, id) {
 
     // Send volunteer confirmation email
     try {
-      const appUrl = process.env.APP_URL || 'https://supportworkshousing.vercel.app';
+      const appUrl = 'https://supportworkshousing.org';
       const locationInfo = `${eventData.location_name} - ${eventData.location_address}`;
       const timeInfo = `${eventData.time_slot_day}, ${eventData.time_slot_time}`;
       await sendEmail({
@@ -280,7 +451,7 @@ async function handleApproveEvent(req, res, id) {
         </style></head><body>
         <div class="container">
           <div class="header">
-            <img src="${appUrl}/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Your Community Connection is Confirmed!</h1>
           </div>
           <div class="content">
@@ -358,7 +529,7 @@ async function handleApproveSupplyDrive(req, res, id) {
 
     // Send volunteer confirmation email
     try {
-      const appUrl = process.env.APP_URL || 'https://supportworkshousing.vercel.app';
+      const appUrl = 'https://supportworkshousing.org';
       await sendEmail({
         to: driveData.contact_email,
         subject: 'Your Supply Drop-Off is Confirmed! - SupportWorks Housing',
@@ -377,7 +548,7 @@ async function handleApproveSupplyDrive(req, res, id) {
         </style></head><body>
         <div class="container">
           <div class="header">
-            <img src="${appUrl}/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
+            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
             <h1>Your Drop-Off is Confirmed!</h1>
           </div>
           <div class="content">
@@ -1135,6 +1306,11 @@ export default async function handler(req, res) {
   const donationGetMatch = path.match(/^donations\/([^/]+)$/);
   if (method === 'GET' && donationGetMatch) {
     return handleGetDonation(req, res, donationGetMatch[1]);
+  }
+
+  // GET /api/admin/ga4-report
+  if (method === 'GET' && path.startsWith('ga4-report')) {
+    return handleGa4Report(req, res);
   }
 
   // No route matched
