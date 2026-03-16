@@ -1819,14 +1819,17 @@ function Admin() {
                   <div className="overview-metric">
                     <span className="overview-value">{ga4Data.overview.activeUsers.toLocaleString()}</span>
                     <span className="overview-label">Active Users (7d)</span>
+                    <span className="overview-desc">Unique people who visited the site</span>
                   </div>
                   <div className="overview-metric">
                     <span className="overview-value">{ga4Data.overview.sessions.toLocaleString()}</span>
                     <span className="overview-label">Sessions (7d)</span>
+                    <span className="overview-desc">Total visits — one person can have multiple sessions</span>
                   </div>
                   <div className="overview-metric">
                     <span className="overview-value">{ga4Data.overview.pageViews.toLocaleString()}</span>
                     <span className="overview-label">Page Views (7d)</span>
+                    <span className="overview-desc">Total pages loaded across all sessions</span>
                   </div>
                 </div>
 

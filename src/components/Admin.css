@@ -2158,6 +2158,12 @@
   letter-spacing: 0.05em;
 }
 
+.overview-desc {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  line-height: 1.4;
+}
+
 .analytics-funnels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
