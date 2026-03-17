@@ -1512,11 +1512,11 @@ function Admin() {
                           {isSupplyDrive ? (
                             <>
                               <span className="volunteer-event-activity">Supply Drive</span>
-                              <span className="volunteer-event-size">{event.items?.length || 0} items</span>
+                              <span className="volunteer-event-size">{(event.selected_items || event.items || []).length} items</span>
                             </>
                           ) : (
                             <>
-                              <span className="volunteer-event-activity">{event.activity_plan}</span>
+                              <span className="volunteer-event-activity">{event.activity_plan ? event.activity_plan.charAt(0).toUpperCase() + event.activity_plan.slice(1) : ''}</span>
                               <span className="volunteer-event-size">{event.group_size} people</span>
                             </>
                           )}
