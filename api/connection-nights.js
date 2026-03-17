@@ -1,10 +1,15 @@
 // API endpoint to create a new Connection Night request
 // Compatible with Vercel serverless functions
 
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
+import { checkRateLimit } from './_rateLimit.js';
+
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const isValidEmail = (e) => /^[^\s@]{1,64}@[^\s@]{1,255}$/.test(String(e ?? ''));
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
@@ -41,7 +46,7 @@ const getVolunteerReceiptEmail = (data) => {
             <h1>Thank You for Signing Up!</h1>
           </div>
           <div class="content">
-            <p>Dear ${data.contact_name},</p>
+            <p>Dear ${escHtml(data.contact_name)},</p>
 
             <p>Thank you for your interest in hosting a Community Connection at SupportWorks Housing! We've received your request and a SupportWorks team member will be in touch to confirm.</p>
 
@@ -56,24 +61,24 @@ const getVolunteerReceiptEmail = (data) => {
             <h2 style="color: #9B1B5D; margin-top: 30px;">Your Request Details</h2>
 
             <h3 style="color: #1A1A1A; font-size: 16px;">Location & Time</h3>
-            <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
-            <div class="info-row"><span class="info-label">Time Slot:</span> ${timeInfo}</div>
-            ${data.alternate_date_time ? `<div class="info-row"><span class="info-label">Alternate Time:</span> ${data.alternate_date_time}</div>` : ''}
+            <div class="info-row"><span class="info-label">Location:</span> ${escHtml(locationInfo)}</div>
+            <div class="info-row"><span class="info-label">Time Slot:</span> ${escHtml(timeInfo)}</div>
+            ${data.alternate_date_time ? `<div class="info-row"><span class="info-label">Alternate Time:</span> ${escHtml(data.alternate_date_time)}</div>` : ''}
 
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Group Information</h3>
-            <div class="info-row"><span class="info-label">Type:</span> ${groupType}</div>
-            <div class="info-row"><span class="info-label">Group Name:</span> ${data.group_name}</div>
-            <div class="info-row"><span class="info-label">Contact:</span> ${data.contact_name}</div>
-            <div class="info-row"><span class="info-label">Email:</span> ${data.contact_email}</div>
-            <div class="info-row"><span class="info-label">Phone:</span> ${data.contact_phone}</div>
-            <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
+            <div class="info-row"><span class="info-label">Type:</span> ${escHtml(groupType)}</div>
+            <div class="info-row"><span class="info-label">Group Name:</span> ${escHtml(data.group_name)}</div>
+            <div class="info-row"><span class="info-label">Contact:</span> ${escHtml(data.contact_name)}</div>
+            <div class="info-row"><span class="info-label">Email:</span> ${escHtml(data.contact_email)}</div>
+            <div class="info-row"><span class="info-label">Phone:</span> ${escHtml(data.contact_phone)}</div>
+            <div class="info-row"><span class="info-label">Group Size:</span> ${escHtml(data.group_size)} people</div>
 
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Event Plan</h3>
             <div class="info-row"><span class="info-label">Food Plan:</span> ${data.food_plan === 'bring' ? 'Bring food' : data.food_plan === 'cater' ? 'Cater/deliver food' : 'Request guidance'}</div>
-            ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${data.food_details}</div>` : ''}
-            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : ''}</div>
-            ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
-            ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${data.property_notes}</div>` : ''}
+            ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${escHtml(data.food_details)}</div>` : ''}
+            <div class="info-row"><span class="info-label">Activity:</span> ${escHtml(data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : '')}</div>
+            ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${escHtml(data.activity_details)}</div>` : ''}
+            ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${escHtml(data.property_notes)}</div>` : ''}
 
             <p style="margin-top: 30px;">If you have any questions, please don't hesitate to reach out to us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
 
@@ -128,25 +133,25 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
             <h2 style="color: #9B1B5D;">Request Details</h2>
 
             <h3 style="color: #1A1A1A; font-size: 16px;">Location & Time</h3>
-            <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-            <div class="info-row"><span class="info-label">Time Slot:</span> ${timeInfo}</div>
-            ${data.alternate_date_time ? `<div class="info-row"><span class="info-label">Alternate Time:</span> ${data.alternate_date_time}</div>` : ''}
+            <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+            <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+            <div class="info-row"><span class="info-label">Time Slot:</span> ${escHtml(timeInfo)}</div>
+            ${data.alternate_date_time ? `<div class="info-row"><span class="info-label">Alternate Time:</span> ${escHtml(data.alternate_date_time)}</div>` : ''}
 
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Group Information</h3>
-            <div class="info-row"><span class="info-label">Type:</span> ${groupType}</div>
-            <div class="info-row"><span class="info-label">Group Name:</span> ${data.group_name}</div>
-            <div class="info-row"><span class="info-label">Contact Name:</span> ${data.contact_name}</div>
-            <div class="info-row"><span class="info-label">Contact Email:</span> <a href="mailto:${data.contact_email}" style="color: #9B1B5D;">${data.contact_email}</a></div>
-            <div class="info-row"><span class="info-label">Contact Phone:</span> <a href="tel:${data.contact_phone}" style="color: #9B1B5D;">${data.contact_phone}</a></div>
-            <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
+            <div class="info-row"><span class="info-label">Type:</span> ${escHtml(groupType)}</div>
+            <div class="info-row"><span class="info-label">Group Name:</span> ${escHtml(data.group_name)}</div>
+            <div class="info-row"><span class="info-label">Contact Name:</span> ${escHtml(data.contact_name)}</div>
+            <div class="info-row"><span class="info-label">Contact Email:</span> <a href="mailto:${escHtml(data.contact_email)}" style="color: #9B1B5D;">${escHtml(data.contact_email)}</a></div>
+            <div class="info-row"><span class="info-label">Contact Phone:</span> <a href="tel:${escHtml(data.contact_phone)}" style="color: #9B1B5D;">${escHtml(data.contact_phone)}</a></div>
+            <div class="info-row"><span class="info-label">Group Size:</span> ${escHtml(data.group_size)} people</div>
 
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Event Plan</h3>
             <div class="info-row"><span class="info-label">Food Plan:</span> ${data.food_plan === 'bring' ? 'Bring food' : data.food_plan === 'cater' ? 'Cater/deliver food' : 'Request guidance'}</div>
-            ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${data.food_details}</div>` : ''}
-            <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : ''}</div>
-            ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
-            ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${data.property_notes}</div>` : ''}
+            ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${escHtml(data.food_details)}</div>` : ''}
+            <div class="info-row"><span class="info-label">Activity:</span> ${escHtml(data.activity_plan ? data.activity_plan.charAt(0).toUpperCase() + data.activity_plan.slice(1) : '')}</div>
+            ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${escHtml(data.activity_details)}</div>` : ''}
+            ${data.property_notes ? `<div class="info-row"><span class="info-label">Property Notes:</span> ${escHtml(data.property_notes)}</div>` : ''}
           </div>
           <div class="footer">
             <p>SupportWorks Housing | Making Homelessness History</p>
@@ -242,6 +247,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Rate limit: 7 submissions per IP per day
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip, 'connection-nights')) {
+    return res.status(429).json({ error: 'Too many submissions. Please try again tomorrow.' });
+  }
+
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -266,7 +277,7 @@ export default async function handler(req, res) {
       contact_phone: requestData.contact.phone,
       food_plan: requestData.event.foodPlan,
       activity_plan: requestData.event.activityPlan,
-      confirmation_token: `stub-${Date.now()}`,
+      confirmation_token: crypto.randomBytes(32).toString('hex'),
     };
 
     let insertedData = emailData;
@@ -359,7 +370,7 @@ export default async function handler(req, res) {
         to: ADMIN_EMAIL,
         subject: missionEmail.subject,
         html: missionEmail.html,
-        replyTo: insertedData.contact_email,
+        replyTo: isValidEmail(insertedData.contact_email) ? insertedData.contact_email : undefined,
       });
 
       console.log('Emails sent successfully to volunteer and admin');
@@ -376,9 +387,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error processing request:', error);
-    return res.status(500).json({
-      error: error.message || 'Internal server error',
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 

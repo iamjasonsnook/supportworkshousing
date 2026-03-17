@@ -1,7 +1,6 @@
 // Shared CORS configuration for all API endpoints
 const ALLOWED_ORIGINS = [
   'https://supportworkshousing.org',
-  'https://supportworkshousing.org',
   'https://www.supportworkshousing.org',
 ];
 

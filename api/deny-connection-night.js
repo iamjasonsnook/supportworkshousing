@@ -34,7 +34,7 @@ const getDenialEmail = (data, reason) => {
             <h1>Community Connections Request Update</h1>
           </div>
           <div class="content">
-            <p>Dear ${data.contact_name},</p>
+            <p>Dear ${escHtml(data.contact_name)},</p>
 
             <p>Thank you for your interest in hosting a Community Connection at SupportWorks Housing.</p>
 
@@ -42,7 +42,7 @@ const getDenialEmail = (data, reason) => {
               <p style="margin: 0;"><strong>We're unable to accommodate your request at this time.</strong></p>
             </div>
 
-            ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+            ${reason ? `<p><strong>Reason:</strong> ${escHtml(reason)}</p>` : ''}
 
             <p>We truly appreciate your willingness to volunteer and create connections within our community. While we can't accommodate this particular request, we'd love to work with you on future opportunities.</p>
 

@@ -1,6 +1,7 @@
 // Vercel Serverless Function for creating Stripe PaymentIntents
 import Stripe from 'stripe';
 import { setCorsHeaders } from './_cors.js';
+import { checkRateLimit } from './_rateLimit.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -20,6 +21,12 @@ export default async function handler(req, res) {
   }
 
   const stripe = new Stripe(STRIPE_SECRET_KEY);
+
+  // Rate limit: 20 payment attempts per IP per day
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip, 'create-payment-intent', 20)) {
+    return res.status(429).json({ error: 'Too many requests. Please try again tomorrow.' });
+  }
 
   try {
     const { amount, donationType, email, name, phone, address, city, state, zip } = req.body;
@@ -41,6 +48,14 @@ export default async function handler(req, res) {
     if (parsedAmount > 50000) {
       return res.status(400).json({ error: 'For donations over $50,000, please contact us directly' });
     }
+
+    // Validate metadata field lengths
+    if (String(name).length > 100) return res.status(400).json({ error: 'Name is too long' });
+    if (phone && String(phone).length > 30) return res.status(400).json({ error: 'Phone number is too long' });
+    if (address && String(address).length > 200) return res.status(400).json({ error: 'Address is too long' });
+    if (city && String(city).length > 100) return res.status(400).json({ error: 'City is too long' });
+    if (state && !/^[A-Za-z]{2}$/.test(state)) return res.status(400).json({ error: 'Invalid state' });
+    if (zip && !/^\d{5}(-\d{4})?$/.test(zip)) return res.status(400).json({ error: 'Invalid ZIP code' });
 
     const cents = Math.round(parsedAmount * 100);
 
@@ -119,9 +134,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Stripe error:', error);
-    return res.status(500).json({
-      error: 'Failed to create payment intent',
-      details: error.message,
-    });
+    return res.status(500).json({ error: 'Failed to process donation. Please try again.' });
   }
 }

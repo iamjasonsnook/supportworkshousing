@@ -1,9 +1,14 @@
 // API endpoint to submit a new Supply Drive request
 
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
+import { checkRateLimit } from './_rateLimit.js';
+
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const isValidEmail = (e) => /^[^\s@]{1,64}@[^\s@]{1,255}$/.test(String(e ?? ''));
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
@@ -34,7 +39,7 @@ const getVolunteerReceiptEmail = (data) => ({
           <h1>Thank You for Your Donation!</h1>
         </div>
         <div class="content">
-          <p>Dear ${data.contact_name},</p>
+          <p>Dear ${escHtml(data.contact_name)},</p>
           <p>Thank you for scheduling a supply drop-off at SupportWorks Housing! We've received your request and a SupportWorks team member will be in touch to confirm.</p>
 
           <div class="info-box">
@@ -46,13 +51,13 @@ const getVolunteerReceiptEmail = (data) => ({
           </div>
 
           <h2 style="color: #9B1B5D; margin-top: 30px;">Your Drop-Off Details</h2>
-          <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
+          <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+          <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+          <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
 
           ${data.selected_items && data.selected_items.length > 0 ? `
           <div class="info-row"><span class="info-label">Items to Donate:</span></div>
-          <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
+          <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
           ` : ''}
 
           <p style="margin-top: 30px;">If you have any questions, please reach out at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
@@ -102,18 +107,18 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
             </div>
 
             <h2 style="color: #9B1B5D;">Drop-Off Details</h2>
-            <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-            <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
+            <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+            <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+            <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
 
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Contact</h3>
-            <div class="info-row"><span class="info-label">Name:</span> ${data.contact_name}</div>
-            <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${data.contact_email}" style="color: #9B1B5D;">${data.contact_email}</a></div>
-            <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${data.contact_phone}" style="color: #9B1B5D;">${data.contact_phone}</a></div>
+            <div class="info-row"><span class="info-label">Name:</span> ${escHtml(data.contact_name)}</div>
+            <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${escHtml(data.contact_email)}" style="color: #9B1B5D;">${escHtml(data.contact_email)}</a></div>
+            <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${escHtml(data.contact_phone)}" style="color: #9B1B5D;">${escHtml(data.contact_phone)}</a></div>
 
             ${data.selected_items && data.selected_items.length > 0 ? `
             <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Items to Donate</h3>
-            <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
+            <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
             ` : ''}
           </div>
           <div class="footer">
@@ -136,6 +141,12 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limit: 7 submissions per IP per day
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip, 'supply-drives')) {
+    return res.status(429).json({ error: 'Too many submissions. Please try again tomorrow.' });
   }
 
   const {
@@ -169,7 +180,7 @@ export default async function handler(req, res) {
   };
 
   let savedId = `sd-${Date.now()}`;
-  let confirmationToken = `stub-${Date.now()}`;
+  let confirmationToken = crypto.randomBytes(32).toString('hex');
 
   // Save to Supabase if configured
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -246,7 +257,7 @@ export default async function handler(req, res) {
       to: ADMIN_EMAIL,
       subject: adminEmail.subject,
       html: adminEmail.html,
-      replyTo: contact_email,
+      replyTo: isValidEmail(contact_email) ? contact_email : undefined,
     });
   } catch (emailError) {
     console.error('Email send error:', emailError);

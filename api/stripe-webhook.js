@@ -57,12 +57,7 @@ export default async function handler(req, res) {
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
 
-    console.log('Payment confirmed via webhook:', {
-      id: paymentIntent.id,
-      amount: paymentIntent.amount / 100,
-      email: paymentIntent.receipt_email,
-      metadata: paymentIntent.metadata,
-    });
+    console.log('Payment confirmed via webhook:', paymentIntent.id, '$' + paymentIntent.amount / 100);
 
     // Supabase config — declared early so Bloomerang cache check can use it
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -122,7 +117,7 @@ export default async function handler(req, res) {
               .maybeSingle();
             if (cached?.bloomerang_id) {
               accountId = cached.bloomerang_id;
-              console.log('Bloomerang: matched via cached bloomerang_id', accountId);
+              console.log('Bloomerang: matched via cached bloomerang_id');
             }
           } catch (e) {
             // Non-critical, fall through to search
@@ -146,7 +141,7 @@ export default async function handler(req, res) {
             for (const c of emailResults) {
               if (c.PrimaryEmail?.Value?.toLowerCase() === donor_email.toLowerCase()) {
                 accountId = c.Id;
-                console.log('Bloomerang: matched constituent', accountId, 'by email search');
+                console.log('Bloomerang: matched constituent by email search');
                 break;
               }
             }
@@ -160,7 +155,7 @@ export default async function handler(req, res) {
                 ).then(r => r.json());
                 if (detail.PrimaryEmail?.Value?.toLowerCase() === donor_email.toLowerCase()) {
                   accountId = detail.Id;
-                  console.log('Bloomerang: matched constituent', accountId, 'by email (detail check)');
+                  console.log('Bloomerang: matched constituent by email (detail check)');
                   break;
                 }
               }
@@ -188,7 +183,7 @@ export default async function handler(req, res) {
 
             if (exactMatches.length === 1) {
               accountId = exactMatches[0].Id;
-              console.log('Bloomerang: matched constituent', accountId, 'by name (unique)');
+              console.log('Bloomerang: matched constituent by name (unique)');
             } else if (exactMatches.length > 1) {
               // Multiple name matches — cross-check with email and phone
               console.log(`Bloomerang: ${exactMatches.length} name matches, verifying with email/phone`);
@@ -201,7 +196,7 @@ export default async function handler(req, res) {
                 // Check email match
                 if (detail.PrimaryEmail?.Value?.toLowerCase() === donor_email?.toLowerCase()) {
                   accountId = candidate.Id;
-                  console.log('Bloomerang: matched constituent', accountId, 'by name + email');
+                  console.log('Bloomerang: matched constituent by name + email');
                   break;
                 }
                 // Check phone match
@@ -210,7 +205,7 @@ export default async function handler(req, res) {
                   const dPhone = donor_phone.replace(/\D/g, '');
                   if (cPhone && dPhone && cPhone === dPhone) {
                     accountId = candidate.Id;
-                    console.log('Bloomerang: matched constituent', accountId, 'by name + phone');
+                    console.log('Bloomerang: matched constituent by name + phone');
                     break;
                   }
                 }
@@ -218,7 +213,7 @@ export default async function handler(req, res) {
               // Fallback to first exact name match
               if (!accountId) {
                 accountId = exactMatches[0].Id;
-                console.log('Bloomerang: using first name match', accountId);
+                console.log('Bloomerang: using first name match (multiple found)');
               }
             }
           } catch (nameSearchErr) {
@@ -313,7 +308,7 @@ export default async function handler(req, res) {
             console.error('Bloomerang transaction failed:', txnResult);
           } else {
             bloomerangTransactionId = txnResult.Id || null;
-            console.log('Bloomerang: recorded donation for', donor_email, '$' + donorAmount);
+            console.log('Bloomerang: recorded donation $' + donorAmount);
 
             // Cache bloomerang_id on our people record for faster future lookups
             if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
@@ -330,7 +325,7 @@ export default async function handler(req, res) {
             }
           }
         } else if (!accountId) {
-          console.error('Bloomerang: no accountId found for', donor_email);
+          console.error('Bloomerang: no accountId found');
         } else {
           console.error('Bloomerang: no fundId found');
         }

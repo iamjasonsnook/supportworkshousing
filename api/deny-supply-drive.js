@@ -32,12 +32,12 @@ const getDenialEmail = (data, reason) => ({
           <h1>Supply Drop-Off Request Update</h1>
         </div>
         <div class="content">
-          <p>Dear ${data.contact_name},</p>
+          <p>Dear ${escHtml(data.contact_name)},</p>
           <p>Thank you for your interest in donating to SupportWorks Housing.</p>
           <div class="info-box">
             <p style="margin: 0;"><strong>We're unable to accommodate your drop-off request at this time.</strong></p>
           </div>
-          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          ${reason ? `<p><strong>Reason:</strong> ${escHtml(reason)}</p>` : ''}
           <p>We truly appreciate your generosity. While we can't accommodate this particular request, we'd love to work with you on future opportunities.</p>
           <h3 style="color: #1A1A1A; margin-top: 25px;">What's Next?</h3>
           <ul style="line-height: 2;">
