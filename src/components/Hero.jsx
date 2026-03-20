@@ -25,7 +25,8 @@ function Hero() {
           </p>
           <div className="hero-buttons">
             <a href="#donate" className="btn btn-primary">
-              Make an Impact Today
+              <span className="hero-btn-desktop">Make an Impact Today</span>
+              <span className="hero-btn-mobile">Donate Now</span>
               <ArrowRight size={20} />
             </a>
             <a href="#what-we-do" className="btn btn-outline">
