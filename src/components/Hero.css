@@ -101,7 +101,7 @@
 @media (max-width: 768px) {
   .hero {
     min-height: auto;
-    padding: 24px 0 40px;
+    padding: 24px 0 24px;
     background-image: none !important;
     background-color: var(--color-white);
   }
@@ -130,9 +130,13 @@
     line-height: 1.6;
   }
 
+  .hero-btn-learn {
+    display: none;
+  }
+
   .hero-buttons {
     flex-direction: column;
-    margin-bottom: 32px;
+    margin-bottom: 0;
   }
 
   .hero-buttons .btn {

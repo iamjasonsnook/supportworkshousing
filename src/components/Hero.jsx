@@ -29,7 +29,7 @@ function Hero() {
               <span className="hero-btn-mobile">Donate Now</span>
               <ArrowRight size={20} />
             </a>
-            <a href="#what-we-do" className="btn btn-outline">
+            <a href="#what-we-do" className="btn btn-outline hero-btn-learn">
               Learn Our Approach
             </a>
           </div>
