@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Clock, Building2, DollarSign, ArrowLeft, CalendarDays } from 'lucide-react';
+import { MapPin, Clock, Building2, DollarSign, ArrowLeft } from 'lucide-react';
 import { jobListings } from './CareersPage';
 import CareersHeader from './CareersHeader';
 import Footer from './Footer';
@@ -64,9 +64,6 @@ function JobDetail() {
                   </span>
                   <span className="job-hero-meta-item">
                     <DollarSign size={16} /> {job.salary}
-                  </span>
-                  <span className="job-hero-meta-item">
-                    <CalendarDays size={16} /> Posted {job.posted}
                   </span>
                 </div>
               </div>
