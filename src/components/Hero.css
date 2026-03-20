@@ -53,6 +53,10 @@
   margin-bottom: 48px;
 }
 
+.hero-btn-mobile {
+  display: none;
+}
+
 .hero-stats {
   display: flex;
   gap: 48px;
@@ -135,12 +139,16 @@
     width: 100%;
   }
 
+  .hero-btn-desktop {
+    display: none;
+  }
+
+  .hero-btn-mobile {
+    display: inline;
+  }
+
   .hero-stats {
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    padding: 16px;
-    background-color: var(--color-gray-50);
+    display: none;
   }
 
   .stat {
