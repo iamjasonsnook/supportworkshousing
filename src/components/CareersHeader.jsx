@@ -13,9 +13,9 @@ function CareersHeader() {
         </a>
 
         <nav className={`careers-nav ${isMenuOpen ? 'nav-open' : ''}`}>
-          <a href="#why-us" className="nav-link" onClick={() => setIsMenuOpen(false)}>Why SupportWorks</a>
-          <a href="#benefits" className="nav-link" onClick={() => setIsMenuOpen(false)}>Benefits</a>
-          <a href="#open-positions" className="nav-link" onClick={() => setIsMenuOpen(false)}>Open Positions</a>
+          <a href="/careers#why-us" className="nav-link" onClick={() => setIsMenuOpen(false)}>Why SupportWorks</a>
+          <a href="/careers#benefits" className="nav-link" onClick={() => setIsMenuOpen(false)}>Benefits</a>
+          <a href="/careers#open-positions" className="nav-link" onClick={() => setIsMenuOpen(false)}>Open Positions</a>
           <a href="/" className="btn-back">Back to Main Site</a>
         </nav>
 

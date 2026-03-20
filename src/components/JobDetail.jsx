@@ -156,7 +156,7 @@ function JobDetail() {
                     Virginia's leading supportive housing organization since 1988. We house over
                     1,500 individuals annually across Richmond, Hampton Roads, and Charlottesville.
                   </p>
-                  <a href="/careers" className="job-all-link">
+                  <a href="/careers#open-positions" className="job-all-link">
                     View all open positions →
                   </a>
                 </div>
