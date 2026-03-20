@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin, Clock, Building2, DollarSign, ArrowLeft, CalendarDays } from 'lucide-react';
 import { jobListings } from './CareersPage';
@@ -9,6 +10,15 @@ function JobDetail() {
   const { jobId } = useParams();
   const job = jobListings.find((j) => j.id === jobId);
 
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    document.head.appendChild(meta);
+    return () => document.head.removeChild(meta);
+  }, []);
+
+
   if (!job) {
     return (
       <>
@@ -17,7 +27,7 @@ function JobDetail() {
           <div className="container">
             <h1>Position Not Found</h1>
             <p>This position may no longer be available.</p>
-            <Link to="/careers" className="btn btn-primary">View All Positions</Link>
+            <a href="/careers" className="btn btn-primary">View All Positions</a>
           </div>
         </main>
         <Footer />
@@ -32,9 +42,9 @@ function JobDetail() {
         {/* Breadcrumb / back */}
         <div className="job-breadcrumb">
           <div className="container">
-            <Link to="/careers" className="job-back-link">
+            <a href="/careers" className="job-back-link">
               <ArrowLeft size={16} /> Back to Careers
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -61,10 +71,9 @@ function JobDetail() {
                 </div>
               </div>
               <div className="job-hero-apply">
-                <button className="btn btn-primary job-apply-btn" disabled>
+                <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary job-apply-btn">
                   Apply Now
-                </button>
-                <p className="job-apply-note">Applications open soon</p>
+                </a>
               </div>
             </div>
           </div>
@@ -136,10 +145,9 @@ function JobDetail() {
                       <dd>{job.salary}</dd>
                     </div>
                   </dl>
-                  <button className="btn btn-primary job-sidebar-apply" disabled>
+                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary job-sidebar-apply">
                     Apply Now
-                  </button>
-                  <p className="job-apply-note">Applications open soon</p>
+                  </a>
                 </div>
 
                 <div className="job-sidebar-card job-sidebar-about">
@@ -148,9 +156,9 @@ function JobDetail() {
                     Virginia's leading supportive housing organization since 1988. We house over
                     1,500 individuals annually across Richmond, Hampton Roads, and Charlottesville.
                   </p>
-                  <Link to="/careers" className="job-all-link">
+                  <a href="/careers" className="job-all-link">
                     View all open positions →
-                  </Link>
+                  </a>
                 </div>
               </aside>
 

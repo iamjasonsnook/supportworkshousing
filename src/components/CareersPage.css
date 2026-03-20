@@ -1,13 +1,36 @@
-/* ── Hero ─────────────────────────────────── */
+/* ── Hero — matches main site Hero.css ─────── */
 .careers-hero {
-  background: linear-gradient(135deg, var(--color-pink-light) 0%, #fff 60%);
-  padding: 80px 0 0;
-  overflow: hidden;
+  position: relative;
+  min-height: 72vh;
+  display: flex;
+  align-items: center;
+  background-size: cover;
+  background-position: 65% 10%;
+}
+
+.careers-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.92) 30%,
+    rgba(255, 255, 255, 0.5)  50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    rgba(255, 255, 255, 0)    100%
+  );
+}
+
+.careers-hero-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding-top: 40px;
+  padding-bottom: 40px;
 }
 
 .careers-hero-content {
-  max-width: 760px;
-  margin-bottom: 60px;
+  max-width: 560px;
 }
 
 .careers-eyebrow {
@@ -31,11 +54,10 @@
 }
 
 .careers-hero-body {
-  font-size: 1.2rem;
+  font-size: 1.125rem;
   color: var(--color-text-body);
   line-height: 1.7;
-  max-width: 640px;
-  margin-bottom: 36px;
+  margin-bottom: 32px;
 }
 
 .careers-hero-actions {
@@ -46,12 +68,15 @@
 
 /* Stat bar */
 .careers-hero-stat-bar {
-  display: flex;
-  align-items: center;
   background-color: var(--color-white);
   border-top: 1px solid var(--color-gray-200);
   padding: 32px 0;
-  gap: 0;
+}
+
+.careers-stat-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .careers-stat {
@@ -343,8 +368,8 @@
 
 /* ── Responsive ───────────────────────────── */
 @media (max-width: 1024px) {
-  .careers-hero h1 {
-    font-size: 3rem;
+  .careers-hero-content {
+    max-width: 500px;
   }
 
   .why-us-grid {
@@ -358,7 +383,23 @@
 
 @media (max-width: 768px) {
   .careers-hero {
-    padding: 48px 0 0;
+    min-height: auto;
+    padding: 24px 0 40px;
+    background-image: none !important;
+    background-color: var(--color-white);
+  }
+
+  .careers-hero-overlay {
+    display: none;
+  }
+
+  .careers-hero-container {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .careers-hero-content {
+    max-width: 100%;
   }
 
   .careers-hero h1 {
