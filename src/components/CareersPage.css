@@ -435,7 +435,20 @@
   }
 
   .why-us-card {
-    padding: 24px;
+    padding: 20px;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .why-us-icon {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  .why-us-card h3 {
+    margin-bottom: 8px;
   }
 
   .careers-quote {
