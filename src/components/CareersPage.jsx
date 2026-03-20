@@ -269,8 +269,10 @@ function CareersPage() {
                     <div className="why-us-icon">
                       <Icon size={24} />
                     </div>
-                    <h3>{reason.title}</h3>
-                    <p>{reason.body}</p>
+                    <div className="why-us-card-text">
+                      <h3>{reason.title}</h3>
+                      <p>{reason.body}</p>
+                    </div>
                   </div>
                 );
               })}
