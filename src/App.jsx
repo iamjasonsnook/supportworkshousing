@@ -11,6 +11,8 @@ import Stories from './components/Stories';
 import Donate from './components/Donate';
 import Footer from './components/Footer';
 import Admin from './components/Admin';
+import CareersPage from './components/CareersPage';
+import JobDetail from './components/JobDetail';
 import './App.css';
 
 function HomePage() {
@@ -115,6 +117,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/careers/:jobId" element={<JobDetail />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
