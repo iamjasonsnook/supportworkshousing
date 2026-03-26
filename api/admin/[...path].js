@@ -257,6 +257,22 @@ async function runGa4MetricsReport(accessToken, propertyId, startDate, endDate) 
   return res.json();
 }
 
+async function runGa4DailyReport(accessToken, propertyId, startDate, endDate) {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'activeUsers' }],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+    }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 async function handleGa4Report(req, res) {
   const propertyId = process.env.GA4_PROPERTY_ID;
   const email = process.env.GA4_SERVICE_ACCOUNT_EMAIL;
@@ -292,9 +308,14 @@ async function handleGa4Report(req, res) {
     'begin_checkout', 'add_payment_info', 'donation_payment_entered', 'purchase',
   ];
 
-  const [funnelReport, overviewReport] = await Promise.all([
+  const yoyStart = `${range + 365}daysAgo`;
+  const yoyEnd = `365daysAgo`;
+
+  const [funnelReport, overviewReport, trendCurrent, trendPriorYear] = await Promise.all([
     runGa4EventReport(accessToken, propertyId, startDate, endDate, funnelEvents),
     runGa4MetricsReport(accessToken, propertyId, '7daysAgo', endDate),
+    runGa4DailyReport(accessToken, propertyId, startDate, endDate),
+    runGa4DailyReport(accessToken, propertyId, yoyStart, yoyEnd),
   ]);
 
   // Build event count map
@@ -316,10 +337,19 @@ async function handleGa4Report(req, res) {
 
   const c = (name) => eventCounts[name] || 0;
 
+  const parseDailyRows = (report) =>
+    (report?.rows || [])
+      .sort((a, b) => a.dimensionValues[0].value.localeCompare(b.dimensionValues[0].value))
+      .map((row) => parseInt(row.metricValues[0].value) || 0);
+
   return res.status(200).json({
     configured: true,
     range,
     overview,
+    trend: {
+      current: parseDailyRows(trendCurrent),
+      priorYear: parseDailyRows(trendPriorYear),
+    },
     funnels: {
       donations: [
         { step: 'Amount selected', event: 'begin_checkout', count: c('begin_checkout') },

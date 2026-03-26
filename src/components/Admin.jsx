@@ -1815,6 +1815,37 @@ function Admin() {
 
             {!ga4Loading && ga4Data?.configured && (
               <>
+                {ga4Data.trend && (ga4Data.trend.current.length > 1 || ga4Data.trend.priorYear.length > 1) && (
+                  <div className="trend-chart-card">
+                    <div className="trend-chart-header">
+                      <span className="trend-chart-title">Active Users — Daily</span>
+                      <div className="trend-legend">
+                        <span><span className="legend-dot" style={{ background: '#9B1B5D' }} /> This period</span>
+                        <span><span className="legend-dot" style={{ background: '#D1D5DB' }} /> Prior year</span>
+                      </div>
+                    </div>
+                    {(() => {
+                      const cur = ga4Data.trend.current;
+                      const yoy = ga4Data.trend.priorYear;
+                      const all = [...cur, ...yoy];
+                      const max = Math.max(...all, 1);
+                      const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
+                      const toPoints = (data) =>
+                        data.map((v, i) => {
+                          const x = PL + (i / Math.max(data.length - 1, 1)) * (W - PL - PR);
+                          const y = PT + (1 - v / max) * (H - PT - PB);
+                          return `${x.toFixed(1)},${y.toFixed(1)}`;
+                        }).join(' ');
+                      return (
+                        <svg viewBox={`0 0 ${W} ${H}`} className="trend-svg" preserveAspectRatio="none">
+                          {yoy.length > 1 && <polyline points={toPoints(yoy)} fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+                          {cur.length > 1 && <polyline points={toPoints(cur)} fill="none" stroke="#9B1B5D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+                        </svg>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 <div className="analytics-overview">
                   <div className="overview-metric">
                     <span className="overview-value">{ga4Data.overview.activeUsers.toLocaleString()}</span>
