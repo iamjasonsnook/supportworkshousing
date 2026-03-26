@@ -4,9 +4,9 @@ import heroImage from '/images/hero-new.png';
 
 function Hero() {
   const stats = [
+    { value: '1,650', label: 'People served annually' },
     { value: '96%+', label: 'Do not return to homelessness' },
-    { value: '37', label: 'Years of service' },
-    { value: '3', label: 'Virginia regions served' },
+    { value: '726', label: <>Units owned<br />and managed</> },
   ];
 
   return (
