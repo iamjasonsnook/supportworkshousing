@@ -35,7 +35,7 @@ function Hero() {
           </div>
           <div className="hero-stats">
             {stats.map((stat) => (
-              <div key={stat.label} className="stat">
+              <div key={stat.value} className="stat">
                 <span className="stat-value">{stat.value}</span>
                 <span className="stat-label">{stat.label}</span>
               </div>
