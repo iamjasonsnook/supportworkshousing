@@ -7,13 +7,13 @@ const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 function TrendChart({ current, priorYear }) {
   const [hovered, setHovered] = useState(null);
   const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
-  const all = [...current, ...priorYear];
-  const max = Math.max(...all, 1);
+  const allVals = [...current.map(d => d.value), ...priorYear.map(d => d.value)];
+  const max = Math.max(...allVals, 1);
 
   const toCoords = (data) =>
-    data.map((v, i) => ({
+    data.map((d, i) => ({
       x: PL + (i / Math.max(data.length - 1, 1)) * (W - PL - PR),
-      y: PT + (1 - v / max) * (H - PT - PB),
+      y: PT + (1 - d.value / max) * (H - PT - PB),
     }));
 
   const curCoords = toCoords(current);
@@ -22,50 +22,51 @@ function TrendChart({ current, priorYear }) {
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const svgX = ((e.clientX - rect.left) / rect.width) * W;
-    const idx = Math.round(((svgX - PL) / (W - PL - PR)) * (current.length - 1));
-    const clamped = Math.max(0, Math.min(current.length - 1, idx));
-    setHovered(clamped);
+    const relX = (e.clientX - rect.left) / rect.width;
+    const idx = Math.round(relX * (current.length - 1));
+    setHovered(Math.max(0, Math.min(current.length - 1, idx)));
   };
 
   const hp = hovered !== null ? curCoords[hovered] : null;
+  const hpXPct = hp ? (hp.x / W) * 100 : null;
+
+  const formatDate = (yyyymmdd) => {
+    const s = String(yyyymmdd);
+    const d = new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="trend-svg"
-      preserveAspectRatio="none"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setHovered(null)}
-    >
-      {yoyCoords.length > 1 && <polyline points={toPointsStr(yoyCoords)} fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
-      {curCoords.length > 1 && <polyline points={toPointsStr(curCoords)} fill="none" stroke="#9B1B5D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
-      {hp && (
-        <>
-          <line x1={hp.x} y1={PT} x2={hp.x} y2={H - PB} stroke="#9B1B5D" strokeWidth="1" strokeDasharray="3,2" opacity="0.5" />
-          <circle cx={hp.x} cy={hp.y} r="4" fill="#9B1B5D" />
-          <rect
-            x={hp.x > W / 2 ? hp.x - 54 : hp.x + 8}
-            y={Math.max(PT, hp.y - 14)}
-            width="46"
-            height="18"
-            rx="4"
-            fill="#1A1A1A"
-            opacity="0.85"
-          />
-          <text
-            x={hp.x > W / 2 ? hp.x - 31 : hp.x + 31}
-            y={Math.max(PT, hp.y - 14) + 13}
-            textAnchor="middle"
-            fill="white"
-            fontSize="11"
-            fontFamily="inherit"
-          >
-            {current[hovered].toLocaleString()}
-          </text>
-        </>
+    <div className="trend-svg-wrap">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="trend-svg"
+        preserveAspectRatio="none"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHovered(null)}
+      >
+        {yoyCoords.length > 1 && <polyline points={toPointsStr(yoyCoords)} fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+        {curCoords.length > 1 && <polyline points={toPointsStr(curCoords)} fill="none" stroke="#9B1B5D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+        {hp && (
+          <>
+            <line x1={hp.x} y1={PT} x2={hp.x} y2={H - PB} stroke="#9B1B5D" strokeWidth="1" strokeDasharray="3,2" opacity="0.4" />
+            <circle cx={hp.x} cy={hp.y} r="3.5" fill="#9B1B5D" />
+          </>
+        )}
+      </svg>
+      {hovered !== null && hp && (
+        <div
+          className="trend-tooltip"
+          style={{
+            left: `${hpXPct}%`,
+            transform: hpXPct > 60 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)',
+          }}
+        >
+          <span className="trend-tooltip-date">{formatDate(current[hovered].date)}</span>
+          <span className="trend-tooltip-value">{current[hovered].value.toLocaleString()}</span>
+        </div>
       )}
-    </svg>
+    </div>
   );
 }
 

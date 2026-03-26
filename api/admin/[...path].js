@@ -340,7 +340,7 @@ async function handleGa4Report(req, res) {
   const parseDailyRows = (report) =>
     (report?.rows || [])
       .sort((a, b) => a.dimensionValues[0].value.localeCompare(b.dimensionValues[0].value))
-      .map((row) => parseInt(row.metricValues[0].value) || 0);
+      .map((row) => ({ date: row.dimensionValues[0].value, value: parseInt(row.metricValues[0].value) || 0 }));
 
   return res.status(200).json({
     configured: true,
