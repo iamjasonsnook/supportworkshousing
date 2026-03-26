@@ -4,6 +4,71 @@ import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
+function TrendChart({ current, priorYear }) {
+  const [hovered, setHovered] = useState(null);
+  const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
+  const all = [...current, ...priorYear];
+  const max = Math.max(...all, 1);
+
+  const toCoords = (data) =>
+    data.map((v, i) => ({
+      x: PL + (i / Math.max(data.length - 1, 1)) * (W - PL - PR),
+      y: PT + (1 - v / max) * (H - PT - PB),
+    }));
+
+  const curCoords = toCoords(current);
+  const yoyCoords = toCoords(priorYear);
+  const toPointsStr = (coords) => coords.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const idx = Math.round(((svgX - PL) / (W - PL - PR)) * (current.length - 1));
+    const clamped = Math.max(0, Math.min(current.length - 1, idx));
+    setHovered(clamped);
+  };
+
+  const hp = hovered !== null ? curCoords[hovered] : null;
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="trend-svg"
+      preserveAspectRatio="none"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHovered(null)}
+    >
+      {yoyCoords.length > 1 && <polyline points={toPointsStr(yoyCoords)} fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+      {curCoords.length > 1 && <polyline points={toPointsStr(curCoords)} fill="none" stroke="#9B1B5D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+      {hp && (
+        <>
+          <line x1={hp.x} y1={PT} x2={hp.x} y2={H - PB} stroke="#9B1B5D" strokeWidth="1" strokeDasharray="3,2" opacity="0.5" />
+          <circle cx={hp.x} cy={hp.y} r="4" fill="#9B1B5D" />
+          <rect
+            x={hp.x > W / 2 ? hp.x - 54 : hp.x + 8}
+            y={Math.max(PT, hp.y - 14)}
+            width="46"
+            height="18"
+            rx="4"
+            fill="#1A1A1A"
+            opacity="0.85"
+          />
+          <text
+            x={hp.x > W / 2 ? hp.x - 31 : hp.x + 31}
+            y={Math.max(PT, hp.y - 14) + 13}
+            textAnchor="middle"
+            fill="white"
+            fontSize="11"
+            fontFamily="inherit"
+          >
+            {current[hovered].toLocaleString()}
+          </text>
+        </>
+      )}
+    </svg>
+  );
+}
+
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -1824,25 +1889,7 @@ function Admin() {
                         <span><span className="legend-dot" style={{ background: '#D1D5DB' }} /> Prior year</span>
                       </div>
                     </div>
-                    {(() => {
-                      const cur = ga4Data.trend.current;
-                      const yoy = ga4Data.trend.priorYear;
-                      const all = [...cur, ...yoy];
-                      const max = Math.max(...all, 1);
-                      const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
-                      const toPoints = (data) =>
-                        data.map((v, i) => {
-                          const x = PL + (i / Math.max(data.length - 1, 1)) * (W - PL - PR);
-                          const y = PT + (1 - v / max) * (H - PT - PB);
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        }).join(' ');
-                      return (
-                        <svg viewBox={`0 0 ${W} ${H}`} className="trend-svg" preserveAspectRatio="none">
-                          {yoy.length > 1 && <polyline points={toPoints(yoy)} fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
-                          {cur.length > 1 && <polyline points={toPoints(cur)} fill="none" stroke="#9B1B5D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
-                        </svg>
-                      );
-                    })()}
+                    <TrendChart current={ga4Data.trend.current} priorYear={ga4Data.trend.priorYear} />
                   </div>
                 )}
 

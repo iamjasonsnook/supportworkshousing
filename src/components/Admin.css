@@ -2175,6 +2175,7 @@
   display: block;
   width: 100%;
   height: 80px;
+  cursor: crosshair;
 }
 
 .analytics-overview {
