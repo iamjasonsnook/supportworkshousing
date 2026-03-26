@@ -375,6 +375,27 @@ async function handleGa4Report(req, res) {
   });
 }
 
+async function handleSendBroadcast(req, res) {
+  const { subject, html, emails } = req.body || {};
+
+  if (!subject || !html || !Array.isArray(emails) || emails.length === 0) {
+    return res.status(400).json({ error: 'subject, html, and emails are required.' });
+  }
+
+  const results = [];
+  for (const email of emails) {
+    try {
+      await sendEmail({ to: email.trim(), subject, html });
+      results.push({ email, ok: true });
+    } catch (err) {
+      results.push({ email, ok: false, error: err.message });
+    }
+  }
+
+  const failed = results.filter((r) => !r.ok);
+  return res.status(200).json({ sent: results.length - failed.length, failed: failed.length, results });
+}
+
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
 function handleLogin(req, res) {
@@ -1341,6 +1362,11 @@ export default async function handler(req, res) {
   // GET /api/admin/ga4-report
   if (method === 'GET' && path.startsWith('ga4-report')) {
     return handleGa4Report(req, res);
+  }
+
+  // POST /api/admin/send-broadcast
+  if (method === 'POST' && path === 'send-broadcast') {
+    return handleSendBroadcast(req, res);
   }
 
   // No route matched

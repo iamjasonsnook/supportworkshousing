@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, BarChart2 } from 'lucide-react';
+import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, BarChart2, Send } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -112,6 +112,14 @@ function Admin() {
   const [ga4Error, setGa4Error] = useState('');
   const [ga4Range, setGa4Range] = useState('30');
   const [ga4Fetched, setGa4Fetched] = useState(false);
+
+  // Communications tab
+  const [commSubject, setCommSubject] = useState('');
+  const [commHtml, setCommHtml] = useState('');
+  const [commRecipients, setCommRecipients] = useState('');
+  const [commView, setCommView] = useState('editor'); // 'editor' | 'preview'
+  const [commSending, setCommSending] = useState(false);
+  const [commResult, setCommResult] = useState(null);
 
   const togglePeopleFilter = (filter) => {
     setPeopleFilters(prev =>
@@ -979,6 +987,13 @@ function Admin() {
         >
           <BarChart2 size={18} />
           Analytics
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'communications' ? 'active' : ''}`}
+          onClick={() => setActiveTab('communications')}
+        >
+          <Mail size={18} />
+          Communications
         </button>
       </div>
 
@@ -1951,6 +1966,107 @@ function Admin() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Communications Tab */}
+        {activeTab === 'communications' && (
+          <div className="comm-tab">
+            <div className="comm-header">
+              <h2><Mail size={20} /> Communications</h2>
+            </div>
+
+            <div className="comm-field">
+              <label className="comm-label">Subject</label>
+              <input
+                type="text"
+                className="comm-input"
+                placeholder="Email subject line…"
+                value={commSubject}
+                onChange={(e) => setCommSubject(e.target.value)}
+              />
+            </div>
+
+            <div className="comm-field">
+              <div className="comm-view-toggle">
+                <label className="comm-label">Message</label>
+                <div className="comm-toggle-btns">
+                  <button
+                    className={`comm-toggle-btn ${commView === 'editor' ? 'active' : ''}`}
+                    onClick={() => setCommView('editor')}
+                  >Editor</button>
+                  <button
+                    className={`comm-toggle-btn ${commView === 'preview' ? 'active' : ''}`}
+                    onClick={() => setCommView('preview')}
+                  >Preview</button>
+                </div>
+              </div>
+              {commView === 'editor' ? (
+                <textarea
+                  className="comm-html-editor"
+                  placeholder="Paste your HTML here…"
+                  value={commHtml}
+                  onChange={(e) => setCommHtml(e.target.value)}
+                  spellCheck={false}
+                />
+              ) : (
+                <iframe
+                  className="comm-preview"
+                  srcDoc={commHtml || '<p style="color:#9CA3AF;font-family:sans-serif;padding:20px;">Nothing to preview yet.</p>'}
+                  title="Email preview"
+                  sandbox="allow-same-origin"
+                />
+              )}
+            </div>
+
+            <div className="comm-field">
+              <label className="comm-label">Recipients <span className="comm-label-hint">(one per line or comma-separated)</span></label>
+              <textarea
+                className="comm-recipients"
+                placeholder="email@example.com&#10;another@example.com"
+                value={commRecipients}
+                onChange={(e) => setCommRecipients(e.target.value)}
+              />
+            </div>
+
+            {commResult && (
+              <div className={`comm-result ${commResult.failed > 0 ? 'comm-result-warn' : 'comm-result-ok'}`}>
+                {commResult.failed === 0
+                  ? `✓ Sent to ${commResult.sent} recipient${commResult.sent !== 1 ? 's' : ''}`
+                  : `Sent ${commResult.sent}, failed ${commResult.failed}: ${commResult.results.filter(r => !r.ok).map(r => r.email).join(', ')}`}
+              </div>
+            )}
+
+            <button
+              className="btn btn-primary comm-send-btn"
+              disabled={commSending || !commSubject || !commHtml || !commRecipients.trim()}
+              onClick={async () => {
+                const emails = commRecipients
+                  .split(/[\n,]+/)
+                  .map((e) => e.trim())
+                  .filter(Boolean);
+                if (emails.length === 0) return;
+                setCommSending(true);
+                setCommResult(null);
+                try {
+                  const token = localStorage.getItem('adminToken');
+                  const res = await fetch(`${API_BASE}/api/admin/send-broadcast`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ subject: commSubject, html: commHtml, emails }),
+                  });
+                  const data = await res.json();
+                  setCommResult(data);
+                } catch (err) {
+                  setCommResult({ sent: 0, failed: 1, results: [{ email: 'unknown', ok: false, error: err.message }] });
+                } finally {
+                  setCommSending(false);
+                }
+              }}
+            >
+              {commSending ? <RefreshCw size={16} className="spin" /> : <Send size={16} />}
+              {commSending ? 'Sending…' : 'Send Email'}
+            </button>
           </div>
         )}
       </div>
