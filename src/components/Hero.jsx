@@ -6,7 +6,7 @@ function Hero() {
   const stats = [
     { value: '1,650', label: 'People served annually' },
     { value: '96%+', label: 'Do not return to homelessness' },
-    { value: '726', label: <>Units owned<br />and managed</> },
+    { value: '726', label: 'Units owned\nand managed' },
   ];
 
   return (
@@ -37,7 +37,7 @@ function Hero() {
             {stats.map((stat) => (
               <div key={stat.value} className="stat">
                 <span className="stat-value">{stat.value}</span>
-                <span className="stat-label">{stat.label}</span>
+                <span className="stat-label" style={{ whiteSpace: 'pre-line' }}>{stat.label}</span>
               </div>
             ))}
           </div>

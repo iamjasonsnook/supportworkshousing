@@ -2049,7 +2049,7 @@ function Admin() {
                 setCommSending(true);
                 setCommResult(null);
                 try {
-                  const token = localStorage.getItem('adminToken');
+                  const token = localStorage.getItem('admin_session');
                   const res = await fetch(`${API_BASE}/api/admin/send-broadcast`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
