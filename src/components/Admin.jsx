@@ -2058,7 +2058,8 @@ function Admin() {
                   .split(/[\n,]+/)
                   .map((e) => e.trim())
                   .filter(Boolean);
-                if (emails.length === 0) return;
+                const bccList = commBcc.split(/[\n,]+/).map((e) => e.trim()).filter(Boolean);
+                if (emails.length === 0 && bccList.length === 0) return;
                 setCommSending(true);
                 setCommResult(null);
                 try {
@@ -2070,7 +2071,7 @@ function Admin() {
                       subject: commSubject,
                       html: commHtml,
                       emails,
-                      bcc: commBcc.split(/[\n,]+/).map((e) => e.trim()).filter(Boolean),
+                      bcc: bccList,
                     }),
                   });
                   const data = await res.json();
