@@ -117,6 +117,7 @@ function Admin() {
   const [commSubject, setCommSubject] = useState('');
   const [commHtml, setCommHtml] = useState('');
   const [commRecipients, setCommRecipients] = useState('');
+  const [commBcc, setCommBcc] = useState('');
   const [commView, setCommView] = useState('editor'); // 'editor' | 'preview'
   const [commSending, setCommSending] = useState(false);
   const [commResult, setCommResult] = useState(null);
@@ -2029,6 +2030,16 @@ function Admin() {
               />
             </div>
 
+            <div className="comm-field">
+              <label className="comm-label">BCC <span className="comm-label-hint">(one per line or comma-separated)</span></label>
+              <textarea
+                className="comm-recipients"
+                placeholder="bcc@example.com"
+                value={commBcc}
+                onChange={(e) => setCommBcc(e.target.value)}
+              />
+            </div>
+
             {commResult && (
               <div className={`comm-result ${commResult.failed > 0 ? 'comm-result-warn' : 'comm-result-ok'}`}>
                 {commResult.failed === 0
@@ -2053,7 +2064,12 @@ function Admin() {
                   const res = await fetch(`${API_BASE}/api/admin/send-broadcast`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ subject: commSubject, html: commHtml, emails }),
+                    body: JSON.stringify({
+                      subject: commSubject,
+                      html: commHtml,
+                      emails,
+                      bcc: commBcc.split(/[\n,]+/).map((e) => e.trim()).filter(Boolean),
+                    }),
                   });
                   const data = await res.json();
                   setCommResult(data);

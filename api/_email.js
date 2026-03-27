@@ -5,7 +5,7 @@
 // NOTE: Requires "Allow non-browser environments" enabled in EmailJS dashboard:
 // https://dashboard.emailjs.com/admin/account/security
 
-export async function sendEmail({ to, subject, html, replyTo }) {
+export async function sendEmail({ to, subject, html, replyTo, bcc }) {
   const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -19,6 +19,7 @@ export async function sendEmail({ to, subject, html, replyTo }) {
         email_subject: subject,
         email_html: html,
         reply_to: replyTo || '',
+        bcc_email: bcc || '',
       },
     }),
   });

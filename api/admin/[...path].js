@@ -376,16 +376,20 @@ async function handleGa4Report(req, res) {
 }
 
 async function handleSendBroadcast(req, res) {
-  const { subject, html, emails } = req.body || {};
+  const { subject, html, emails, bcc } = req.body || {};
 
   if (!subject || !html || !Array.isArray(emails) || emails.length === 0) {
     return res.status(400).json({ error: 'subject, html, and emails are required.' });
   }
 
+  const bccStr = Array.isArray(bcc) && bcc.length > 0
+    ? bcc.map((e) => e.trim()).filter(Boolean).join(',')
+    : '';
+
   const results = [];
   for (const email of emails) {
     try {
-      await sendEmail({ to: email.trim(), subject, html });
+      await sendEmail({ to: email.trim(), subject, html, bcc: bccStr });
       results.push({ email, ok: true });
     } catch (err) {
       results.push({ email, ok: false, error: err.message });
