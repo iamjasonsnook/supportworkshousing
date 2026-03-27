@@ -397,7 +397,8 @@ async function handleSendBroadcast(req, res) {
   }
 
   const failed = results.filter((r) => !r.ok);
-  return res.status(200).json({ sent: results.length - failed.length, failed: failed.length, results });
+  const bccCount = bccStr ? bccStr.split(',').filter(Boolean).length : 0;
+  return res.status(200).json({ sent: results.length - failed.length, failed: failed.length, bccCount, results });
 }
 
 // ─── Route handlers ──────────────────────────────────────────────────────────

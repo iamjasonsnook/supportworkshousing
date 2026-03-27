@@ -2043,7 +2043,7 @@ function Admin() {
             {commResult && (
               <div className={`comm-result ${commResult.failed > 0 ? 'comm-result-warn' : 'comm-result-ok'}`}>
                 {commResult.failed === 0
-                  ? `✓ Sent to ${commResult.sent} recipient${commResult.sent !== 1 ? 's' : ''}`
+                  ? `✓ Sent to ${commResult.sent} recipient${commResult.sent !== 1 ? 's' : ''}${commResult.bccCount > 0 ? ` (+${commResult.bccCount} BCC)` : ''}`
                   : `Sent ${commResult.sent}, failed ${commResult.failed}: ${commResult.results.filter(r => !r.ok).map(r => r.email).join(', ')}`}
               </div>
             )}
