@@ -2043,14 +2043,16 @@ function Admin() {
             {commResult && (
               <div className={`comm-result ${commResult.failed > 0 ? 'comm-result-warn' : 'comm-result-ok'}`}>
                 {commResult.failed === 0
-                  ? `✓ Sent to ${commResult.sent} recipient${commResult.sent !== 1 ? 's' : ''}${commResult.bccCount > 0 ? ` (+${commResult.bccCount} BCC)` : ''}`
+                  ? commResult.sent === 0 && commResult.bccCount > 0
+                    ? `✓ Sent to ${commResult.bccCount} BCC recipient${commResult.bccCount !== 1 ? 's' : ''}`
+                    : `✓ Sent to ${commResult.sent} recipient${commResult.sent !== 1 ? 's' : ''}${commResult.bccCount > 0 ? ` (+${commResult.bccCount} BCC)` : ''}`
                   : `Sent ${commResult.sent}, failed ${commResult.failed}: ${commResult.results.filter(r => !r.ok).map(r => r.email).join(', ')}`}
               </div>
             )}
 
             <button
               className="btn btn-primary comm-send-btn"
-              disabled={commSending || !commSubject || !commHtml || !commRecipients.trim()}
+              disabled={commSending || !commSubject || !commHtml || (!commRecipients.trim() && !commBcc.trim())}
               onClick={async () => {
                 const emails = commRecipients
                   .split(/[\n,]+/)

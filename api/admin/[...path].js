@@ -378,18 +378,22 @@ async function handleGa4Report(req, res) {
 async function handleSendBroadcast(req, res) {
   const { subject, html, emails, bcc } = req.body || {};
 
-  if (!subject || !html || !Array.isArray(emails) || emails.length === 0) {
-    return res.status(400).json({ error: 'subject, html, and emails are required.' });
-  }
-
+  const toList = Array.isArray(emails) ? emails.map((e) => e.trim()).filter(Boolean) : [];
   const bccStr = Array.isArray(bcc) && bcc.length > 0
     ? bcc.map((e) => e.trim()).filter(Boolean).join(',')
     : '';
 
+  if (!subject || !html || (toList.length === 0 && !bccStr)) {
+    return res.status(400).json({ error: 'subject, html, and at least one recipient or BCC are required.' });
+  }
+
+  // If no To recipients, send a single self-addressed email so BCC recipients receive it
+  const sendList = toList.length > 0 ? toList : [ADMIN_EMAIL];
+
   const results = [];
-  for (const email of emails) {
+  for (const email of sendList) {
     try {
-      await sendEmail({ to: email.trim(), subject, html, bcc: bccStr });
+      await sendEmail({ to: email, subject, html, bcc: bccStr });
       results.push({ email, ok: true });
     } catch (err) {
       results.push({ email, ok: false, error: err.message });
@@ -398,7 +402,8 @@ async function handleSendBroadcast(req, res) {
 
   const failed = results.filter((r) => !r.ok);
   const bccCount = bccStr ? bccStr.split(',').filter(Boolean).length : 0;
-  return res.status(200).json({ sent: results.length - failed.length, failed: failed.length, bccCount, results });
+  const sentCount = toList.length > 0 ? results.length - failed.length : 0;
+  return res.status(200).json({ sent: sentCount, failed: failed.length, bccCount, results });
 }
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
