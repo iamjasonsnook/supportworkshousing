@@ -458,7 +458,7 @@ async function handleDenyEvent(req, res, id) {
     .eq('id', id);
   if (updateError) {
     console.error('Supabase deny error:', updateError.message);
-    return res.status(500).json({ error: 'Failed to deny event' });
+    return res.status(500).json({ error: updateError.message });
   }
   return res.status(200).json({ success: true });
 }
@@ -542,7 +542,7 @@ async function handleDenySupplyDrive(req, res, id) {
     .eq('id', id);
   if (updateError) {
     console.error('Supabase deny supply drive error:', updateError.message);
-    return res.status(500).json({ error: 'Failed to deny supply drive' });
+    return res.status(500).json({ error: updateError.message });
   }
   return res.status(200).json({ success: true });
 }
