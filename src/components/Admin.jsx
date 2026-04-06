@@ -443,9 +443,13 @@ function Admin() {
 
       if (response.ok) {
         fetchEvents();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`Failed to deny event: ${data.error || response.status}`);
       }
     } catch (err) {
       console.error('Deny failed:', err);
+      alert('Failed to deny event. Check that the admin server is running.');
     } finally {
       setActionLoading(null);
     }
@@ -490,9 +494,13 @@ function Admin() {
 
       if (response.ok) {
         fetchEvents();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`Failed to deny supply drive: ${data.error || response.status}`);
       }
     } catch (err) {
       console.error('Deny failed:', err);
+      alert('Failed to deny supply drive. Check that the admin server is running.');
     } finally {
       setActionLoading(null);
     }

@@ -876,17 +876,11 @@ app.post('/api/admin/supply-drives/:id/approve', authMiddleware, async (req, res
   const { id } = req.params;
 
   try {
-    if (supabase && id.includes('-') && id.length > 10) {
-      await supabase.from('supply_drives')
-        .update({ status: 'approved' })
-        .eq('id', id);
-      return res.json({ success: true });
-    }
-    const supplyDrive = mockSupplyDrives.find(e => e.id === id);
-    if (supplyDrive) {
-      supplyDrive.status = 'approved';
-      supplyDrive.approved_at = new Date().toISOString();
-    }
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { error } = await supabase.from('supply_drives')
+      .update({ status: 'approved', approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
     res.json({ success: true });
   } catch (error) {
     console.error('Error approving supply drive:', error);
@@ -900,17 +894,11 @@ app.post('/api/admin/supply-drives/:id/deny', authMiddleware, async (req, res) =
   const { reason } = req.body;
 
   try {
-    if (supabase && id.includes('-') && id.length > 10) {
-      await supabase.from('supply_drives')
-        .update({ status: 'denied', denial_reason: reason || null })
-        .eq('id', id);
-      return res.json({ success: true });
-    }
-    const supplyDrive = mockSupplyDrives.find(e => e.id === id);
-    if (supplyDrive) {
-      supplyDrive.status = 'denied';
-      supplyDrive.denial_reason = reason || null;
-    }
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { error } = await supabase.from('supply_drives')
+      .update({ status: 'denied', denial_reason: reason || null })
+      .eq('id', id);
+    if (error) throw error;
     res.json({ success: true });
   } catch (error) {
     console.error('Error denying supply drive:', error);
