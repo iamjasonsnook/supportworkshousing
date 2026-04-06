@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, LogOut, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, BarChart2, Send } from 'lucide-react';
+import { Calendar, Users, MapPin, Phone, Mail, Check, X, Clock, RefreshCw, Filter, ChevronLeft, ChevronRight, Building, User, FileText, ArrowLeft, Edit3, Save, Search, Package, DollarSign, Heart, BarChart2, Send } from 'lucide-react';
 import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
@@ -104,7 +104,6 @@ function Admin() {
   const [donationFilter, setDonationFilter] = useState('all'); // 'all', 'one-time', 'monthly'
   const [donationSearch, setDonationSearch] = useState('');
   const [donationSort, setDonationSort] = useState('newest'); // 'newest', 'oldest', 'highest', 'lowest'
-  const [showTestData, setShowTestData] = useState(false);
 
   // GA4 Analytics state
   const [ga4Data, setGa4Data] = useState(null);
@@ -567,8 +566,8 @@ function Admin() {
 
   // Combine events and supply drives for calendar display
   const allCalendarItems = useMemo(() => {
-    const filteredEvts = showTestData ? events : events.filter(e => !e._test);
-    const filteredDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
+    const filteredEvts = events;
+    const filteredDrives = supplyDrives;
     return [
       ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
       ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
@@ -658,8 +657,8 @@ function Admin() {
 
   // Filter events based on selected date or filter
   const displayedEvents = useMemo(() => {
-    const filteredEvts = showTestData ? events : events.filter(e => !e._test);
-    const filteredDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
+    const filteredEvts = events;
+    const filteredDrives = supplyDrives;
 
     // Build base item list respecting type filter
     let evtItems = typeFilter !== 'supply-drive' ? filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })) : [];
@@ -702,10 +701,10 @@ function Admin() {
   const defaultItemValue = 8; // Default value for unlisted items
 
   const calculatedStats = useMemo(() => {
-    const baseEvents = showTestData ? events : events.filter(e => !e._test);
-    const baseDrives = showTestData ? supplyDrives : supplyDrives.filter(e => !e._test);
-    const baseVolunteers = showTestData ? volunteers : volunteers.filter(v => !v._test);
-    const baseDonations = showTestData ? donations : donations.filter(d => !d._test);
+    const baseEvents = events;
+    const baseDrives = supplyDrives;
+    const baseVolunteers = volunteers;
+    const baseDonations = donations;
 
     if (!baseEvents.length && !baseDrives.length) return null;
 
@@ -779,7 +778,7 @@ function Admin() {
 
   // Filter volunteers based on type, role, and search query
   const displayedVolunteers = useMemo(() => {
-    let filtered = showTestData ? volunteers : volunteers.filter(v => !v._test);
+    let filtered = volunteers;
 
     // Type filters (OR within category)
     const typeFilters = peopleFilters.filter(f => ['organization', 'individual'].includes(f));
@@ -810,7 +809,7 @@ function Admin() {
 
   // Filter and sort donations
   const displayedDonations = useMemo(() => {
-    let filtered = showTestData ? donations : donations.filter(d => !d._test);
+    let filtered = donations;
 
     if (donationFilter !== 'all') {
       filtered = filtered.filter(d => d.donation_type === donationFilter);
@@ -844,7 +843,7 @@ function Admin() {
 
   // Donation summary stats
   const donationStats = useMemo(() => {
-    const baseDonations = showTestData ? donations : donations.filter(d => !d._test);
+    const baseDonations = donations;
     if (!baseDonations.length) return null;
     const total = baseDonations.reduce((sum, d) => sum + d.amount, 0);
     const uniqueDonors = new Set(baseDonations.map(d => d.donor_email)).size;
@@ -902,17 +901,8 @@ function Admin() {
           </div>
         </div>
         <div className="admin-header-right">
-          <label className="admin-test-toggle">
-            <span className="admin-test-toggle-label">Test Data</span>
-            <div className={`admin-test-toggle-switch ${showTestData ? 'active' : ''}`} onClick={() => setShowTestData(prev => !prev)}>
-              <div className="admin-test-toggle-knob" />
-            </div>
-          </label>
-          <button onClick={() => { fetchEvents(); fetchVolunteers(); fetchStats(); fetchDonations(); }} className="admin-btn-icon" title="Refresh">
-            <RefreshCw size={20} className={loading ? 'spinning' : ''} />
-          </button>
-          <button onClick={handleLogout} className="admin-btn-icon" title="Logout">
-            <LogOut size={20} />
+          <button onClick={handleLogout} className="admin-btn-logout">
+            Log Out
           </button>
         </div>
       </header>
@@ -1284,7 +1274,7 @@ function Admin() {
                   onClick={() => togglePeopleFilter('organization')}
                 >
                   <Building size={14} />
-                  Organizations ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.type === 'organization').length})
+                  Organizations ({(volunteers).filter(v => v.type === 'organization').length})
                   {peopleFilters.includes('organization') && <X size={12} className="filter-x" />}
                 </button>
                 <button
@@ -1292,7 +1282,7 @@ function Admin() {
                   onClick={() => togglePeopleFilter('individual')}
                 >
                   <User size={14} />
-                  Individuals ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.type === 'individual').length})
+                  Individuals ({(volunteers).filter(v => v.type === 'individual').length})
                   {peopleFilters.includes('individual') && <X size={12} className="filter-x" />}
                 </button>
                 <span className="filter-divider" />
@@ -1300,14 +1290,14 @@ function Admin() {
                   className={`filter-btn ${peopleFilters.includes('volunteer') ? 'active' : ''}`}
                   onClick={() => togglePeopleFilter('volunteer')}
                 >
-                  Volunteers ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.roles?.includes('volunteer')).length})
+                  Volunteers ({(volunteers).filter(v => v.roles?.includes('volunteer')).length})
                   {peopleFilters.includes('volunteer') && <X size={12} className="filter-x" />}
                 </button>
                 <button
                   className={`filter-btn ${peopleFilters.includes('donor') ? 'active' : ''}`}
                   onClick={() => togglePeopleFilter('donor')}
                 >
-                  Donors ({(showTestData ? volunteers : volunteers.filter(v => !v._test)).filter(v => v.roles?.includes('donor')).length})
+                  Donors ({(volunteers).filter(v => v.roles?.includes('donor')).length})
                   {peopleFilters.includes('donor') && <X size={12} className="filter-x" />}
                 </button>
               </div>
@@ -1682,19 +1672,19 @@ function Admin() {
                   className={`filter-btn ${donationFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('all')}
                 >
-                  All ({(showTestData ? donations : donations.filter(d => !d._test)).length})
+                  All ({(donations).length})
                 </button>
                 <button
                   className={`filter-btn ${donationFilter === 'one-time' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('one-time')}
                 >
-                  One-time ({(showTestData ? donations : donations.filter(d => !d._test)).filter(d => d.donation_type === 'one-time').length})
+                  One-time ({(donations).filter(d => d.donation_type === 'one-time').length})
                 </button>
                 <button
                   className={`filter-btn ${donationFilter === 'monthly' ? 'active' : ''}`}
                   onClick={() => setDonationFilter('monthly')}
                 >
-                  Monthly ({(showTestData ? donations : donations.filter(d => !d._test)).filter(d => d.donation_type === 'monthly').length})
+                  Monthly ({(donations).filter(d => d.donation_type === 'monthly').length})
                 </button>
               </div>
               <div className="donation-controls">
