@@ -99,6 +99,13 @@
 .footer-bottom p {
   color: var(--color-gray-300);
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-bottom-divider {
+  opacity: 0.4;
 }
 
 .footer-legal {
@@ -106,14 +113,87 @@
   gap: 24px;
 }
 
-.footer-legal a {
+.footer-legal a,
+.footer-legal-link {
   color: var(--color-gray-300);
   font-size: 0.875rem;
   transition: color 0.2s ease;
 }
 
-.footer-legal a:hover {
+.footer-legal-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.footer-legal a:hover,
+.footer-legal-link:hover {
   color: var(--color-white);
+}
+
+/* HMIS Privacy Modal */
+.hmis-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.hmis-modal {
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  border-radius: 8px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.hmis-modal h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.hmis-modal h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
+}
+
+.hmis-modal p {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.hmis-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+  padding: 4px;
+}
+
+.hmis-modal-close:hover {
+  color: var(--color-text-dark);
 }
 
 @media (max-width: 1024px) {
