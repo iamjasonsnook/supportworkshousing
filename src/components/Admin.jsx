@@ -572,7 +572,7 @@ function Admin() {
       ...filteredEvts.map(e => ({ ...e, itemType: 'connection-night' })),
       ...filteredDrives.map(e => ({ ...e, itemType: 'supply-drive' })),
     ];
-  }, [events, supplyDrives, showTestData]);
+  }, [events, supplyDrives]);
 
   const getEventsForDate = (date) => {
     return allCalendarItems.filter(item => {
@@ -682,7 +682,7 @@ function Admin() {
     }
 
     return allItems;
-  }, [events, supplyDrives, filter, typeFilter, selectedDate, showTestData]);
+  }, [events, supplyDrives, filter, typeFilter, selectedDate]);
 
   // Calculate stats based on timeframe
   // Estimated values for supply drive items (for in-kind donation records)
@@ -774,7 +774,7 @@ function Admin() {
       totalDonationAmount,
       donationCount,
     };
-  }, [events, supplyDrives, volunteers, donations, statsTimeframe, showTestData]);
+  }, [events, supplyDrives, volunteers, donations, statsTimeframe]);
 
   // Filter volunteers based on type, role, and search query
   const displayedVolunteers = useMemo(() => {
@@ -805,7 +805,7 @@ function Admin() {
     }
 
     return filtered;
-  }, [volunteers, peopleFilters, volunteerSearch, showTestData]);
+  }, [volunteers, peopleFilters, volunteerSearch]);
 
   // Filter and sort donations
   const displayedDonations = useMemo(() => {
@@ -839,7 +839,7 @@ function Admin() {
     }
 
     return sorted;
-  }, [donations, donationFilter, donationSearch, donationSort, showTestData]);
+  }, [donations, donationFilter, donationSearch, donationSort]);
 
   // Donation summary stats
   const donationStats = useMemo(() => {
@@ -855,7 +855,7 @@ function Admin() {
       uniqueDonors,
       monthlyCount,
     };
-  }, [donations, showTestData]);
+  }, [donations]);
 
   // Login Screen
   if (!isAuthenticated) {
