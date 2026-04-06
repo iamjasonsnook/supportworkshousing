@@ -391,7 +391,11 @@
 }
 
 .event-dot.denied {
-  background: #EF4444;
+  background: transparent;
+  border: 1.5px dashed #C4C4C4;
+  color: #C4C4C4;
+  font-weight: 400;
+  font-size: 0.65rem;
 }
 
 .event-dot.completed {
@@ -431,7 +435,8 @@
 }
 
 .legend-dot.denied {
-  background: #EF4444;
+  background: transparent;
+  border: 1.5px dashed #C4C4C4;
 }
 
 .legend-dot.completed {
