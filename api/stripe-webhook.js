@@ -266,24 +266,8 @@ export default async function handler(req, res) {
         }
 
         // Look up the "General Fund" ID
-        let fundId = null;
-        try {
-          const fundsResp = await fetch(
-            'https://api.bloomerang.co/v2/funds?isActive=true',
-            { headers: bloomerangHeaders }
-          );
-          const fundsData = await fundsResp.json();
-          const generalFund = (fundsData.Results || []).find(f => f.Name === 'General Fund');
-          if (generalFund) {
-            fundId = generalFund.Id;
-          } else if (fundsData.Results && fundsData.Results.length > 0) {
-            // Fall back to the first active fund
-            fundId = fundsData.Results[0].Id;
-            console.log('Bloomerang: no "General Fund" found, using', fundsData.Results[0].Name);
-          }
-        } catch (e) {
-          console.error('Bloomerang fund lookup failed:', e.message);
-        }
+        // Bloomerang fund ID 13317 = Unrestricted Fund (general giving)
+        const fundId = 13317;
 
         // Record the transaction
         if (accountId && fundId) {
