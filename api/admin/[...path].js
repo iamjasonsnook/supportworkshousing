@@ -272,8 +272,8 @@ async function handleGa4Report(req, res) {
       supplyDrives: [
         { step: 'Form started', event: 'sd_form_start', count: c('sd_form_start') },
         { step: 'Location & date', event: 'sd_step1_complete', count: c('sd_step1_complete') },
-        { step: 'Your information', event: 'sd_step2_complete', count: c('sd_step2_complete') },
-        { step: 'Items to donate', event: 'sd_step3_complete', count: c('sd_step3_complete') },
+        { step: 'Items to donate', event: 'sd_step2_complete', count: c('sd_step2_complete') },
+        { step: 'Your information', event: 'sd_step3_complete', count: c('sd_step3_complete') },
         { step: 'Submitted', event: 'sd_generate_lead', count: c('sd_generate_lead') },
       ],
     },
