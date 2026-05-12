@@ -191,6 +191,12 @@ function GetInvolved({
     }
 
     if (step === 2) {
+      if (sdFormData.selectedItems.length === 0) {
+        newErrors.selectedItems = 'Please select at least one item';
+      }
+    }
+
+    if (step === 3) {
       if (!sdFormData.contactName.trim()) newErrors.contactName = 'Contact name is required';
       if (!sdFormData.contactEmail.trim()) {
         newErrors.contactEmail = 'Contact email is required';
@@ -201,12 +207,6 @@ function GetInvolved({
         newErrors.contactPhone = 'Contact phone is required';
       } else if (!validatePhone(sdFormData.contactPhone)) {
         newErrors.contactPhone = 'Please enter a valid phone number';
-      }
-    }
-
-    if (step === 3) {
-      if (sdFormData.selectedItems.length === 0) {
-        newErrors.selectedItems = 'Please select at least one item';
       }
     }
 
@@ -834,6 +834,38 @@ function GetInvolved({
                 {currentStep === 2 && (
                   <div className="gi-step">
                     <div className="gi-step-header">
+                      <div className="gi-step-icon"><Package size={24} color="#9B1B5D" /></div>
+                      <div>
+                        <h3>Items to Donate</h3>
+                        <p>Select the items you plan to bring (select all that apply)</p>
+                      </div>
+                    </div>
+
+                    {supplyCategories.map(category => (
+                      <div key={category.name} className="gi-supply-category">
+                        <h4>{category.name}</h4>
+                        <div className="gi-supply-items">
+                          {category.items.map(item => (
+                            <label key={item} className={`gi-supply-item ${sdFormData.selectedItems.includes(item) ? 'selected' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={sdFormData.selectedItems.includes(item)}
+                                onChange={() => toggleSupplyItem(item)}
+                              />
+                              <span>{item}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {errors.selectedItems && <span className="gi-error">{errors.selectedItems}</span>}
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="gi-step">
+                    <div className="gi-step-header">
                       <div className="gi-step-icon"><User size={24} color="#9B1B5D" /></div>
                       <div>
                         <h3>Your Information</h3>
@@ -881,38 +913,6 @@ function GetInvolved({
                         {errors.contactPhone && <span className="gi-error">{errors.contactPhone}</span>}
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {currentStep === 3 && (
-                  <div className="gi-step">
-                    <div className="gi-step-header">
-                      <div className="gi-step-icon"><Package size={24} color="#9B1B5D" /></div>
-                      <div>
-                        <h3>Items to Donate</h3>
-                        <p>Select the items you plan to bring (select all that apply)</p>
-                      </div>
-                    </div>
-
-                    {supplyCategories.map(category => (
-                      <div key={category.name} className="gi-supply-category">
-                        <h4>{category.name}</h4>
-                        <div className="gi-supply-items">
-                          {category.items.map(item => (
-                            <label key={item} className={`gi-supply-item ${sdFormData.selectedItems.includes(item) ? 'selected' : ''}`}>
-                              <input
-                                type="checkbox"
-                                checked={sdFormData.selectedItems.includes(item)}
-                                onChange={() => toggleSupplyItem(item)}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-
-                    {errors.selectedItems && <span className="gi-error">{errors.selectedItems}</span>}
                   </div>
                 )}
 
