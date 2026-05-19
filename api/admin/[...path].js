@@ -1022,6 +1022,108 @@ async function handleGetDonation(req, res, id) {
   return res.status(404).json({ error: 'Donation not found' });
 }
 
+// ─── AI Analysis ─────────────────────────────────────────────────────────────
+
+async function handleAiAnalysis(req, res) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Anthropic API not configured' });
+  }
+
+  const { ga4Data, range } = req.body || {};
+  if (!ga4Data) {
+    return res.status(400).json({ error: 'Missing analytics data' });
+  }
+
+  const formatFunnel = (steps) =>
+    steps.map((s, i) => {
+      const pct = steps[0].count > 0 ? Math.round((s.count / steps[0].count) * 100) : 0;
+      const dropOff = i > 0 && steps[i - 1].count > 0
+        ? Math.round(((steps[i - 1].count - s.count) / steps[i - 1].count) * 100)
+        : null;
+      return `  - ${s.step}: ${s.count}${dropOff !== null ? ` (−${dropOff}% from previous step)` : ''}`;
+    }).join('\n');
+
+  const trendCurrent = ga4Data.trend?.current || [];
+  const trendPriorYear = ga4Data.trend?.priorYear || [];
+  const totalCurrent = trendCurrent.reduce((sum, d) => sum + d.value, 0);
+  const totalPriorYear = trendPriorYear.reduce((sum, d) => sum + d.value, 0);
+  const trendPct = totalPriorYear > 0
+    ? Math.round(((totalCurrent - totalPriorYear) / totalPriorYear) * 100)
+    : null;
+
+  const prompt = `You are analyzing website analytics for SupportWorks Housing, a nonprofit in Richmond, VA that helps people experiencing homelessness transition to stable housing. The website was redesigned and relaunched in Q1 2026 — year-over-year differences largely reflect the new site launch, not organic growth trends.
+
+Data covers the last ${range} days.
+
+TRAFFIC (7-day rolling):
+- Active Users: ${ga4Data.overview.activeUsers.toLocaleString()}
+- Sessions: ${ga4Data.overview.sessions.toLocaleString()}
+- Page Views: ${ga4Data.overview.pageViews.toLocaleString()}
+- Sessions per user: ${(ga4Data.overview.sessions / Math.max(ga4Data.overview.activeUsers, 1)).toFixed(1)}
+- Pages per session: ${(ga4Data.overview.pageViews / Math.max(ga4Data.overview.sessions, 1)).toFixed(1)}
+${trendPct !== null ? `- Active users vs prior year: ${trendPct >= 0 ? '+' : ''}${trendPct}% (interpret carefully due to site relaunch)` : ''}
+
+DONATION FUNNEL:
+${formatFunnel(ga4Data.funnels.donations)}
+
+COMMUNITY CONNECTIONS FUNNEL (volunteer groups host dinners/activities with residents):
+${formatFunnel(ga4Data.funnels.connectionNights)}
+
+SUPPLY DRIVES FUNNEL (individuals/groups donate household supplies):
+${formatFunnel(ga4Data.funnels.supplyDrives)}
+
+Respond with a JSON object (no markdown, no code fences) with this exact shape:
+{
+  "headline": "One honest sentence summarizing overall site performance",
+  "sections": [
+    { "title": "Traffic & Reach", "body": "2-3 sentences on visitor numbers, engagement depth, and trends. Use specific numbers." },
+    { "title": "Donations", "body": "2-3 sentences on donation funnel performance, conversion rate, and biggest drop-off point." },
+    { "title": "Volunteer Engagement", "body": "2-3 sentences covering Community Connections and Supply Drives — what's working and where people abandon." },
+    { "title": "What to Focus On", "body": "Three specific, actionable recommendations as a numbered list (1. 2. 3.)." }
+  ]
+}
+
+Write conversationally for a nonprofit director who is not a data expert. Use the actual numbers. Be honest about weaknesses.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Anthropic API error:', errText);
+      return res.status(500).json({ error: 'Failed to generate analysis' });
+    }
+
+    const data = await response.json();
+    const text = data.content[0].text.trim();
+
+    try {
+      const analysis = JSON.parse(text);
+      return res.status(200).json({ analysis });
+    } catch {
+      return res.status(200).json({
+        analysis: { headline: '', sections: [{ title: 'Analysis', body: text }] },
+      });
+    }
+  } catch (err) {
+    console.error('AI analysis error:', err);
+    return res.status(500).json({ error: 'Failed to generate analysis' });
+  }
+}
+
 // ─── Main handler ────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -1141,6 +1243,11 @@ export default async function handler(req, res) {
   // POST /api/admin/send-broadcast
   if (method === 'POST' && path === 'send-broadcast') {
     return handleSendBroadcast(req, res);
+  }
+
+  // POST /api/admin/ai-analysis
+  if (method === 'POST' && path === 'ai-analysis') {
+    return handleAiAnalysis(req, res);
   }
 
   // No route matched

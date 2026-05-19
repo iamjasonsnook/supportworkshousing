@@ -2463,4 +2463,119 @@
   .funnel-step {
     grid-template-columns: 100px 1fr 40px 40px;
   }
+
+  .ai-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AI Analysis Section */
+.ai-analysis-section {
+  margin-top: 24px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ai-analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.ai-analysis-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+}
+
+.ai-analysis-title h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.btn-generate-analysis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-generate-analysis:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.btn-generate-analysis:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-analysis-error {
+  padding: 12px 18px;
+  color: #DC2626;
+  font-size: 0.85rem;
+}
+
+.ai-analysis-content {
+  padding: 18px;
+}
+
+.ai-analysis-headline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0 0 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-gray-200);
+  line-height: 1.5;
+}
+
+.ai-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ai-analysis-card {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.ai-analysis-card h4 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+}
+
+.ai-analysis-card p {
+  font-size: 0.85rem;
+  color: var(--color-text-dark);
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.ai-analysis-footer {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: right;
 }
