@@ -463,6 +463,22 @@ async function handleDenyEvent(req, res, id) {
   return res.status(200).json({ success: true });
 }
 
+async function handleCompleteEvent(req, res, id) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase not configured' });
+  }
+  const { error } = await supabase
+    .from('connection_nights')
+    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) {
+    console.error('Supabase complete event error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+  return res.status(200).json({ success: true });
+}
+
 async function handleApproveSupplyDrive(req, res, id) {
   const supabase = getSupabase();
   if (!supabase) {
@@ -1184,6 +1200,12 @@ export default async function handler(req, res) {
   const eventDenyMatch = path.match(/^events\/([^/]+)\/deny$/);
   if (method === 'POST' && eventDenyMatch) {
     return handleDenyEvent(req, res, eventDenyMatch[1]);
+  }
+
+  // POST /api/admin/events/:id/complete
+  const eventCompleteMatch = path.match(/^events\/([^/]+)\/complete$/);
+  if (method === 'POST' && eventCompleteMatch) {
+    return handleCompleteEvent(req, res, eventCompleteMatch[1]);
   }
 
   // POST /api/admin/supply-drives/:id/approve

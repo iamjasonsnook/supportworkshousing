@@ -697,7 +697,8 @@
 }
 
 .admin-btn-approve,
-.admin-btn-deny {
+.admin-btn-deny,
+.admin-btn-complete {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -729,8 +730,18 @@
   background: #FEE2E2;
 }
 
+.admin-btn-complete {
+  background: #2563EB;
+  color: white;
+}
+
+.admin-btn-complete:hover {
+  background: #1D4ED8;
+}
+
 .admin-btn-approve:disabled,
-.admin-btn-deny:disabled {
+.admin-btn-deny:disabled,
+.admin-btn-complete:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

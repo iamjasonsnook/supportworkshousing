@@ -484,6 +484,23 @@ function Admin() {
     }
   };
 
+  const handleCompleteEvent = async (event) => {
+    if (!confirm(`Mark Community Connection for ${event.group_name} as completed?`)) return;
+    setActionLoading(event.id);
+    try {
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch(`${API_BASE}/api/admin/events/${event.id}/complete`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) fetchEvents();
+    } catch (err) {
+      console.error('Complete failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleApproveSupplyDrive = async (drive) => {
     if (!confirm(`Approve Supply Drive from ${drive.contact_name}?`)) return;
 
@@ -1272,6 +1289,27 @@ function Admin() {
                     <button
                       className="admin-btn-deny"
                       onClick={() => isSupplyDrive ? handleDenySupplyDrive(item) : handleDeny(item)}
+                      disabled={actionLoading === item.id}
+                    >
+                      <X size={18} />
+                      Deny
+                    </button>
+                  </div>
+                )}
+
+                {item.status === 'approved' && !isSupplyDrive && (
+                  <div className="event-actions">
+                    <button
+                      className="admin-btn-complete"
+                      onClick={() => handleCompleteEvent(item)}
+                      disabled={actionLoading === item.id}
+                    >
+                      <Check size={18} />
+                      Mark Complete
+                    </button>
+                    <button
+                      className="admin-btn-deny"
+                      onClick={() => handleDeny(item)}
                       disabled={actionLoading === item.id}
                     >
                       <X size={18} />
