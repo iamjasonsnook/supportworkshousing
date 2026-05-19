@@ -2486,13 +2486,14 @@
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
   overflow: hidden;
+  background: white;
 }
 
 .ai-analysis-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 14px 20px;
   background: var(--color-gray-50);
   border-bottom: 1px solid var(--color-gray-200);
 }
@@ -2505,7 +2506,7 @@
 }
 
 .ai-analysis-title h3 {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   margin: 0;
   color: var(--color-primary);
@@ -2520,7 +2521,7 @@
   color: white;
   border: none;
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -2536,57 +2537,81 @@
 }
 
 .ai-analysis-error {
-  padding: 12px 18px;
+  padding: 14px 20px;
   color: #DC2626;
   font-size: 0.85rem;
 }
 
 .ai-analysis-content {
-  padding: 18px;
+  padding: 20px;
 }
 
 .ai-analysis-headline {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 500;
   color: var(--color-text-dark);
-  margin: 0 0 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-gray-200);
-  line-height: 1.5;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  background: #FDF2F8;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  line-height: 1.6;
 }
 
 .ai-analysis-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .ai-analysis-card {
   background: var(--color-gray-50);
   border-radius: var(--radius-sm);
-  padding: 14px;
+  padding: 16px;
+  border-top: 3px solid var(--section-color, var(--color-primary));
+}
+
+.ai-analysis-next-step {
+  background: #F5F3FF;
+  border-top-color: #7C3AED;
+  margin-bottom: 14px;
+}
+
+.ai-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--section-color, var(--color-primary));
 }
 
 .ai-analysis-card h4 {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-primary);
-  margin: 0 0 8px;
+  letter-spacing: 0.6px;
+  color: var(--section-color, var(--color-primary));
+  margin: 0;
 }
 
 .ai-analysis-card p {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: var(--color-text-dark);
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
   white-space: pre-line;
 }
 
 .ai-analysis-footer {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-text-muted);
   text-align: right;
+  padding-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .ai-analysis-grid {
+    grid-template-columns: 1fr;
+  }
 }

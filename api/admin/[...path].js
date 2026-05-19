@@ -1091,16 +1091,16 @@ ${formatFunnel(ga4Data.funnels.supplyDrives)}
 
 Respond with a JSON object (no markdown, no code fences) with this exact shape:
 {
-  "headline": "One honest sentence summarizing overall site performance",
+  "headline": "One warm, grounded sentence summarizing where things stand — acknowledge what's working before noting what's still developing",
   "sections": [
-    { "title": "Traffic & Reach", "body": "2-3 sentences on visitor numbers, engagement depth, and trends. Use specific numbers." },
-    { "title": "Donations", "body": "2-3 sentences on donation funnel performance, conversion rate, and biggest drop-off point." },
-    { "title": "Volunteer Engagement", "body": "2-3 sentences covering Community Connections and Supply Drives — what's working and where people abandon." },
-    { "title": "What to Focus On", "body": "Three specific, actionable recommendations as a numbered list (1. 2. 3.)." }
+    { "title": "Traffic & Reach", "body": "2-3 sentences on visitor numbers, engagement, and trends. Use specific numbers. Frame early-stage patterns as normal for a new site." },
+    { "title": "Donations", "body": "2-3 sentences on how the donation flow is performing. Use specific numbers. Frame any drop-off as an opportunity to explore, not a problem." },
+    { "title": "Volunteer Engagement", "body": "2-3 sentences covering Community Connections and Supply Drives. Use specific numbers. Note what's encouraging and what's worth keeping an eye on." },
+    { "title": "One Gentle Next Step", "body": "One specific, small, low-effort suggestion that could make a meaningful difference. Put each idea on its own line starting with a number (1. then 2. then 3.) with a line break between each." }
   ]
 }
 
-Write conversationally for a nonprofit director who is not a data expert. Use the actual numbers. Be honest about weaknesses.`;
+Write warmly and encouragingly, like a supportive advisor talking to a nonprofit director who cares deeply about this work. This is a new site that just launched — early patterns are completely normal. Use specific numbers but avoid alarm language. Frame everything as natural and improvable. Avoid words like 'crisis', 'badly', 'broken', 'urgent', 'immediately'.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
