@@ -2578,6 +2578,10 @@
   margin-bottom: 14px;
 }
 
+.ai-analysis-next-step p {
+  white-space: pre-line;
+}
+
 .ai-card-header {
   display: flex;
   align-items: center;

@@ -1096,11 +1096,11 @@ Respond with a JSON object (no markdown, no code fences) with this exact shape:
     { "title": "Traffic & Reach", "body": "2-3 sentences on visitor numbers, engagement, and trends. Use specific numbers. Frame early-stage patterns as normal for a new site." },
     { "title": "Donations", "body": "2-3 sentences on how the donation flow is performing. Use specific numbers. Frame any drop-off as an opportunity to explore, not a problem." },
     { "title": "Volunteer Engagement", "body": "2-3 sentences covering Community Connections and Supply Drives. Use specific numbers. Note what's encouraging and what's worth keeping an eye on." },
-    { "title": "One Gentle Next Step", "body": "One specific, small, low-effort suggestion that could make a meaningful difference. Put each idea on its own line starting with a number (1. then 2. then 3.) with a line break between each." }
+    { "title": "One Next Step", "body": "Three specific, small, low-effort suggestions that could make a meaningful difference. Put each idea on its own line starting with a number (1. then 2. then 3.) with a line break between each." }
   ]
 }
 
-Write warmly and encouragingly, like a supportive advisor talking to a nonprofit director who cares deeply about this work. This is a new site that just launched — early patterns are completely normal. Use specific numbers but avoid alarm language. Frame everything as natural and improvable. Avoid words like 'crisis', 'badly', 'broken', 'urgent', 'immediately'.`;
+Write warmly and encouragingly, like a supportive advisor talking to a nonprofit director who cares deeply about this work. This is a new site that just launched — early patterns are completely normal. Use specific numbers but avoid alarm language. Frame everything as natural and improvable. Avoid words like 'crisis', 'badly', 'broken', 'urgent', 'immediately'. Use **bold** (markdown double asterisks) to highlight key numbers and important phrases for scannability.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

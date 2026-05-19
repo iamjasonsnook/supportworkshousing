@@ -4,6 +4,11 @@ import './Admin.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
+function renderBold(text) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
+}
+
 function TrendChart({ current, priorYear }) {
   const [hovered, setHovered] = useState(null);
   const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
@@ -2058,7 +2063,7 @@ function Admin() {
                       'Traffic & Reach':        { color: '#2563EB', icon: Users },
                       'Donations':              { color: '#9B1B5D', icon: DollarSign },
                       'Volunteer Engagement':   { color: '#059669', icon: Heart },
-                      'One Gentle Next Step':   { color: '#7C3AED', icon: Sparkles },
+                      'One Next Step':          { color: '#7C3AED', icon: Sparkles },
                     };
                     const topSections = aiAnalysis.sections.slice(0, 3);
                     const bottomSection = aiAnalysis.sections[3];
@@ -2077,7 +2082,7 @@ function Admin() {
                                   <Icon size={15} />
                                   <h4>{section.title}</h4>
                                 </div>
-                                <p>{section.body}</p>
+                                <p>{renderBold(section.body)}</p>
                               </div>
                             );
                           })}
@@ -2091,7 +2096,7 @@ function Admin() {
                                 <Icon size={15} />
                                 <h4>{bottomSection.title}</h4>
                               </div>
-                              <p>{bottomSection.body}</p>
+                              <p>{renderBold(bottomSection.body)}</p>
                             </div>
                           );
                         })()}
