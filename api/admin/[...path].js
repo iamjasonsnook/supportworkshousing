@@ -1108,7 +1108,9 @@ Write conversationally for a nonprofit director who is not a data expert. Use th
     }
 
     const data = await response.json();
-    const text = data.content[0].text.trim();
+    const raw = data.content[0].text.trim();
+    // Strip markdown code fences if present
+    const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
     try {
       const analysis = JSON.parse(text);
