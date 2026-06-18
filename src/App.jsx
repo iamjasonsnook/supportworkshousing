@@ -13,7 +13,6 @@ import Footer from './components/Footer';
 import Admin from './components/Admin';
 import CareersPage from './components/CareersPage';
 import JobDetail from './components/JobDetail';
-import GivePage from './components/GivePage';
 import ImpactReportBanner from './components/ImpactReportBanner';
 import './App.css';
 
@@ -124,8 +123,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/careers" element={<CareersPage />} />
         <Route path="/careers/:jobId" element={<JobDetail />} />
-        <Route path="/give" element={<GivePage />} />
-        <Route path="/admin" element={<Admin />} />
+<Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
