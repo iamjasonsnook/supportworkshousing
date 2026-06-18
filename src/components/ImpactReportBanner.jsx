@@ -7,7 +7,7 @@ function ImpactReportBanner() {
     <div className="ir-banner" role="banner">
       <div className="ir-banner-inner">
         <span className="ir-banner-label">New</span>
-        <span className="ir-banner-text">Our Impact Report is ready —</span>
+        <span className="ir-banner-text">Our Impact Report is ready — 1,650 people served, 96%+ housed and staying housed.</span>
         <a
           href={REPORT_URL}
           target="_blank"
@@ -18,7 +18,7 @@ function ImpactReportBanner() {
             event_label: 'banner',
           })}
         >
-          Read it now
+          See the full story
         </a>
       </div>
     </div>
