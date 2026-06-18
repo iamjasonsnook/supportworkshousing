@@ -2,3 +2,9 @@
 main {
   min-height: 100vh;
 }
+
+.site-header-stack {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}

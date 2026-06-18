@@ -1,0 +1,238 @@
+/* ── Hero ─────────────────────────────────────────────── */
+.give-hero {
+  background: linear-gradient(135deg, #7D1649 0%, #9B1B5D 55%, #b8256f 100%);
+  color: var(--color-white);
+  padding: 96px 24px 80px;
+  text-align: center;
+}
+
+.give-hero-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.give-hero-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 16px;
+}
+
+.give-hero-headline {
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-white);
+  margin-bottom: 24px;
+}
+
+.give-hero-sub {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.88);
+  margin-bottom: 40px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.give-hero-cta {
+  display: inline-block;
+  background-color: var(--color-white);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 14px 36px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.give-hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Widget wrapper ───────────────────────────────────── */
+.give-widget-wrap {
+  background-color: var(--color-white);
+}
+
+/* Override the donate section's background so it blends */
+.give-widget-wrap .donate {
+  background-color: var(--color-white);
+}
+
+/* ── Ways to Give ─────────────────────────────────────── */
+.give-ways {
+  background-color: var(--color-gray-50);
+}
+
+.give-ways-header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 48px;
+}
+
+.give-ways-header h2 {
+  margin-bottom: 12px;
+}
+
+.give-ways-header p {
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.give-ways-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.give-way-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.give-way-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.give-way-icon {
+  width: 52px;
+  height: 52px;
+  background-color: var(--color-pink-icon);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.give-way-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: 10px;
+}
+
+.give-way-desc {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-text-body);
+  flex: 1;
+  margin-bottom: 24px;
+}
+
+.give-way-link {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  align-self: flex-start;
+  font-family: inherit;
+}
+
+.give-way-link::after {
+  content: ' →';
+}
+
+.give-way-link:hover {
+  color: var(--color-primary-dark);
+}
+
+/* ── Questions strip ──────────────────────────────────── */
+.give-questions {
+  background-color: var(--color-pink-light);
+  padding: 56px 24px;
+  border-top: 1px solid var(--color-pink-icon);
+}
+
+.give-questions-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.give-questions-inner h3 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: 8px;
+}
+
+.give-questions-inner p {
+  color: var(--color-text-body);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.give-questions-btn {
+  display: inline-block;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.give-questions-btn:hover {
+  background-color: var(--color-primary-dark);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .give-ways-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .give-hero {
+    padding: 72px 20px 60px;
+  }
+
+  .give-ways-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .give-questions-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .give-questions-inner p {
+    max-width: 100%;
+  }
+
+  .give-questions-btn {
+    align-self: center;
+  }
+}

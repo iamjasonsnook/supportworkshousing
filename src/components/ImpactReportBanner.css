@@ -1,0 +1,52 @@
+.ir-banner {
+  background-color: #7D1649;
+  color: var(--color-white);
+  width: 100%;
+  z-index: 99;
+}
+
+.ir-banner-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ir-banner-label {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: var(--color-white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.ir-banner-text {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ir-banner-link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-white);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.ir-banner-link:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 480px) {
+  .ir-banner-text {
+    display: none;
+  }
+}
