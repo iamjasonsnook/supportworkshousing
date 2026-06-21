@@ -4,3 +4,21 @@ Disallow: /admin
 Disallow: /careers
 
 Sitemap: https://supportworkshousing.org/sitemap.xml
+
+# AI language model crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+
+LLMs: https://supportworkshousing.org/llms.txt
