@@ -337,6 +337,30 @@ function handleLogin(req, res) {
   return res.status(200).json({ success: true, token });
 }
 
+function handleCareersSyncNotify(req, res) {
+  const secret = process.env.CAREERS_SYNC_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Careers sync auth not configured' });
+  }
+
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!safeCompare(token, secret)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { subject, html } = req.body || {};
+  if (!subject || !html) {
+    return res.status(400).json({ error: 'Missing subject or html' });
+  }
+
+  return sendEmail({ to: ADMIN_EMAIL, subject, html })
+    .then(() => res.status(200).json({ success: true }))
+    .catch((error) => {
+      console.error('Careers sync notification error:', error);
+      return res.status(500).json({ error: error.message });
+    });
+}
+
 async function handleGetEvents(req, res) {
   const supabase = getSupabase();
   if (!supabase) {
@@ -1170,6 +1194,12 @@ export default async function handler(req, res) {
   // POST /api/admin/login — no auth required
   if (method === 'POST' && path === 'login') {
     return handleLogin(req, res);
+  }
+
+  // POST /api/admin/careers-sync-notify — used by the scheduled careers-sync
+  // agent; authenticated with its own bearer secret, not an admin session.
+  if (method === 'POST' && path === 'careers-sync-notify') {
+    return handleCareersSyncNotify(req, res);
   }
 
   // All other routes require auth
