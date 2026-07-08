@@ -2005,6 +2005,7 @@ function Admin() {
                     { title: 'Donations', color: '#9B1B5D', steps: ga4Data.funnels.donations },
                     { title: 'Community Connections', color: '#2563EB', steps: ga4Data.funnels.connectionNights },
                     { title: 'Supply Drives', color: '#059669', steps: ga4Data.funnels.supplyDrives },
+                    { title: 'Careers', color: '#D97706', steps: ga4Data.funnels.careers },
                   ].map(({ title, color, steps }) => {
                     const topCount = steps[0]?.count || 0;
                     return (

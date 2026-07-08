@@ -68,7 +68,17 @@ function JobDetail() {
                 </div>
               </div>
               <div className="job-hero-apply">
-                <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary job-apply-btn">
+                <a
+                  href={job.applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary job-apply-btn"
+                  onClick={() => window.gtag?.('event', 'careers_apply_click', {
+                    job_id: job.id,
+                    job_title: job.title,
+                    click_location: 'hero',
+                  })}
+                >
                   Apply Now
                 </a>
               </div>
@@ -142,7 +152,17 @@ function JobDetail() {
                       <dd>{job.salary}</dd>
                     </div>
                   </dl>
-                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary job-sidebar-apply">
+                  <a
+                    href={job.applyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary job-sidebar-apply"
+                    onClick={() => window.gtag?.('event', 'careers_apply_click', {
+                      job_id: job.id,
+                      job_title: job.title,
+                      click_location: 'sidebar',
+                    })}
+                  >
                     Apply Now
                   </a>
                 </div>

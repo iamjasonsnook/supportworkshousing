@@ -211,6 +211,7 @@ async function handleGa4Report(req, res) {
     'cn_form_start', 'cn_step1_complete', 'cn_step2_complete', 'cn_step3_complete', 'cn_generate_lead',
     'sd_form_start', 'sd_step1_complete', 'sd_step2_complete', 'sd_step3_complete', 'sd_generate_lead',
     'begin_checkout', 'add_payment_info', 'donation_payment_entered', 'purchase',
+    'careers_view_positions_click', 'careers_job_click', 'careers_apply_click',
   ];
 
   const yoyStart = `${range + 365}daysAgo`;
@@ -275,6 +276,11 @@ async function handleGa4Report(req, res) {
         { step: 'Items to donate', event: 'sd_step2_complete', count: c('sd_step2_complete') },
         { step: 'Your information', event: 'sd_step3_complete', count: c('sd_step3_complete') },
         { step: 'Submitted', event: 'sd_generate_lead', count: c('sd_generate_lead') },
+      ],
+      careers: [
+        { step: 'Viewed open positions', event: 'careers_view_positions_click', count: c('careers_view_positions_click') },
+        { step: 'Clicked into a job', event: 'careers_job_click', count: c('careers_job_click') },
+        { step: 'Clicked Apply Now', event: 'careers_apply_click', count: c('careers_apply_click') },
       ],
     },
   });

@@ -284,7 +284,11 @@ function CareersPage() {
                 We meet people where they are. We treat them with dignity and respect. We don't give up.
               </p>
               <div className="careers-hero-actions">
-                <a href="#open-positions" className="btn btn-primary">
+                <a
+                  href="#open-positions"
+                  className="btn btn-primary"
+                  onClick={() => window.gtag?.('event', 'careers_view_positions_click')}
+                >
                   View Open Positions <ArrowRight size={18} />
                 </a>
                 <a href="#why-us" className="btn btn-outline">Why SupportWorks?</a>
@@ -392,7 +396,16 @@ function CareersPage() {
             </div>
             <div className="jobs-list">
               {jobListings.map((job) => (
-                <a href={`/careers/${job.id}`} key={job.id} className="job-card">
+                <a
+                  href={`/careers/${job.id}`}
+                  key={job.id}
+                  className="job-card"
+                  onClick={() => window.gtag?.('event', 'careers_job_click', {
+                    job_id: job.id,
+                    job_title: job.title,
+                    transport_type: 'beacon',
+                  })}
+                >
                   <div className="job-card-main">
                     <div className="job-card-info">
                       <h3 className="job-title">{job.title}</h3>
