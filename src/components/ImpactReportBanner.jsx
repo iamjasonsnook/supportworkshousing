@@ -19,7 +19,7 @@ function ImpactReportBanner() {
           })}
         >
           <span className="ir-banner-link-full">See the full story</span>
-          <span className="ir-banner-link-short">Check Out Our Impact Report Today!</span>
+          <span className="ir-banner-link-short">Check out our impact report today!</span>
         </a>
       </div>
     </div>
