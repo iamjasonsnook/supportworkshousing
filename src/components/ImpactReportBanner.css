@@ -39,14 +39,31 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: opacity 0.15s ease;
+  white-space: nowrap;
 }
 
 .ir-banner-link:hover {
   opacity: 0.8;
 }
 
+.ir-banner-link-short {
+  display: none;
+}
+
 @media (max-width: 480px) {
+  .ir-banner-inner {
+    flex-wrap: nowrap;
+  }
+
   .ir-banner-text {
     display: none;
+  }
+
+  .ir-banner-link-full {
+    display: none;
+  }
+
+  .ir-banner-link-short {
+    display: inline;
   }
 }

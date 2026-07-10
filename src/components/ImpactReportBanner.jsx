@@ -18,7 +18,8 @@ function ImpactReportBanner() {
             event_label: 'banner',
           })}
         >
-          See the full story
+          <span className="ir-banner-link-full">See the full story</span>
+          <span className="ir-banner-link-short">Check Out Our Impact Report Today!</span>
         </a>
       </div>
     </div>
