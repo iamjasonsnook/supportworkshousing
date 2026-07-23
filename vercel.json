@@ -7,6 +7,7 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/admin", "destination": "/index.html" },
     { "source": "/careers", "destination": "/index.html" },
-    { "source": "/careers/(.*)", "destination": "/index.html" }
+    { "source": "/careers/(.*)", "destination": "/index.html" },
+    { "source": "/impact-report", "destination": "/index.html" }
   ]
 }
