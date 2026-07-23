@@ -1,0 +1,23 @@
+.pdf-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 80px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.pdf-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--color-pink-icon);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: pdf-spin 0.9s linear infinite;
+}
+@keyframes pdf-spin { to { transform: rotate(360deg); } }
+.pdf-status a { color: var(--color-primary); text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-spinner { animation-duration: 2s; }
+}

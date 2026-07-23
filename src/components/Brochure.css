@@ -1,0 +1,196 @@
+/* ==========================================================================
+   Capital-campaign tri-fold brochure: shared branded wrapper and panel-flip viewer.
+   Brand tokens come from index.css.
+   ========================================================================== */
+
+/* ---- Header ---- */
+.brx-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+  box-shadow: var(--shadow-sm);
+}
+.brx-header-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brx-logo img { height: 40px; width: auto; }
+.brx-header-actions { display: flex; align-items: center; gap: 20px; }
+.brx-header-donate {
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 9px 20px;
+  border-radius: var(--radius-full);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.brx-header-donate:hover { background: var(--color-accent-hover); transform: translateY(-1px); }
+.brx-header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.brx-header-back:hover { color: var(--color-primary); }
+
+/* ---- Intro ---- */
+.brx-main { background: var(--color-white); }
+.brx-intro {
+  text-align: center;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 36px 24px 24px;
+}
+.brx-eyebrow {
+  display: inline-block;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.brx-title { font-size: 2.75rem; margin-bottom: 18px; }
+.brx-lead {
+  max-width: 900px;
+  margin: 0 auto;
+  color: var(--color-text-body);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+.brx-lead strong { color: var(--color-primary); font-weight: 700; }
+
+/* Comparison switcher (temporary) */
+.brx-switcher {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.brx-switcher-label { color: var(--color-text-muted); font-size: 0.85rem; font-weight: 600; }
+.brx-switcher-pill {
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-gray-300);
+  color: var(--color-text-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.brx-switcher-pill:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.brx-switcher-pill.is-active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-white); }
+
+/* ---- Viewer backdrop ---- */
+.brx-viewer-section {
+  background: linear-gradient(180deg, var(--color-gray-50) 0%, var(--color-pink-light) 100%);
+  padding: 44px 16px 56px;
+}
+
+/* ---- Shared controls ---- */
+.brx-arrow {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-white);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  transition: all 0.15s ease;
+}
+.brx-arrow:hover:not(:disabled) { background: var(--color-primary); color: var(--color-white); }
+.brx-arrow:disabled { opacity: 0.35; cursor: default; }
+.brx-counter { font-weight: 700; color: var(--color-text-dark); }
+.brx-hint { font-size: 0.85rem; color: var(--color-text-muted); }
+
+/* ---- Donate CTA ---- */
+.brx-cta { background: var(--color-white); padding: 64px 24px; }
+.brx-cta-card {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--color-pink-light);
+  border: 1px solid var(--color-pink-icon);
+  border-radius: var(--radius-lg);
+  padding: 44px 32px;
+}
+.brx-cta-icon {
+  width: 60px; height: 60px;
+  margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-white);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-card);
+}
+.brx-cta-title { font-size: 2rem; margin-bottom: 12px; }
+.brx-cta-text { max-width: 520px; margin: 0 auto 26px; color: var(--color-text-body); font-size: 1.05rem; }
+.brx-cta-btn { font-size: 1.05rem; }
+
+/* ==========================================================================
+   Panel flip viewer
+   ========================================================================== */
+.brv2-stage { max-width: 1100px; margin: 0 auto; }
+.brv2-book-row { position: relative; display: flex; align-items: center; justify-content: center; gap: 14px; }
+
+/* Subtle hint in the empty space beside the closed cover (page 0 only). */
+.brv2-flip-hint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 42%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  animation: brv2-hint-in 0.9s ease 0.2s both;
+}
+.brv2-flip-hint-text {
+  font-size: 1.05rem;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+@keyframes brv2-hint-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 0.6; transform: none; }
+}
+.brv2-book { margin: 0 auto; }
+.brv2-panel { background: var(--color-white); overflow: hidden; }
+.brv2-panel img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brv2-caption {
+  margin-top: 26px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+  .brx-title { font-size: 2rem; }
+  .brx-lead { font-size: 1rem; }
+  .brx-header-back { display: none; }
+  .brx-cta-title { font-size: 1.6rem; }
+  .brx-arrow { width: 42px; height: 42px; }
+  .brv2-flip-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brv2-flip-hint { animation: none; }
+}
