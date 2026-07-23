@@ -6,6 +6,10 @@ import { sendEmail } from './_email.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
+// Escape user-supplied values before interpolating into HTML. Matches the
+// helper used in api/connection-nights.js and api/supply-drives.js.
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 const getApprovalEmail = (data) => ({
   subject: 'Supply Drop-Off Confirmed! - SupportWorks Housing',
   html: `
@@ -127,11 +131,11 @@ export default async function handler(req, res) {
         <h1>Drop-Off Approved!</h1>
         <p>The donor has been notified with confirmation details.</p>
         <div class="details">
-          <div class="detail-row"><span class="detail-label">Donor:</span> ${requestData.contact_name}</div>
-          <div class="detail-row"><span class="detail-label">Location:</span> ${requestData.location_name}</div>
-          <div class="detail-row"><span class="detail-label">Date & Time:</span> ${requestData.drop_off_date}, ${requestData.drop_off_time}</div>
+          <div class="detail-row"><span class="detail-label">Donor:</span> ${escHtml(requestData.contact_name)}</div>
+          <div class="detail-row"><span class="detail-label">Location:</span> ${escHtml(requestData.location_name)}</div>
+          <div class="detail-row"><span class="detail-label">Date & Time:</span> ${escHtml(requestData.drop_off_date)}, ${escHtml(requestData.drop_off_time)}</div>
         </div>
-        <p style="color: #6B7280; font-size: 14px;">Confirmation email sent to ${requestData.contact_email}.</p>
+        <p style="color: #6B7280; font-size: 14px;">Confirmation email sent to ${escHtml(requestData.contact_email)}.</p>
       </div></body></html>
     `);
   } catch (error) {

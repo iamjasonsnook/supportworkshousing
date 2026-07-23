@@ -9,6 +9,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -20,7 +21,7 @@ const PORT = 3001;
 // Admin config from environment
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
-const SESSION_TOKEN = 'admin-session-token-' + Date.now();
+const SESSION_TOKEN = 'admin-session-token-' + crypto.randomBytes(32).toString('hex');
 
 // Middleware
 app.use(cors());
@@ -650,8 +651,16 @@ const mockDonations = [
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token || !token.startsWith('admin-session-token-')) {
+  const token = req.headers.authorization?.replace('Bearer ', '') || '';
+  // Constant-time comparison against the full issued token. A prefix check
+  // (startsWith) or a plain === would let a forged/guessed token through;
+  // timingSafeEqual requires equal-length buffers, so length is checked first.
+  const tokenBuf = Buffer.from(token);
+  const expectedBuf = Buffer.from(SESSION_TOKEN);
+  if (
+    tokenBuf.length !== expectedBuf.length ||
+    !crypto.timingSafeEqual(tokenBuf, expectedBuf)
+  ) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
