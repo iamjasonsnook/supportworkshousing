@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * other routes keep the site-wide defaults from index.html.
  *
  * All targeted tags already exist statically in index.html, so this only
- * updates their values — it never leaves orphaned tags behind.
+ * updates their values, so it never leaves orphaned tags behind.
  *
  * @param {{title?:string, description?:string, canonical?:string,
  *          ogTitle?:string, ogDescription?:string}} meta

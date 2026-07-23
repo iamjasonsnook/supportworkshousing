@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Impact Report viewer — shared branded wrapper + three viewer variants.
+   Impact Report viewer: branded wrapper and booklet viewer.
    Brand tokens (--color-primary #9B1B5D, Inter, etc.) come from index.css.
    ========================================================================== */
 
@@ -127,7 +127,7 @@
 .irx-cta-btn { font-size: 1.05rem; }
 
 /* ==========================================================================
-   V1 — Classic Booklet (react-pageflip)
+   Classic Booklet (react-pageflip)
    ========================================================================== */
 .v1-stage {
   position: relative;

@@ -8,7 +8,7 @@ import { usePdfPages } from '../utils/usePdfPages';
 const REPORT_URL = `${import.meta.env.BASE_URL}impact-report-2025.pdf`;
 
 /**
- * Impact Report viewer — a realistic two-page booklet with a page-curl flip
+ * Impact Report viewer: a realistic two-page booklet with a page-curl flip
  * and drag support (react-pageflip), rendered from the report PDF.
  */
 function ImpactReport() {

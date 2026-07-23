@@ -9,11 +9,11 @@ import './ImpactReport.css';
  */
 function ImpactReportLayout({ children }) {
   useDocumentMeta({
-    title: 'Resilience in Action — 2025 Impact Report | SupportWorks Housing',
+    title: 'Resilience in Action: 2025 Impact Report | SupportWorks Housing',
     description:
       'Read the SupportWorks Housing 2025 Impact Report, "Resilience in Action": 1,650 neighbors served and 96% still housed. Flip through our year of ending homelessness in Virginia through permanent supportive housing.',
     canonical: 'https://supportworkshousing.org/impact-report',
-    ogTitle: 'Resilience in Action — SupportWorks Housing 2025 Impact Report',
+    ogTitle: 'Resilience in Action: SupportWorks Housing 2025 Impact Report',
   });
 
   return (
@@ -39,7 +39,7 @@ function ImpactReportLayout({ children }) {
           <p className="irx-lead">
             Every number in this report is a person who now has a front door to call their own. In 2025,
             SupportWorks Housing walked alongside <strong>1,650 neighbors</strong> on the path out of
-            homelessness — and <strong>96%</strong> of those we housed are still housed today. Flip through
+            homelessness, and <strong>96%</strong> of those we housed are still housed today. Flip through
             the booklet below to see the year in full.
           </p>
         </section>
