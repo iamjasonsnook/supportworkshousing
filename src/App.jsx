@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 import Header from './components/Header';
@@ -15,6 +15,10 @@ import CareersPage from './components/CareersPage';
 import JobDetail from './components/JobDetail';
 import ImpactReportBanner from './components/ImpactReportBanner';
 import './App.css';
+
+// Code-split the report viewer so pdf.js (~100 KB gz) loads only on this
+// route, keeping the homepage bundle lean.
+const ImpactReport = lazy(() => import('./components/ImpactReport'));
 
 function HomePage() {
   const location = useLocation();
@@ -123,6 +127,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/careers" element={<CareersPage />} />
         <Route path="/careers/:jobId" element={<JobDetail />} />
+        <Route path="/impact-report" element={<Suspense fallback={null}><ImpactReport /></Suspense>} />
 <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
