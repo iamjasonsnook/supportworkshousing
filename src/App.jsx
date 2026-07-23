@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 import Header from './components/Header';
@@ -120,17 +120,43 @@ function NotFound() {
   );
 }
 
+// Send a GA4 page_view on client-side route changes. The initial load is
+// already counted by the gtag('config') call in index.html, so skip the first
+// location to avoid double-counting direct/search/AI entries.
+function usePageViews() {
+  const location = useLocation();
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      return;
+    }
+    window.gtag?.('event', 'page_view', {
+      page_path: location.pathname + location.search + location.hash,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [location]);
+}
+
+function AppRoutes() {
+  usePageViews();
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/careers" element={<CareersPage />} />
+      <Route path="/careers/:jobId" element={<JobDetail />} />
+      <Route path="/impact-report" element={<Suspense fallback={null}><ImpactReport /></Suspense>} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/careers" element={<CareersPage />} />
-        <Route path="/careers/:jobId" element={<JobDetail />} />
-        <Route path="/impact-report" element={<Suspense fallback={null}><ImpactReport /></Suspense>} />
-<Route path="/admin" element={<Admin />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

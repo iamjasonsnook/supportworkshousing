@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import Footer from './Footer';
+import { useDocumentMeta } from '../utils/useDocumentMeta';
 import './ImpactReport.css';
 
 /**
@@ -8,9 +8,13 @@ import './ImpactReport.css';
  * the viewer (children), a donation call-to-action, and the site footer.
  */
 function ImpactReportLayout({ children }) {
-  useEffect(() => {
-    document.title = 'Impact Report | SupportWorks Housing';
-  }, []);
+  useDocumentMeta({
+    title: 'Resilience in Action — 2025 Impact Report | SupportWorks Housing',
+    description:
+      'Read the SupportWorks Housing 2025 Impact Report, "Resilience in Action": 1,650 neighbors served and 96% still housed. Flip through our year of ending homelessness in Virginia through permanent supportive housing.',
+    canonical: 'https://supportworkshousing.org/impact-report',
+    ogTitle: 'Resilience in Action — SupportWorks Housing 2025 Impact Report',
+  });
 
   return (
     <>
