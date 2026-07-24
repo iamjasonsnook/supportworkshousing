@@ -7,11 +7,13 @@ import { useBrochurePanels } from '../utils/useBrochurePanels';
 
 const BROCHURE_URL = `${import.meta.env.BASE_URL}capital-campaign-brochure.pdf`;
 
-// Reading order: front cover → three inside panels → the two outside content panels.
-const ORDER = [2, 3, 4, 5, 0, 1];
+// Reading order: cover, then the Challenge/Project spread, then the
+// Priorities/Where We Are spread, then Join Us as the back panel.
+// Panel indices: 0 Challenge, 1 Join Us, 2 Cover, 3 Project, 4 Priorities, 5 Where We Are.
+const ORDER = [2, 0, 3, 4, 5, 1];
 const LABELS = [
-  'Front cover', 'The Project', 'Campaign Priorities',
-  'Where We Are', 'The Challenge', 'Join Us',
+  'Front cover', 'The Challenge', 'The Project',
+  'Campaign Priorities', 'Where We Are', 'Join Us',
 ];
 
 /**
