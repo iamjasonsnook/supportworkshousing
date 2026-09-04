@@ -9,6 +9,7 @@
  */
 
 import crypto from 'crypto';
+import { signToken, verifyToken } from './_token.js';
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from '../_cors.js';
 import { sendEmail } from '../_email.js';
@@ -25,47 +26,6 @@ function getSupabase() {
 }
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
-
-const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-function signToken(secret) {
-  const payload = {
-    iat: Date.now(),
-    exp: Date.now() + TOKEN_EXPIRY_MS,
-  };
-  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const sig = crypto
-    .createHmac('sha256', secret)
-    .update(payloadB64)
-    .digest('base64url');
-  return `${payloadB64}.${sig}`;
-}
-
-function verifyToken(token, secret) {
-  if (!token || !token.includes('.')) return false;
-  const [payloadB64, sig] = token.split('.');
-  if (!payloadB64 || !sig) return false;
-
-  const expectedSig = crypto
-    .createHmac('sha256', secret)
-    .update(payloadB64)
-    .digest('base64url');
-
-  // Constant-time comparison for signature
-  if (sig.length !== expectedSig.length) return false;
-  const sigBuf = Buffer.from(sig);
-  const expectedBuf = Buffer.from(expectedSig);
-  if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return false;
-
-  // Check expiration
-  try {
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-    if (!payload.exp || Date.now() > payload.exp) return false;
-  } catch {
-    return false;
-  }
-  return true;
-}
 
 function safeCompare(a, b) {
   // Constant-time password comparison
@@ -339,8 +299,54 @@ function handleLogin(req, res) {
     });
   }
 
-  const token = signToken(secret);
+  const token = signToken(secret, 'admin');
   return res.status(200).json({ success: true, token });
+}
+
+/**
+ * The Crossings asset dashboard has its own password and its own scope. A
+ * token from here opens the dashboard and nothing else: it cannot read
+ * volunteers, donations, events or the GA4 report.
+ */
+function handleCrossingsLogin(req, res) {
+  const secret = process.env.ADMIN_TOKEN_SECRET;
+  const password = process.env.CROSSINGS_PASSWORD;
+
+  if (!secret || !password) {
+    return res.status(500).json({ error: 'Crossings auth not configured' });
+  }
+
+  const { password: inputPassword } = req.body || {};
+
+  if (!inputPassword || !safeCompare(inputPassword, password)) {
+    // Same 1-second penalty as the admin login. It is the only thing
+    // standing between this route and an online guessing run, so it is
+    // not optional here.
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        res.status(401).json({ success: false, error: 'Invalid password' });
+        resolve();
+      }, 1000);
+    });
+  }
+
+  const token = signToken(secret, 'crossings');
+  return res.status(200).json({ success: true, token });
+}
+
+/**
+ * Serves the dashboard itself. The page is returned only after the token
+ * verifies, so the financials never reach a browser that has not
+ * authenticated -- which is the whole reason this is a server route and
+ * not a file in public/.
+ */
+async function handleCrossingsDashboard(req, res) {
+  const { default: encoded } = await import('./_crossings-dashboard.js');
+  const html = Buffer.from(encoded, 'base64').toString('utf8');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  // Never cached by a proxy or CDN: it is per-viewer authenticated content.
+  res.setHeader('Cache-Control', 'private, no-store');
+  return res.status(200).send(html);
 }
 
 function handleCareersSyncNotify(req, res) {
@@ -1202,6 +1208,11 @@ export default async function handler(req, res) {
     return handleLogin(req, res);
   }
 
+  // POST /api/admin/crossings-login — no auth required
+  if (method === 'POST' && path === 'crossings-login') {
+    return handleCrossingsLogin(req, res);
+  }
+
   // POST /api/admin/careers-sync-notify — used by the scheduled careers-sync
   // agent; authenticated with its own bearer secret, not an admin session.
   if (method === 'POST' && path === 'careers-sync-notify') {
@@ -1215,6 +1226,19 @@ export default async function handler(req, res) {
   }
 
   const token = (req.headers.authorization || '').replace('Bearer ', '');
+
+  // GET /api/admin/crossings — checked before the admin gate below, because
+  // that gate only accepts admin-scoped tokens and would turn away a valid
+  // Crossings one. An admin token is accepted too: a signed-in admin should
+  // not have to enter a second password to see a dashboard they already
+  // have strictly more access than.
+  if (method === 'GET' && path === 'crossings') {
+    if (!verifyToken(token, secret, ['crossings', 'admin'])) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    return handleCrossingsDashboard(req, res);
+  }
+
   if (!verifyToken(token, secret)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

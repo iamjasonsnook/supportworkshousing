@@ -11,6 +11,7 @@ import Stories from './components/Stories';
 import Donate from './components/Donate';
 import Footer from './components/Footer';
 import Admin from './components/Admin';
+import CrossingsDashboard from './components/CrossingsDashboard';
 import CareersPage from './components/CareersPage';
 import JobDetail from './components/JobDetail';
 import ImpactReportBanner from './components/ImpactReportBanner';
@@ -150,6 +151,7 @@ function AppRoutes() {
       <Route path="/impact-report" element={<Suspense fallback={null}><ImpactReport /></Suspense>} />
       <Route path="/SWHCapitalCampaign" element={<Suspense fallback={null}><Brochure /></Suspense>} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/crossings" element={<CrossingsDashboard />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -119,6 +119,37 @@ Required environment variables for these functions:
 - `SUPABASE_SERVICE_KEY` - Your Supabase service role key (keep secret!)
 - `RESEND_API_KEY` - Your Resend API key for sending emails
 - `APP_URL` - Your application URL (for constructing approve/deny links)
+- `ADMIN_PASSWORD` - Password for the admin portal at `/admin`
+- `ADMIN_TOKEN_SECRET` - Random 64-char hex string; signs all session tokens
+- `CROSSINGS_PASSWORD` - Password for the asset dashboard at `/admin/crossings`
+
+## Two passwords, two scopes
+
+`/admin` and `/admin/crossings` have separate passwords. What keeps them
+separate is the `scope` claim signed into each session token
+(`api/admin/_token.js`):
+
+| Login | Scope issued | Opens |
+|---|---|---|
+| `POST /api/admin/login` | `admin` | every admin route |
+| `POST /api/admin/crossings-login` | `crossings` | `GET /api/admin/crossings` only |
+
+The scope sits inside the HMAC payload, so it cannot be edited without
+invalidating the signature. This matters: without it, any valid token
+would open any admin route, and the Crossings password — a weaker one,
+handed to more people — would have granted full access to volunteer
+records, donations and analytics. `api/admin/_token.test.js` asserts the
+boundary in both directions, including that a token with its scope
+rewritten to `admin` is rejected.
+
+An `admin` token also opens the Crossings dashboard, since an admin
+already holds strictly more access than it grants.
+
+The dashboard payload lives in `api/admin/_crossings-dashboard.js`, which
+is inside the function bundle rather than `public/` — anything under
+`public/` is served by the CDN to anyone who asks. Refresh it with
+`node scripts/sync-crossings-dashboard.mjs` after rebuilding the dashboard
+in the swh-asset-management repo.
 
 ## Email Templates
 

@@ -23,6 +23,14 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const SESSION_TOKEN = 'admin-session-token-' + crypto.randomBytes(32).toString('hex');
 
+// The Crossings dashboard has its own password and its own session token.
+// Two separate tokens rather than one with a scope claim, because that is
+// all this dev stand-in needs: an admin token is a different string from a
+// Crossings token, so neither opens the other's routes. Production signs a
+// scope into the token instead -- see api/admin/[...path].js.
+const CROSSINGS_PASSWORD = process.env.CROSSINGS_PASSWORD;
+const CROSSINGS_TOKEN = 'crossings-session-token-' + crypto.randomBytes(32).toString('hex');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -764,6 +772,49 @@ app.post('/api/admin/login', (req, res) => {
     res.json({ success: true, token: SESSION_TOKEN });
   } else {
     res.status(401).json({ success: false, error: 'Invalid password' });
+  }
+});
+
+// ─── The Crossings asset dashboard ──────────────────────────────────────────
+
+app.post('/api/admin/crossings-login', (req, res) => {
+  const { password } = req.body;
+  if (!CROSSINGS_PASSWORD) {
+    return res.status(500).json({ error: 'CROSSINGS_PASSWORD is not set' });
+  }
+  if (password === CROSSINGS_PASSWORD) {
+    return res.json({ success: true, token: CROSSINGS_TOKEN });
+  }
+  // Matches production's penalty on a wrong password.
+  return setTimeout(
+    () => res.status(401).json({ success: false, error: 'Invalid password' }),
+    1000
+  );
+});
+
+// Accepts either token: an admin already has strictly more access than this
+// dashboard grants, so a second password would be ceremony.
+const crossingsAuth = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '') || '';
+  for (const expected of [CROSSINGS_TOKEN, SESSION_TOKEN]) {
+    const a = Buffer.from(token);
+    const b = Buffer.from(expected);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
+};
+
+app.get('/api/admin/crossings', crossingsAuth, async (req, res) => {
+  try {
+    const { default: encoded } = await import('../api/admin/_crossings-dashboard.js');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(Buffer.from(encoded, 'base64').toString('utf8'));
+  } catch (err) {
+    console.error('crossings dashboard:', err.message);
+    res.status(500).json({
+      error: 'Dashboard payload missing. Run: node scripts/sync-crossings-dashboard.mjs',
+    });
   }
 });
 
