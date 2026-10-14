@@ -14,6 +14,7 @@ import Admin from './components/Admin';
 import CareersPage from './components/CareersPage';
 import JobDetail from './components/JobDetail';
 import ImpactReportBanner from './components/ImpactReportBanner';
+import DonateNudge from './components/nudge/DonateNudge';
 import './App.css';
 
 // Code-split the report viewer so pdf.js (~100 KB gz) loads only on this
@@ -104,6 +105,7 @@ function HomePage() {
         <Donate />
       </main>
       <Footer />
+      <DonateNudge />
     </>
   );
 }

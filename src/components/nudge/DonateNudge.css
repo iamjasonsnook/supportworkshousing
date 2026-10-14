@@ -1,0 +1,111 @@
+.swh-nudge {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 900;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.swh-nudge.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swh-nudge { transition: opacity 0.3s linear; transform: none; }
+}
+@media (max-width: 1023px) {
+  .swh-nudge { display: none; }
+}
+
+/* ---- the card ---------------------------------------------------- */
+.nudge-card {
+  position: relative;
+  width: 290px;
+  overflow: hidden;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  font-family: var(--font-sans);
+  color: var(--color-text-body);
+}
+.nudge-close {
+  position: absolute; top: 10px; right: 10px; z-index: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 0; border-radius: var(--radius-full);
+  background: transparent; color: var(--color-text-muted); cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nudge-close:hover { background: rgba(255, 255, 255, 0.9); color: var(--color-text-dark); }
+.nudge-copy { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--color-text-body); }
+.nudge-cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 11px 18px; border: 0; border-radius: var(--radius-full);
+  background: var(--color-primary); color: var(--color-white);
+  font: 600 14px var(--font-sans); cursor: pointer; transition: background-color 0.2s ease;
+}
+.nudge-cta:hover { background: var(--color-primary-dark); }
+
+/* story: the resident's words on blush, the ask on white */
+.nudge-figure {
+  margin: 0; padding: 20px 40px 16px 22px;
+  background: var(--color-pink-light); border-left: 3px solid var(--color-primary);
+}
+.nudge-mark { display: block; margin-bottom: 8px; color: var(--color-primary); opacity: 0.85; }
+.nudge-quote {
+  margin: 0 0 12px; font-size: 18px; font-weight: 600; font-style: italic;
+  line-height: 1.4; letter-spacing: -0.01em; color: var(--color-text-dark);
+}
+.nudge-cite { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 1.35; }
+.nudge-name { font-weight: 700; color: var(--color-primary); }
+.nudge-meta { color: #4B5563; }
+.nudge-ask { padding: 14px 22px 20px; }
+
+/* stat: one real figure, large */
+.nudge-card--stat { border: 1px solid var(--color-gray-200); box-shadow: var(--shadow-lg); }
+.nudge-stat-body { padding: 22px 22px 20px; }
+.nudge-eyebrow {
+  margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--color-primary);
+}
+.nudge-stat {
+  margin: 0; font-size: 52px; font-weight: 800; line-height: 1;
+  letter-spacing: -0.03em; color: var(--color-primary);
+}
+.nudge-stat span { font-size: 32px; vertical-align: 14px; margin-left: 2px; }
+.nudge-lede { margin: 6px 0 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--color-text-dark); }
+.nudge-rule { width: 32px; height: 3px; margin: 14px 0 12px; border-radius: var(--radius-full); background: var(--color-pink-icon); }
+
+/* ---- the pill ---------------------------------------------------- */
+.nudge-pill {
+  display: inline-flex; align-items: center; gap: 4px; height: 40px;
+  padding: 0 5px 0 4px; border: 1px solid var(--color-gray-200); border-radius: var(--radius-full);
+  background: var(--color-white); box-shadow: var(--shadow-lg);
+  font: 500 14px var(--font-sans); white-space: nowrap; transition: border-color 0.2s ease;
+}
+.nudge-pill:hover { border-color: var(--color-primary); }
+.nudge-pill-open {
+  display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px 0 10px;
+  border: 0; border-radius: var(--radius-full); background: transparent;
+  color: var(--color-text-dark); font: inherit; cursor: pointer;
+}
+.nudge-pill-icon { color: var(--color-primary); flex-shrink: 0; }
+.nudge-pill-quote { font-style: italic; }
+.nudge-pill-stat { font-weight: 800; color: var(--color-primary); letter-spacing: -0.01em; }
+.nudge-pill-text { font-weight: 600; }
+.nudge-pill-ask {
+  display: inline-flex; align-items: center; height: 30px; padding: 0 12px;
+  border: 0; border-radius: var(--radius-full); background: var(--color-primary);
+  color: var(--color-white); font: 600 14px var(--font-sans); cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.nudge-pill-ask:hover { background: var(--color-primary-dark); }
+
+.nudge-cta:focus-visible, .nudge-close:focus-visible, .nudge-pill-open:focus-visible, .nudge-pill-ask:focus-visible {
+  outline: 2px solid var(--color-primary); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nudge-cta, .nudge-close, .nudge-pill, .nudge-pill-ask { transition: none; }
+}
