@@ -1,26 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Quote, ArrowRight } from 'lucide-react';
 import { useNudge } from './useNudge';
 import { MESSAGES } from './messages';
 import './DonateNudge.css';
 
 const CARD_WIDTH = 290;
-const MSG_KEY = 'swh-nudge-message';
+const LAST_KEY = 'swh-nudge-last';
 
-// One message per visit: chosen at random the first time, then kept for the
-// rest of the session so it does not change from page to page.
-// ?nudgeMsg=<id> shows a specific one (for review).
+// A fresh message on every page load, never the one shown last time, so a
+// refresh always shows a different one. ?nudgeMsg=<id> shows a specific one.
 function pickMessage() {
   const forced = new URLSearchParams(window.location.search).get('nudgeMsg');
   const byId = id => MESSAGES.find(m => m.id === id);
   if (forced && byId(forced)) return byId(forced);
-  try {
-    const kept = byId(sessionStorage.getItem(MSG_KEY));
-    if (kept) return kept;
-  } catch { /* storage unavailable */ }
-  const m = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-  try { sessionStorage.setItem(MSG_KEY, m.id); } catch { /* storage unavailable */ }
-  return m;
+  let last = null;
+  try { last = localStorage.getItem(LAST_KEY); } catch { /* storage unavailable */ }
+  const pool = MESSAGES.filter(m => m.id !== last);
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // The pill: its text opens the card; its chip is the primary action and
@@ -87,6 +83,11 @@ function StatCard({ m, donate }) {
 // does not. Non-modal, so a labelled region rather than a dialog.
 export default function DonateNudge() {
   const [m] = useState(pickMessage);
+  // Recorded once it is on screen, not while picking: React may run the
+  // picker more than once, and only the message actually shown counts.
+  useEffect(() => {
+    try { localStorage.setItem(LAST_KEY, m.id); } catch { /* storage unavailable */ }
+  }, [m.id]);
   const s = useNudge(CARD_WIDTH);
   if (!s.active) return null;
   const closeLabel = s.collapsible ? 'Minimise' : 'Dismiss';
