@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('./_email.js', () => ({ sendEmail: vi.fn(async () => ({})) }));
-vi.mock('./_rateLimit.js', () => ({ checkRateLimit: vi.fn(() => true) }));
+vi.mock('../api/_email.js', () => ({ sendEmail: vi.fn(async () => ({})) }));
+vi.mock('../api/_rateLimit.js', () => ({ checkRateLimit: vi.fn(() => true) }));
 
-const { sendEmail } = await import('./_email.js');
-const { checkRateLimit } = await import('./_rateLimit.js');
-const { default: handler, cleanStockPledge } = await import('./send-donation-notification.js');
+const { sendEmail } = await import('../api/_email.js');
+const { checkRateLimit } = await import('../api/_rateLimit.js');
+const { default: handler, cleanStockPledge } = await import('../api/send-donation-notification.js');
 
 function call(body) {
   const res = { statusCode: 200, headers: {}, body: null,

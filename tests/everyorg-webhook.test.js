@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../_email.js', () => ({ sendEmail: vi.fn(async () => ({})) }));
+vi.mock('../api/_email.js', () => ({ sendEmail: vi.fn(async () => ({})) }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn() }));
-const { sendEmail } = await import('../_email.js');
-const { default: handler, everyOrgDonationEmail } = await import('./[...path].js');
+const { sendEmail } = await import('../api/_email.js');
+const { default: handler, everyOrgDonationEmail } = await import('../api/admin/[...path].js');
 
 const TOKEN = 'a'.repeat(64);
 function call(url, body) {
