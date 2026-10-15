@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import { Copy, Check, CheckCircle } from 'lucide-react';
 import './StockGift.css';
 
 // SupportWorks Housing's receiving account at Merrill Lynch. These details
@@ -11,54 +11,41 @@ const TRANSFER_DETAILS = [
   { label: 'Account number', value: '758-02792' },
 ];
 
-const MAX_STOCKS = 5;
-const emptyStock = () => ({ name: '', shares: '' });
+// One button copies every detail, labelled, ready to paste to a broker.
+const ALL_DETAILS = ['Stock transfer to SupportWorks Housing',
+  ...TRANSFER_DETAILS.map(d => `${d.label}: ${d.value}`)].join('\n');
 
-function CopyRow({ label, value }) {
+function CopyAll() {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(ALL_DETAILS);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch { /* clipboard blocked: the value is still selectable */ }
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked: the details are still selectable */ }
   };
   return (
-    <div className="stock-detail">
-      <dt>{label}</dt>
-      <dd>
-        <span className="stock-detail-value">{value}</span>
-        <button type="button" className="stock-copy" onClick={copy}
-          aria-label={copied ? `${label} copied` : `Copy ${label}`}>
-          {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-          <span>{copied ? 'Copied' : 'Copy'}</span>
-        </button>
-      </dd>
-    </div>
+    <button type="button" className="stock-copy" onClick={copy}>
+      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      <span>{copied ? 'Copied all details' : 'Copy all details'}</span>
+      <span className="sr-only" role="status">{copied ? 'Transfer details copied' : ''}</span>
+    </button>
   );
 }
 
 export default function StockGift() {
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
-    stocks: [emptyStock()], approxValue: '', transferDate: '', brokerFirm: '', note: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', gift: '', transferDate: '' });
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [submitError, setSubmitError] = useState('');
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })); };
-  const setStock = (i, k, v) => {
-    setForm(f => ({ ...f, stocks: f.stocks.map((s, j) => (j === i ? { ...s, [k]: v } : s)) }));
-    setErrors(e => ({ ...e, stocks: undefined }));
-  };
 
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim()) e.firstName = 'Required';
-    if (!form.lastName.trim()) e.lastName = 'Required';
+    if (!form.name.trim()) e.name = 'Required';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Enter a valid email';
-    if (!form.stocks.some(s => s.name.trim() && s.shares.trim())) e.stocks = 'Enter at least one stock and its number of shares';
+    if (!form.gift.trim()) e.gift = 'Tell us the stock and number of shares';
     if (!form.transferDate) e.transferDate = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -73,11 +60,7 @@ export default function StockGift() {
       const res = await fetch('/api/send-donation-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'stock-pledge',
-          ...form,
-          stocks: form.stocks.filter(s => s.name.trim() && s.shares.trim()),
-        }),
+        body: JSON.stringify({ kind: 'stock-pledge', ...form }),
       });
       if (!res.ok) throw new Error(res.status === 429 ? 'limit' : 'failed');
       setStatus('sent');
@@ -101,9 +84,17 @@ export default function StockGift() {
       <div className="stock-step">
         <h3><span className="stock-step-num">1</span> Ask your broker to transfer the shares</h3>
         <p className="stock-help">Share these details with your broker or financial advisor:</p>
-        <dl className="stock-details">
-          {TRANSFER_DETAILS.map(d => <CopyRow key={d.label} {...d} />)}
-        </dl>
+        <div className="stock-details">
+          <dl>
+            {TRANSFER_DETAILS.map(d => (
+              <div className="stock-detail" key={d.label}>
+                <dt>{d.label}</dt>
+                <dd className="stock-detail-value">{d.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="stock-details-foot"><CopyAll /></div>
+        </div>
       </div>
 
       <div className="stock-step">
@@ -112,7 +103,7 @@ export default function StockGift() {
           <div className="stock-sent" role="status">
             <CheckCircle size={28} aria-hidden="true" />
             <div>
-              <strong>Thank you, {form.firstName}.</strong>
+              <strong>Thank you, {form.name.trim().split(/\s+/)[0]}.</strong>
               <p>We have your details and will watch for the transfer. A copy of the transfer
                 instructions is on its way to {form.email}.</p>
             </div>
@@ -122,66 +113,30 @@ export default function StockGift() {
             <p className="stock-help">Transfers often arrive without the donor&rsquo;s name, so this is how we
               match your gift and thank you for it.</p>
             <div className="stock-row">
-              <label>First name<input value={form.firstName} onChange={e => set('firstName', e.target.value)}
-                autoComplete="given-name" aria-invalid={!!errors.firstName} />
-                {errors.firstName && <span className="stock-err">{errors.firstName}</span>}</label>
-              <label>Last name<input value={form.lastName} onChange={e => set('lastName', e.target.value)}
-                autoComplete="family-name" aria-invalid={!!errors.lastName} />
-                {errors.lastName && <span className="stock-err">{errors.lastName}</span>}</label>
-            </div>
-            <div className="stock-row">
+              <label>Name<input value={form.name} onChange={e => set('name', e.target.value)}
+                autoComplete="name" aria-invalid={!!errors.name} />
+                {errors.name && <span className="stock-err">{errors.name}</span>}</label>
               <label>Email<input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                 autoComplete="email" aria-invalid={!!errors.email} />
                 {errors.email && <span className="stock-err">{errors.email}</span>}</label>
-              <label>Phone <span className="stock-opt">(optional)</span><input type="tel" value={form.phone}
-                onChange={e => set('phone', e.target.value)} autoComplete="tel" /></label>
             </div>
-
-            <fieldset className="stock-shares">
-              <legend>Stock and number of shares</legend>
-              {form.stocks.map((s, i) => (
-                <div className="stock-row stock-share-row" key={i}>
-                  <label>Stock name or ticker<input value={s.name} placeholder="e.g. Apple (AAPL)"
-                    onChange={e => setStock(i, 'name', e.target.value)} /></label>
-                  <label>Shares<input value={s.shares} inputMode="decimal" placeholder="e.g. 25"
-                    onChange={e => setStock(i, 'shares', e.target.value)} /></label>
-                  {form.stocks.length > 1 && (
-                    <button type="button" className="stock-remove" aria-label={`Remove stock ${i + 1}`}
-                      onClick={() => setForm(f => ({ ...f, stocks: f.stocks.filter((_, j) => j !== i) }))}>
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              {errors.stocks && <span className="stock-err">{errors.stocks}</span>}
-              {form.stocks.length < MAX_STOCKS && (
-                <button type="button" className="stock-add"
-                  onClick={() => setForm(f => ({ ...f, stocks: [...f.stocks, emptyStock()] }))}>
-                  <Plus size={15} aria-hidden="true" /> Add another stock
-                </button>
-              )}
-            </fieldset>
-
             <div className="stock-row">
-              <label>Approximate value <span className="stock-opt">(optional)</span>
-                <span className="stock-money"><span aria-hidden="true">$</span>
-                  <input value={form.approxValue} inputMode="decimal"
-                    onChange={e => set('approxValue', e.target.value)} /></span></label>
+              <label className="stock-gift-field">What you&rsquo;re giving<input value={form.gift}
+                placeholder="e.g. 50 shares of Apple (AAPL)" onChange={e => set('gift', e.target.value)}
+                aria-invalid={!!errors.gift} />
+                {errors.gift && <span className="stock-err">{errors.gift}</span>}</label>
               <label>Expected transfer date<input type="date" value={form.transferDate}
                 onChange={e => set('transferDate', e.target.value)} aria-invalid={!!errors.transferDate} />
                 {errors.transferDate && <span className="stock-err">{errors.transferDate}</span>}</label>
             </div>
-            <label>Your brokerage firm <span className="stock-opt">(optional)</span>
-              <input value={form.brokerFirm} placeholder="e.g. Fidelity, Schwab, Vanguard"
-                onChange={e => set('brokerFirm', e.target.value)} /></label>
-            <label>Note <span className="stock-opt">(optional, e.g. a tribute or designation)</span>
-              <textarea rows={2} value={form.note} onChange={e => set('note', e.target.value)} /></label>
 
             {status === 'error' && <p className="stock-err" role="alert">{submitError}. Please try again,
               or email <a href="mailto:jsnook@supportworkshousing.org">jsnook@supportworkshousing.org</a>.</p>}
             <button type="submit" className="donate-btn" disabled={status === 'sending'}>
               {status === 'sending' ? 'Sending…' : 'Send my gift details'}
             </button>
+            <p className="stock-followup">We&rsquo;ll be in touch to confirm your gift and collect any other
+              information we need.</p>
           </form>
         )}
       </div>

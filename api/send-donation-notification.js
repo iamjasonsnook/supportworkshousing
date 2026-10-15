@@ -131,18 +131,13 @@ export const TRANSFER_DETAILS = [
 
 export function cleanStockPledge(body) {
   const d = {
-    firstName: clip(body.firstName, 80), lastName: clip(body.lastName, 80),
-    email: clip(body.email, 254), phone: clip(body.phone, 40),
-    approxValue: clip(body.approxValue, 40), transferDate: clip(body.transferDate, 10),
-    brokerFirm: clip(body.brokerFirm, 120), note: clip(body.note, 1000),
-    stocks: (Array.isArray(body.stocks) ? body.stocks : []).slice(0, 5)
-      .map(s => ({ name: clip(s?.name, 120), shares: clip(s?.shares, 40) }))
-      .filter(s => s.name && s.shares),
+    name: clip(body.name, 120), email: clip(body.email, 254),
+    gift: clip(body.gift, 300), transferDate: clip(body.transferDate, 10),
   };
   const errors = [];
-  if (!d.firstName || !d.lastName) errors.push('name');
+  if (!d.name) errors.push('name');
   if (!isEmail(d.email)) errors.push('email');
-  if (!d.stocks.length) errors.push('stocks');
+  if (!d.gift) errors.push('gift');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.transferDate)) errors.push('transferDate');
   return { data: d, errors };
 }
@@ -161,30 +156,28 @@ const shell = (title, inner) => `<!DOCTYPE html><html><head><style>${STYLE}</sty
 <div class="content">${inner}</div><div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div></div></body></html>`;
 
 const row = (label, value) => value ? `<div class="info-row"><span class="info-label">${esc(label)}:</span> ${esc(value)}</div>` : '';
-const stockRows = (d) => d.stocks.map(s => `<div class="info-row"><span class="info-label">${esc(s.name)}:</span> ${esc(s.shares)} shares</div>`).join('');
 const transferRows = () => TRANSFER_DETAILS.map(([k, v]) => row(k, v)).join('');
 const fmtDate = (iso) => { const [y, m, dd] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, dd)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' }); };
 
 export function stockPledgeStaffEmail(d) {
-  const name = `${d.firstName} ${d.lastName}`;
+  const gift = d.gift.length > 60 ? `${d.gift.slice(0, 57)}...` : d.gift;
   return {
-    subject: `Stock gift on the way: ${d.stocks.map(s => s.name).join(', ')} from ${name}`,
+    subject: `Stock gift on the way from ${d.name}: ${gift}`,
     html: shell('Stock Gift Pledged', `
-<div class="box">A donor has told us about a stock transfer to our Merrill Lynch account. Watch for it around the date below and match it to this donor.</div>
-<h2 style="color:#9B1B5D;margin-top:24px;">Gift</h2>${stockRows(d)}
-${row('Approximate value', d.approxValue ? `$${d.approxValue.replace(/^\$/, '')}` : '')}
-${row('Expected transfer', fmtDate(d.transferDate))}${row('Donor\'s brokerage', d.brokerFirm)}${row('Note', d.note)}
-<h2 style="color:#9B1B5D;margin-top:24px;">Donor</h2>${row('Name', name)}${row('Email', d.email)}${row('Phone', d.phone)}`),
+<div class="box">A donor has told us about a stock transfer to our Merrill Lynch account. Watch for it around the date below, match it to this donor, and follow up to confirm and collect anything else we need.</div>
+${row('Gift', d.gift)}${row('Expected transfer', fmtDate(d.transferDate))}
+${row('Name', d.name)}${row('Email', d.email)}`),
   };
 }
 
 export function stockPledgeDonorEmail(d) {
+  const first = d.name.split(/\s+/)[0];
   return {
     subject: 'Thank you for your gift of stock to SupportWorks Housing',
     html: shell('Thank You for Your Gift of Stock', `
-<p>Dear ${esc(d.firstName)},</p>
-<p>Thank you for choosing to give stock to SupportWorks Housing. We have your details and will watch for the transfer, then send you a receipt once the shares arrive.</p>
-<h2 style="color:#9B1B5D;margin-top:24px;">Your gift</h2>${stockRows(d)}${row('Expected transfer', fmtDate(d.transferDate))}
+<p>Dear ${esc(first)},</p>
+<p>Thank you for choosing to give stock to SupportWorks Housing. We'll be in touch to confirm your gift and collect any other information we need, and we will send you a receipt once the shares arrive.</p>
+${row('Your gift', d.gift)}${row('Expected transfer', fmtDate(d.transferDate))}
 <h2 style="color:#9B1B5D;margin-top:24px;">Transfer instructions for your broker</h2><div class="box">${transferRows()}</div>
 <p>Please consult your tax advisor about your situation. If anything changes, just reply to this email.</p>
 <p>With gratitude,<br />The SupportWorks Housing team</p>`),

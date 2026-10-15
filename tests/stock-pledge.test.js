@@ -15,9 +15,8 @@ function call(body) {
 }
 
 const valid = {
-  kind: 'stock-pledge', firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.org',
-  stocks: [{ name: 'Apple (AAPL)', shares: '25' }, { name: '', shares: '' }],
-  approxValue: '5000', transferDate: '2026-11-02', brokerFirm: 'Fidelity', note: 'In memory of <b>Byron</b>',
+  kind: 'stock-pledge', name: 'Ada Lovelace', email: 'ada@example.org',
+  gift: '25 shares of Apple (AAPL) <b>and</b> 10 of MSFT', transferDate: '2026-11-02',
 };
 
 describe('stock pledge', () => {
@@ -38,20 +37,21 @@ describe('stock pledge', () => {
     expect(donor.html).toContain('8862');
     expect(donor.html).toContain('758-02792');
     const staff = sendEmail.mock.calls.find(c => c[0].to === 'accountsreceivable@supportworkshousing.org')[0];
-    expect(staff.subject).toContain('Apple (AAPL)');
-    expect(staff.html).toContain('25 shares');
+    expect(staff.subject).toContain('from Ada Lovelace: 25 shares of Apple (AAPL)');
+    expect(donor.html).toContain('Dear Ada,');
+    expect(donor.html).toContain('be in touch to confirm');
     expect(staff.html).toContain('November 2, 2026');
   });
 
   it('escapes what the donor typed', async () => {
     await call(valid);
     const staff = sendEmail.mock.calls[0][0].html;
-    expect(staff).not.toContain('<b>Byron</b>');
-    expect(staff).toContain('&lt;b&gt;Byron&lt;/b&gt;');
+    expect(staff).not.toContain('<b>and</b>');
+    expect(staff).toContain('&lt;b&gt;and&lt;/b&gt;');
   });
 
   it('rejects a pledge with no stock, a bad email or no date, and sends nothing', async () => {
-    for (const bad of [{ stocks: [] }, { email: 'nope' }, { transferDate: '' }]) {
+    for (const bad of [{ gift: '' }, { email: 'nope' }, { transferDate: '' }, { name: ' ' }]) {
       const res = await call({ ...valid, ...bad });
       expect(res.statusCode).toBe(400);
     }
@@ -72,10 +72,10 @@ describe('stock pledge', () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('keeps at most five stocks and trims long input', () => {
-    const { data } = cleanStockPledge({ ...valid, stocks: Array(9).fill({ name: 'X', shares: '1' }), note: 'n'.repeat(5000) });
-    expect(data.stocks).toHaveLength(5);
-    expect(data.note).toHaveLength(1000);
+  it('trims long input', () => {
+    const { data } = cleanStockPledge({ ...valid, gift: 'g'.repeat(5000), name: 'n'.repeat(500) });
+    expect(data.gift).toHaveLength(300);
+    expect(data.name).toHaveLength(120);
   });
 
   it('leaves card donations on their existing path', async () => {
