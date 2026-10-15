@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import StockGift from './StockGift';
@@ -67,8 +67,8 @@ function DonateForm() {
   });
 
   const [formData, setFormData] = useState({
-    // Donation details
-    donationType: 'one-time',
+    // Donation details. /#donatestock opens the form on the Stock tab.
+    donationType: window.location.hash === '#donatestock' ? 'stock' : 'one-time',
     amount: 100,
     customAmount: '',
     startDate: '',
@@ -86,6 +86,19 @@ function DonateForm() {
   });
 
   const [errors, setErrors] = useState({});
+
+  // A #donatestock link followed while already on the page switches to Stock
+  // (App.jsx does the scrolling for both #donate and #donatestock).
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === '#donatestock') {
+        setCurrentStep(0);
+        setFormData(f => ({ ...f, donationType: 'stock' }));
+      }
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   const amounts = [25, 50, 100, 250, 500];
 

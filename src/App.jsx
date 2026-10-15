@@ -39,6 +39,7 @@ function HomePage() {
       // Map friendly names to section IDs
       const hashTargets = {
         'donate': 'donate',
+        'donatestock': 'donate',
         'volunteer': 'get-involved',
       };
       const targetId = hashTargets[hash] || hash;
