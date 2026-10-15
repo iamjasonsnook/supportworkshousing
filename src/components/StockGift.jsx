@@ -83,7 +83,10 @@ export default function StockGift() {
 
       <div className="stock-step">
         <h3><span className="stock-step-num">1</span> Ask your broker to transfer the shares</h3>
-        <p className="stock-help">Share these details with your broker or financial advisor:</p>
+        <div className="stock-help-row">
+          <p className="stock-help">Share these details with your broker or financial advisor:</p>
+          <CopyAll />
+        </div>
         <div className="stock-details">
           <dl>
             {TRANSFER_DETAILS.map(d => (
@@ -93,7 +96,6 @@ export default function StockGift() {
               </div>
             ))}
           </dl>
-          <div className="stock-details-foot"><CopyAll /></div>
         </div>
       </div>
 
