@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, CheckCircle, Plus, Trash2, ExternalLink, Landmark } from 'lucide-react';
+import { Copy, Check, CheckCircle, Plus, Trash2 } from 'lucide-react';
 import './StockGift.css';
 
 // SupportWorks Housing's receiving account at Merrill Lynch. These details
@@ -10,11 +10,6 @@ const TRANSFER_DETAILS = [
   { label: 'Account name', value: 'SupportWorks Housing' },
   { label: 'Account number', value: '758-02792' },
 ];
-
-// Every.org page for SupportWorks Housing (the part after every.org/).
-// Leave empty to hide the Every.org option.
-const EVERY_ORG_SLUG = 'supportworks-housing';
-const everyOrgUrl = slug => `https://www.every.org/${slug}?method=stocks#donate`;
 
 const MAX_STOCKS = 5;
 const emptyStock = () => ({ name: '', shares: '' });
@@ -187,20 +182,6 @@ export default function StockGift() {
           </form>
         )}
       </div>
-
-      {EVERY_ORG_SLUG && (
-        <div className="stock-online">
-          <Landmark size={20} aria-hidden="true" />
-          <div>
-            <strong>Prefer to give online?</strong>
-            <p>Donate stock in a few steps through Every.org, a nonprofit giving platform. Every.org
-              receives the shares and sends us the proceeds, so your tax receipt comes from Every.org.</p>
-            <a className="stock-online-link" href={everyOrgUrl(EVERY_ORG_SLUG)} target="_blank" rel="noopener noreferrer">
-              Give stock through Every.org <ExternalLink size={14} aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

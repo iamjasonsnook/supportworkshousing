@@ -69,16 +69,7 @@
 .stock-sent strong { color: var(--color-text-dark); }
 .stock-sent p { margin: 4px 0 0; color: var(--color-text-body); font-size: 0.9rem; }
 
-/* Every.org */
-.stock-online { display: flex; gap: 14px; padding: 16px; border: 1px dashed var(--color-gray-300);
-  border-radius: var(--radius-md); color: var(--color-primary); }
-.stock-online strong { color: var(--color-text-dark); }
-.stock-online p { margin: 4px 0 8px; font-size: 0.9rem; color: var(--color-text-body); }
-.stock-online-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 600;
-  color: var(--color-primary); text-decoration: none; }
-.stock-online-link:hover { text-decoration: underline; }
-
-.stock-copy:focus-visible, .stock-add:focus-visible, .stock-remove:focus-visible, .stock-online-link:focus-visible {
+.stock-copy:focus-visible, .stock-add:focus-visible, .stock-remove:focus-visible {
   outline: 2px solid var(--color-primary); outline-offset: 2px;
 }
 @media (max-width: 560px) {
