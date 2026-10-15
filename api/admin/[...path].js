@@ -367,6 +367,70 @@ function handleCareersSyncNotify(req, res) {
     });
 }
 
+// ─── Every.org donation webhook ──────────────────────────────────────────────
+//
+// Every.org POSTs here each time a donation to SupportWorks Housing completes
+// (card, bank, stock, DAF and the rest). Every.org documents no signature, so
+// the URL itself carries a long secret: ?token=<EVERYORG_WEBHOOK_TOKEN>.
+// Each donation is emailed to staff and accounting.
+
+const EVERYORG_SLUG = 'supportworks-housing';
+const ACCOUNTING_EMAIL = 'accountsreceivable@supportworkshousing.org';
+const escWh = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const usd = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : escWh(v);
+};
+const METHOD_LABEL = { stocks: 'Stock', stock: 'Stock', card: 'Card', bank: 'Bank transfer', paypal: 'PayPal',
+  venmo: 'Venmo', pay: 'Apple or Google Pay', crypto: 'Crypto', daf: 'Donor-advised fund', gift: 'Gift card' };
+
+export function everyOrgDonationEmail(d) {
+  const name = [d.firstName, d.lastName].filter(Boolean).join(' ') || 'Anonymous (name not shared)';
+  const method = METHOD_LABEL[String(d.paymentMethod || '').toLowerCase()] || d.paymentMethod || 'Not stated';
+  const isStock = /stock/i.test(String(d.paymentMethod || ''));
+  const row = (k, v) => (v ? `<div style="margin:8px 0"><strong style="display:inline-block;min-width:150px;color:#1A1A1A">${escWh(k)}:</strong> ${v}</div>` : '');
+  return {
+    subject: `Every.org donation: ${usd(d.amount)}${isStock ? ' in stock' : ''} from ${name}`,
+    html: `<div style="font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.6;color:#4A4A4A;max-width:600px;margin:0 auto;padding:20px">
+<div style="background:#9B1B5D;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center"><h1 style="margin:0;font-size:22px">Every.org Donation Received</h1></div>
+<div style="border:1px solid #E5E7EB;border-top:none;padding:24px;background:#fff">
+${isStock ? '<div style="background:#FDF2F4;border-left:4px solid #9B1B5D;padding:12px 15px;margin-bottom:16px;border-radius:4px">A gift of stock: Every.org sells the shares and sends the proceeds in its regular disbursement. The donor\'s tax receipt comes from Every.org.</div>' : ''}
+${row('Amount', usd(d.amount))}${row('Net to us', d.netAmount != null ? usd(d.netAmount) : '')}
+${row('Method', escWh(method))}${row('Frequency', escWh(d.frequency))}
+${row('Date', escWh(d.donationDate ? new Date(d.donationDate).toLocaleString('en-US', { timeZone: 'America/New_York' }) : ''))}
+${row('Donor', escWh(name))}${row('Email', d.email ? `<a href="mailto:${escWh(d.email)}" style="color:#9B1B5D">${escWh(d.email)}</a>` : 'Not shared')}
+${row('Private note', escWh(d.privateNote))}${row('Public testimony', escWh(d.publicTestimony))}
+${row('Every.org charge', escWh(d.chargeId))}
+</div></div>`,
+  };
+}
+
+async function handleEveryOrgWebhook(req, res) {
+  const secret = process.env.EVERYORG_WEBHOOK_TOKEN;
+  if (!secret) return res.status(503).json({ error: 'Webhook not configured' });
+  const token = new URL(req.url, 'http://x').searchParams.get('token') || '';
+  if (!safeCompare(token, secret)) return res.status(401).json({ error: 'Unauthorized' });
+
+  const d = req.body || {};
+  if (!d.chargeId || d.amount == null) return res.status(400).json({ error: 'Not a donation payload' });
+  if (d.toNonprofit?.slug && d.toNonprofit.slug !== EVERYORG_SLUG) {
+    return res.status(200).json({ ignored: 'different nonprofit' });
+  }
+
+  const { subject, html } = everyOrgDonationEmail(d);
+  try {
+    await Promise.all([
+      sendEmail({ to: ADMIN_EMAIL, subject, html, replyTo: d.email || undefined }),
+      sendEmail({ to: ACCOUNTING_EMAIL, subject, html }),
+    ]);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Every.org webhook email error:', error);
+    // A non-2xx asks Every.org to retry, which is what we want if email failed.
+    return res.status(500).json({ error: 'Notification failed' });
+  }
+}
+
 async function handleGetEvents(req, res) {
   const supabase = getSupabase();
   if (!supabase) {
@@ -1206,6 +1270,12 @@ export default async function handler(req, res) {
   // agent; authenticated with its own bearer secret, not an admin session.
   if (method === 'POST' && path === 'careers-sync-notify') {
     return handleCareersSyncNotify(req, res);
+  }
+
+  // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;
+  // authenticated by the secret token in its URL, not an admin session.
+  if (method === 'POST' && path === 'everyorg-webhook') {
+    return handleEveryOrgWebhook(req, res);
   }
 
   // All other routes require auth
