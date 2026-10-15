@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import StockGift from './StockGift';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './Donate.css';
 
@@ -257,6 +258,11 @@ function DonateForm() {
   };
 
   const handleGivingOptionClick = (option) => {
+    if (option.label === 'Stock Gifts') {
+      updateField('donationType', 'stock');
+      document.getElementById('donate')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     const mailtoUrl = `mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(option.subject)}&body=${encodeURIComponent(option.body)}`;
     window.location.href = mailtoUrl;
   };
@@ -479,8 +485,16 @@ function DonateForm() {
                   >
                     Monthly
                   </button>
+                  <button
+                    className={`donation-type-btn ${formData.donationType === 'stock' ? 'active' : ''}`}
+                    onClick={() => updateField('donationType', 'stock')}
+                  >
+                    Stock
+                  </button>
                 </div>
               </div>
+
+              {formData.donationType === 'stock' ? <StockGift /> : (<>
 
               <div className="amount-section">
                 <label className="amount-label">Select an amount:</label>
@@ -535,6 +549,7 @@ function DonateForm() {
                 <Lock size={14} />
                 <span>Donations are securely processed using Stripe • Tax-deductible</span>
               </div>
+              </>)}
             </div>
           </div>
 
