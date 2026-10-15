@@ -26,6 +26,8 @@
 
 .donate-header p {
   color: var(--color-text-muted);
+  /* Even line lengths instead of one long line and a short tail. */
+  text-wrap: balance;
 }
 
 /* Donate container */
