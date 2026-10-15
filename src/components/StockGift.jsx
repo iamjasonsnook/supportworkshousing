@@ -13,7 +13,7 @@ const TRANSFER_DETAILS = [
 
 // Every.org page for SupportWorks Housing (the part after every.org/).
 // Leave empty to hide the Every.org option.
-const EVERY_ORG_SLUG = '';
+const EVERY_ORG_SLUG = 'supportworks-housing';
 const everyOrgUrl = slug => `https://www.every.org/${slug}?method=stocks#donate`;
 
 const MAX_STOCKS = 5;
