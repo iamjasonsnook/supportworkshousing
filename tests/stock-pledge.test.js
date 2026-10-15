@@ -58,6 +58,13 @@ describe('stock pledge', () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
+  it('hides the email service\'s error from the donor', async () => {
+    sendEmail.mockRejectedValueOnce(new Error('EmailJS send failed (403): API access in strict mode'));
+    const res = await call(valid);
+    expect(res.statusCode).toBe(502);
+    expect(JSON.stringify(res.body)).not.toContain('EmailJS');
+  });
+
   it('is rate limited', async () => {
     checkRateLimit.mockReturnValue(false);
     const res = await call(valid);

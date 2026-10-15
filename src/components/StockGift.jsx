@@ -79,12 +79,15 @@ export default function StockGift() {
           stocks: form.stocks.filter(s => s.name.trim() && s.shares.trim()),
         }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Something went wrong');
+      if (!res.ok) throw new Error(res.status === 429 ? 'limit' : 'failed');
       setStatus('sent');
       if (window.gtag) window.gtag('event', 'stock_pledge_submitted');
     } catch (err) {
       setStatus('error');
-      setSubmitError(err.message || 'Something went wrong');
+      // Plain words for the donor; the technical cause stays in the server logs.
+      setSubmitError(err.message === 'limit'
+        ? 'We have received several submissions from you today'
+        : 'We could not send your details just now');
     }
   };
 

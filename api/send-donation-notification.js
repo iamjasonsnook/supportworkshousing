@@ -201,11 +201,17 @@ async function handleStockPledge(req, res) {
 
   const staff = stockPledgeStaffEmail(data);
   const donor = stockPledgeDonorEmail(data);
-  await Promise.all([
-    sendEmail({ to: ADMIN_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
-    sendEmail({ to: ACCOUNTING_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
-    sendEmail({ to: data.email, subject: donor.subject, html: donor.html, replyTo: ADMIN_EMAIL }),
-  ]);
+  try {
+    await Promise.all([
+      sendEmail({ to: ADMIN_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
+      sendEmail({ to: ACCOUNTING_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
+      sendEmail({ to: data.email, subject: donor.subject, html: donor.html, replyTo: ADMIN_EMAIL }),
+    ]);
+  } catch (error) {
+    // The cause goes to the logs, never to the donor.
+    console.error('Stock pledge email error:', error);
+    return res.status(502).json({ error: 'send-failed' });
+  }
   return res.status(200).json({ success: true });
 }
 
