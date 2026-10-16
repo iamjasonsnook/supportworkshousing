@@ -579,9 +579,6 @@ function DonateForm() {
                 </button>
               ))}
             </div>
-            <p className="giving-legal">
-              For donor-advised fund and IRA gifts: SupportWorks Housing, EIN 54-1444564
-            </p>
           </div>
         </div>
       </section>
