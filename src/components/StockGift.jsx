@@ -74,73 +74,77 @@ export default function StockGift() {
     }
   };
 
+  const firstName = form.name.trim().split(/\s+/)[0];
+
+  // The transfer details are shown only once the donor has told us about
+  // the gift (and are emailed to them), so every transfer can be matched.
+  if (status === 'sent') {
+    return (
+      <div className="stock-gift">
+        <div className="stock-sent" role="status">
+          <CheckCircle size={28} aria-hidden="true" />
+          <div>
+            <strong>Thank you, {firstName}.</strong>
+            <p>We&rsquo;ve emailed the transfer instructions to {form.email}. Here they are too, to share
+              with your broker or financial advisor.</p>
+          </div>
+        </div>
+        <div className="stock-step">
+          <div className="stock-help-row">
+            <h3>Transfer instructions</h3>
+            <CopyAll />
+          </div>
+          <div className="stock-details">
+            <dl>
+              {TRANSFER_DETAILS.map(d => (
+                <div className="stock-detail" key={d.label}>
+                  <dt>{d.label}</dt>
+                  <dd className="stock-detail-value">{d.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+        <p className="stock-followup">We&rsquo;ll be in touch to confirm your gift and collect any other
+          information we need.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="stock-gift">
       <p className="stock-intro">
         Giving appreciated stock can be a tax-smart way to give. Please consult your tax advisor.
       </p>
-
-      <div className="stock-step">
-        <h3><span className="stock-step-num">1</span> Ask your broker to transfer the shares</h3>
-        <div className="stock-help-row">
-          <p className="stock-help">Share these details with your broker or financial advisor:</p>
-          <CopyAll />
+      <form className="stock-form" onSubmit={submit} noValidate>
+        <p className="stock-help">Tell us about your gift and we&rsquo;ll email you the transfer instructions
+          for your broker.</p>
+        <div className="stock-row">
+          <label>Name<input value={form.name} onChange={e => set('name', e.target.value)}
+            autoComplete="name" aria-invalid={!!errors.name} />
+            {errors.name && <span className="stock-err">{errors.name}</span>}</label>
+          <label>Email<input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+            autoComplete="email" aria-invalid={!!errors.email} />
+            {errors.email && <span className="stock-err">{errors.email}</span>}</label>
         </div>
-        <div className="stock-details">
-          <dl>
-            {TRANSFER_DETAILS.map(d => (
-              <div className="stock-detail" key={d.label}>
-                <dt>{d.label}</dt>
-                <dd className="stock-detail-value">{d.value}</dd>
-              </div>
-            ))}
-          </dl>
+        <div className="stock-row">
+          <label>What you&rsquo;re giving<input value={form.gift}
+            placeholder="e.g. 50 shares of Apple (AAPL)" onChange={e => set('gift', e.target.value)}
+            aria-invalid={!!errors.gift} />
+            {errors.gift && <span className="stock-err">{errors.gift}</span>}</label>
+          <label>Expected transfer date<input type="date" value={form.transferDate}
+            onChange={e => set('transferDate', e.target.value)} aria-invalid={!!errors.transferDate} />
+            {errors.transferDate && <span className="stock-err">{errors.transferDate}</span>}</label>
         </div>
-      </div>
 
-      <div className="stock-step">
-        <h3><span className="stock-step-num">2</span> Tell us about your gift</h3>
-        {status === 'sent' ? (
-          <div className="stock-sent" role="status">
-            <CheckCircle size={28} aria-hidden="true" />
-            <div>
-              <strong>Thank you, {form.name.trim().split(/\s+/)[0]}.</strong>
-              <p>We have your details and will watch for the transfer. A copy of the transfer
-                instructions is on its way to {form.email}.</p>
-            </div>
-          </div>
-        ) : (
-          <form className="stock-form" onSubmit={submit} noValidate>
-            <p className="stock-help">Transfers often arrive without the donor&rsquo;s name, so this is how we
-              match your gift and thank you for it.</p>
-            <div className="stock-row">
-              <label>Name<input value={form.name} onChange={e => set('name', e.target.value)}
-                autoComplete="name" aria-invalid={!!errors.name} />
-                {errors.name && <span className="stock-err">{errors.name}</span>}</label>
-              <label>Email<input type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                autoComplete="email" aria-invalid={!!errors.email} />
-                {errors.email && <span className="stock-err">{errors.email}</span>}</label>
-            </div>
-            <div className="stock-row">
-              <label className="stock-gift-field">What you&rsquo;re giving<input value={form.gift}
-                placeholder="e.g. 50 shares of Apple (AAPL)" onChange={e => set('gift', e.target.value)}
-                aria-invalid={!!errors.gift} />
-                {errors.gift && <span className="stock-err">{errors.gift}</span>}</label>
-              <label>Expected transfer date<input type="date" value={form.transferDate}
-                onChange={e => set('transferDate', e.target.value)} aria-invalid={!!errors.transferDate} />
-                {errors.transferDate && <span className="stock-err">{errors.transferDate}</span>}</label>
-            </div>
-
-            {status === 'error' && <p className="stock-err" role="alert">{submitError}. Please try again,
-              or email <a href="mailto:jsnook@supportworkshousing.org">jsnook@supportworkshousing.org</a>.</p>}
-            <button type="submit" className="donate-btn" disabled={status === 'sending'}>
-              {status === 'sending' ? 'Sending…' : 'Send my gift details'}
-            </button>
-            <p className="stock-followup">We&rsquo;ll be in touch to confirm your gift and collect any other
-              information we need.</p>
-          </form>
-        )}
-      </div>
+        {status === 'error' && <p className="stock-err" role="alert">{submitError}. Please try again,
+          or email <a href="mailto:jsnook@supportworkshousing.org">jsnook@supportworkshousing.org</a>.</p>}
+        <button type="submit" className="donate-btn" disabled={status === 'sending'}>
+          {status === 'sending' ? 'Sending…' : 'Send my gift details'}
+        </button>
+        <p className="stock-followup">We&rsquo;ll email you the transfer instructions and be in touch to
+          confirm your gift.</p>
+      </form>
     </div>
   );
 }
