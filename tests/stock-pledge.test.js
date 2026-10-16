@@ -22,13 +22,11 @@ const valid = {
 describe('stock pledge', () => {
   beforeEach(() => { sendEmail.mockClear(); checkRateLimit.mockReturnValue(true); });
 
-  it('emails staff, accounting and the donor', async () => {
+  it('sends exactly two emails: the donor and jsnook', async () => {
     const res = await call(valid);
     expect(res.statusCode).toBe(200);
-    expect(sendEmail).toHaveBeenCalledTimes(3);
-    const to = sendEmail.mock.calls.map(c => c[0].to);
-    expect(to).toContain('ada@example.org');
-    expect(to).toContain('accountsreceivable@supportworkshousing.org');
+    const to = sendEmail.mock.calls.map(c => c[0].to).sort();
+    expect(to).toEqual(['ada@example.org', 'jsnook@supportworkshousing.org']);
   });
 
   it('gives the donor the transfer instructions, and staff the gift', async () => {
@@ -36,7 +34,7 @@ describe('stock pledge', () => {
     const donor = sendEmail.mock.calls.find(c => c[0].to === 'ada@example.org')[0];
     expect(donor.html).toContain('8862');
     expect(donor.html).toContain('758-02792');
-    const staff = sendEmail.mock.calls.find(c => c[0].to === 'accountsreceivable@supportworkshousing.org')[0];
+    const staff = sendEmail.mock.calls.find(c => c[0].to === 'jsnook@supportworkshousing.org')[0];
     expect(staff.subject).toContain('from Ada Lovelace: 25 shares of Apple (AAPL)');
     expect(donor.html).toContain('Dear Ada,');
     expect(donor.html).toContain('be in touch to confirm');
@@ -45,7 +43,7 @@ describe('stock pledge', () => {
 
   it('escapes what the donor typed', async () => {
     await call(valid);
-    const staff = sendEmail.mock.calls[0][0].html;
+    const staff = sendEmail.mock.calls.find(c => c[0].to === 'jsnook@supportworkshousing.org')[0].html;
     expect(staff).not.toContain('<b>and</b>');
     expect(staff).toContain('&lt;b&gt;and&lt;/b&gt;');
   });

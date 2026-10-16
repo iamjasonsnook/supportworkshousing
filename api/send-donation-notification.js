@@ -196,9 +196,10 @@ async function handleStockPledge(req, res) {
   const donor = stockPledgeDonorEmail(data);
   try {
     await Promise.all([
-      sendEmail({ to: ADMIN_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
-      sendEmail({ to: ACCOUNTING_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
+      // Two emails: the donor's thank-you with the transfer instructions, and
+      // a notification to staff, as for card donations.
       sendEmail({ to: data.email, subject: donor.subject, html: donor.html, replyTo: ADMIN_EMAIL }),
+      sendEmail({ to: ADMIN_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
     ]);
   } catch (error) {
     // The cause goes to the logs, never to the donor.
