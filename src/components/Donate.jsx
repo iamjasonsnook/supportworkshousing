@@ -104,11 +104,6 @@ function DonateForm() {
 
   const givingOptions = [
     {
-      label: 'Stock Gifts',
-      subject: 'Inquiry about Stock Gifts',
-      body: 'Hello,\n\nI am interested in learning more about donating stock or securities to SupportWorks Housing. Could you please provide information about how to make a stock gift?\n\nThank you!'
-    },
-    {
       label: 'Corporate Partnerships',
       subject: 'Inquiry about Corporate Partnerships',
       body: 'Hello,\n\nI am interested in learning more about corporate partnership opportunities with SupportWorks Housing. Could you please provide information about how my organization can get involved?\n\nThank you!'
@@ -271,11 +266,6 @@ function DonateForm() {
   };
 
   const handleGivingOptionClick = (option) => {
-    if (option.label === 'Stock Gifts') {
-      updateField('donationType', 'stock');
-      document.getElementById('donate')?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
     const mailtoUrl = `mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(option.subject)}&body=${encodeURIComponent(option.body)}`;
     window.location.href = mailtoUrl;
   };
