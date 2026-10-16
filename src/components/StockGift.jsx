@@ -77,8 +77,7 @@ export default function StockGift() {
   return (
     <div className="stock-gift">
       <p className="stock-intro">
-        Giving appreciated stock can be a tax-smart way to support our mission.
-        Please consult your tax advisor about your situation.
+        Giving appreciated stock can be a tax-smart way to give. Please consult your tax advisor.
       </p>
 
       <div className="stock-step">
