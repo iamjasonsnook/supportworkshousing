@@ -113,6 +113,16 @@ function DonateForm() {
       subject: 'Inquiry about Planned Giving',
       body: 'Hello,\n\nI am interested in learning more about planned giving options at SupportWorks Housing. Could you please provide information about legacy gifts and estate planning opportunities?\n\nThank you!'
     },
+    {
+      label: 'Donor-Advised Funds',
+      subject: 'Giving through a donor-advised fund',
+      body: 'Hello,\n\nI would like to recommend a grant to SupportWorks Housing (EIN 54-1444564) from my donor-advised fund. Is there anything you need from me, or a designation I should include?\n\nThank you!'
+    },
+    {
+      label: 'IRA Distributions',
+      subject: 'Giving through an IRA charitable distribution',
+      body: 'Hello,\n\nI am interested in making a qualified charitable distribution from my IRA to SupportWorks Housing (EIN 54-1444564). Could you tell me how best to arrange it and who I should notify?\n\nThank you!'
+    },
   ];
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -569,6 +579,9 @@ function DonateForm() {
                 </button>
               ))}
             </div>
+            <p className="giving-legal">
+              For donor-advised fund and IRA gifts: SupportWorks Housing, EIN 54-1444564
+            </p>
           </div>
         </div>
       </section>
