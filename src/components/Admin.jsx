@@ -14,61 +14,67 @@ function renderBold(text) {
 // event parameters registered as custom dimensions in GA4.
 const NUDGE_LABELS = {
   muhammad: 'Meet Muhammad', joel: 'Meet Joel', curtis: 'Meet Curtis', mark: 'Meet Mark',
-  retention: '96%+ stay housed', served: '1,650 served each year',
+  retention: '96%+ stay housed', served: '1,650 served',
 };
 const pctOf = (n, d) => (d > 0 ? `${Math.round((n / d) * 100)}%` : '–');
 
-function NudgePanel({ nudge }) {
-  const { shown, expanded, donateClicks, byMessage, byState } = nudge;
+// Rows in the same shape as the funnel cards: a bar sized against the first
+// row, the count, and (in grey) the share of times the nudge was shown.
+function NudgeRows({ rows, color }) {
+  const top = rows[0]?.base ?? rows[0]?.count ?? 0;
   return (
-    <div className="nudge-panel">
-      <h3>Donation nudge</h3>
-      <div className="nudge-panel-metrics">
-        <div className="nudge-metric">
-          <span className="nudge-metric-value">{shown.toLocaleString()}</span>
-          <span className="nudge-metric-label">Shown</span>
+    <div className="funnel-steps">
+      {rows.map(r => (
+        <div key={r.label} className="funnel-step">
+          <div className="funnel-step-label" title={r.label}>{r.label}</div>
+          <div className="funnel-bar-wrap">
+            <div className="funnel-bar" style={{ width: `${top > 0 ? Math.round((r.count / top) * 100) : 0}%`, backgroundColor: color }} />
+          </div>
+          <div className="funnel-step-count">{r.count.toLocaleString()}</div>
+          {r.rate != null && <div className="funnel-rate">{r.rate}</div>}
         </div>
-        <div className="nudge-metric">
-          <span className="nudge-metric-value">{expanded.toLocaleString()}</span>
-          <span className="nudge-metric-label">Expanded</span>
-          <span className="nudge-metric-rate">{pctOf(expanded, shown)} of times shown</span>
-        </div>
-        <div className="nudge-metric">
-          <span className="nudge-metric-value">{donateClicks.toLocaleString()}</span>
-          <span className="nudge-metric-label">Donate clicks</span>
-          <span className="nudge-metric-rate">{pctOf(donateClicks, shown)} of times shown</span>
-          {byState && (
-            <span className="nudge-metric-rate">
-              {byState.minimized.toLocaleString()} from the pill, {byState.expanded.toLocaleString()} from the card
-            </span>
-          )}
-        </div>
-      </div>
-      {byMessage && byMessage.length > 0 ? (
-        <table className="nudge-table">
-          <thead>
-            <tr><th>Message</th><th>Shown</th><th>Expanded</th><th>Donate clicks</th><th>Click rate</th></tr>
-          </thead>
-          <tbody>
-            {byMessage.map(r => (
-              <tr key={r.message}>
-                <td>{NUDGE_LABELS[r.message] || r.message}</td>
-                <td>{r.shown.toLocaleString()}</td>
-                <td>{r.expanded.toLocaleString()}</td>
-                <td>{r.donateClicks.toLocaleString()}</td>
-                <td>{pctOf(r.donateClicks, r.shown)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="nudge-panel-note">
-          {byMessage
-            ? 'No per-message data yet for this period.'
-            : 'To see results by message and by pill or card, register nudge_message, nudge_type and nudge_state as event-scoped custom dimensions in Google Analytics (Admin > Custom definitions).'}
-        </p>
-      )}
+      ))}
     </div>
+  );
+}
+
+const NUDGE_COLOR = '#7C3AED';
+
+function NudgeCards({ nudge }) {
+  const { shown, expanded, donateClicks, byMessage, byState } = nudge;
+  const rows = [
+    { label: 'Shown', count: shown, base: shown },
+    { label: 'Expanded', count: expanded, rate: pctOf(expanded, shown) },
+    { label: 'Donate clicks', count: donateClicks, rate: pctOf(donateClicks, shown) },
+    ...(byState ? [
+      { label: 'From the pill', count: byState.minimized, rate: pctOf(byState.minimized, shown) },
+      { label: 'From the card', count: byState.expanded, rate: pctOf(byState.expanded, shown) },
+    ] : []),
+  ];
+  const ranked = (byMessage || []).slice().sort((a, b) => b.donateClicks - a.donateClicks || b.shown - a.shown);
+  return (
+    <>
+      <div className="analytics-funnel-card">
+        <h3 style={{ color: NUDGE_COLOR }}>Donation Nudge</h3>
+        <NudgeRows rows={rows} color={NUDGE_COLOR} />
+        {!byMessage && (
+          <p className="funnel-note">Register nudge_message, nudge_type and nudge_state as event-scoped
+            custom dimensions in Google Analytics to see results by message and by pill or card.</p>
+        )}
+      </div>
+      {ranked.length > 0 && (
+        <div className="analytics-funnel-card">
+          <h3 style={{ color: NUDGE_COLOR }}>Nudge by Message</h3>
+          <NudgeRows color={NUDGE_COLOR} rows={ranked.map((r, k) => ({
+            label: NUDGE_LABELS[r.message] || r.message,
+            count: r.donateClicks,
+            base: k === 0 ? Math.max(1, r.donateClicks) : undefined,
+            rate: pctOf(r.donateClicks, r.shown),
+          }))} />
+          <p className="funnel-note">Donate clicks for each message, and the share of the times it was shown.</p>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -2100,9 +2106,8 @@ function Admin() {
                       </div>
                     );
                   })}
+                  {ga4Data.nudge && <NudgeCards nudge={ga4Data.nudge} />}
                 </div>
-
-                {ga4Data.nudge && <NudgePanel nudge={ga4Data.nudge} />}
 
                 {/* AI Analysis */}
                 <div className="ai-analysis-section">
