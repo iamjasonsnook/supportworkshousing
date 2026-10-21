@@ -1,38 +1,40 @@
 import { useEffect, useState, useCallback } from 'react';
 
-// Shared behaviour for the donation nudge. Variants only decide how it looks.
+// Shared behaviour for the donation nudge.
 //
 //   - Desktop only (viewport >= 1024px).
-//   - Fades in after DELAY_MS on the site, once per session; dismissing it
-//     keeps it away for the rest of the session.
-//   - 'card' when the full card fits in the right-hand gutter beside the
-//     1200px content column, otherwise 'pill' (expandable on click).
+//   - Fades in after DELAY_MS on the site.
+//   - Starts minimised, as a pill; the pill expands to the full card, and the
+//     card minimises back to the pill. The primary action is in both.
+//   - Dismissing it (the pill's close button) keeps it away for the rest of
+//     the session.
 //
-// Review overrides (query string): ?nudgeMsg=<id> picks a message, ?nudgeDelay=0
-// shows it at once, ?nudgeMode=card|pill forces a mode, ?nudgeReset=1
-// clears the dismissal.
+// Review overrides (query string): ?nudgeMsg=<id> picks a message,
+// ?nudgeDelay=0 shows it at once, ?nudgeMode=card opens it expanded,
+// ?nudgeReset=1 clears the dismissal.
 const DELAY_MS = 10000;
-const CONTENT_MAX = 1200;
-const EDGE = 24;
 const DESKTOP_MIN = 1024;
 const DISMISS_KEY = 'swh-nudge-dismissed';
 
 const params = () => new URLSearchParams(window.location.search);
 
+// ?nudgeReset=1 clears an earlier dismissal once, when the page loads; doing
+// it on every render would undo a dismissal made on that same page.
 function readDismissed() {
-  try { return sessionStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
+  try {
+    if (params().get('nudgeReset') === '1') sessionStorage.removeItem(DISMISS_KEY);
+    return sessionStorage.getItem(DISMISS_KEY) === '1';
+  } catch { return false; }
 }
 
-export function useNudge(cardWidth) {
+export function useNudge() {
   const q = params();
-  if (q.get('nudgeReset') === '1') { try { sessionStorage.removeItem(DISMISS_KEY); } catch { /* ignore */ } }
   const delay = q.has('nudgeDelay') ? Number(q.get('nudgeDelay')) : DELAY_MS;
-  const forcedMode = q.get('nudgeMode');
 
   const [vw, setVw] = useState(() => window.innerWidth);
   const [shown, setShown] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => q.get('nudgeMode') === 'card');
 
   useEffect(() => {
     const onResize = () => setVw(window.innerWidth);
@@ -45,10 +47,6 @@ export function useNudge(cardWidth) {
     const t = setTimeout(() => setShown(true), delay);
     return () => clearTimeout(t);
   }, [delay, dismissed]);
-
-  const gutter = (vw - CONTENT_MAX) / 2;
-  const fits = gutter >= cardWidth + EDGE * 2;
-  const mode = forcedMode === 'card' || forcedMode === 'pill' ? forcedMode : fits ? 'card' : 'pill';
 
   const dismiss = useCallback(() => {
     setDismissed(true);
@@ -65,8 +63,7 @@ export function useNudge(cardWidth) {
   return {
     active: vw >= DESKTOP_MIN && !dismissed,
     visible: shown,
-    mode: mode === 'pill' && expanded ? 'card' : mode,
-    collapsible: mode === 'pill',
+    mode: expanded ? 'card' : 'pill',
     expand: () => setExpanded(true),
     collapse: () => setExpanded(false),
     dismiss,

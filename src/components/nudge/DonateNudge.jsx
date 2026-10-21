@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Quote, ArrowRight } from 'lucide-react';
+import { X, Quote, ArrowRight, ChevronDown } from 'lucide-react';
 import { useNudge } from './useNudge';
 import { MESSAGES } from './messages';
 import './DonateNudge.css';
 
-const CARD_WIDTH = 290;
 const LAST_KEY = 'swh-nudge-last';
 
 // A fresh message on every page load, never the one shown last time, so a
@@ -19,13 +18,14 @@ function pickMessage() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// The pill: its text opens the card; its chip is the primary action and
-// goes straight to the donate form. Two sibling buttons, never nested.
-function Pill({ m, expand, donate }) {
+// The pill, the nudge's starting state: its text opens the card, its chip is
+// the primary action and goes straight to the donate form, and a small close
+// button dismisses it for the session. Sibling buttons, never nested.
+function Pill({ m, expand, donate, dismiss }) {
   const ask = m.type === 'story' ? 'Give today' : 'Help today';
   return (
     <div className="nudge-pill">
-      <button type="button" className="nudge-pill-open" onClick={expand} aria-expanded="false"
+      <button type="button" className="nudge-pill-open" onClick={expand} aria-expanded="false" title="Read more"
         aria-label={`${m.type === 'story' ? m.pillQuote : `${m.stat}${m.suffix} ${m.pill}`}. Show more`}>
         {m.type === 'story' ? (
           <>
@@ -40,6 +40,8 @@ function Pill({ m, expand, donate }) {
         )}
       </button>
       <button type="button" className="nudge-pill-ask" onClick={donate}>{ask}</button>
+      <button type="button" className="nudge-pill-close" onClick={dismiss}
+        aria-label="Dismiss" title="Dismiss"><X size={14} aria-hidden="true" /></button>
     </div>
   );
 }
@@ -88,16 +90,15 @@ export default function DonateNudge() {
   useEffect(() => {
     try { localStorage.setItem(LAST_KEY, m.id); } catch { /* storage unavailable */ }
   }, [m.id]);
-  const s = useNudge(CARD_WIDTH);
+  const s = useNudge();
   if (!s.active) return null;
-  const closeLabel = s.collapsible ? 'Minimise' : 'Dismiss';
   return (
     <aside className={`swh-nudge ${s.visible ? 'is-visible' : ''}`} aria-label="Support our mission"
       aria-hidden={!s.visible} data-message={m.id}>
-      {s.mode === 'pill' ? <Pill m={m} expand={s.expand} donate={s.donate} /> : (
+      {s.mode === 'pill' ? <Pill m={m} expand={s.expand} donate={s.donate} dismiss={s.dismiss} /> : (
         <div className={`nudge-card nudge-card--${m.type}`} role="region" aria-label="Support our mission">
-          <button type="button" className="nudge-close" onClick={s.collapsible ? s.collapse : s.dismiss}
-            aria-label={closeLabel} title={closeLabel}><X size={16} aria-hidden="true" /></button>
+          <button type="button" className="nudge-close" onClick={s.collapse}
+            aria-label="Minimise" title="Minimise"><ChevronDown size={18} aria-hidden="true" /></button>
           {m.type === 'story' ? <StoryCard m={m} donate={s.donate} /> : <StatCard m={m} donate={s.donate} />}
         </div>
       )}
