@@ -148,6 +148,60 @@ async function runGa4EventReport(accessToken, propertyId, startDate, endDate, ev
   return res.json();
 }
 
+// Nudge events broken down by one of their parameters. Google Analytics only
+// answers once the parameter is registered as an event-scoped custom
+// dimension (Admin > Custom definitions); until then this returns null.
+async function runGa4NudgeBreakdown(accessToken, propertyId, startDate, endDate, param) {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'eventName' }, { name: `customEvent:${param}` }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        filter: { fieldName: 'eventName', inListFilter: { values: NUDGE_EVENTS } },
+      },
+    }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+const NUDGE_EVENTS = ['nudge_shown', 'nudge_expand', 'nudge_donate_click'];
+
+// Turns the two breakdown reports into what the dashboard shows. Rows whose
+// parameter is "(not set)" come from before the dimension was registered.
+export function summariseNudge(eventCounts, byMessageReport, byStateReport) {
+  const c = (name) => eventCounts[name] || 0;
+  let byMessage = null;
+  if (byMessageReport) {
+    const m = {};
+    for (const row of byMessageReport.rows || []) {
+      const [event, message] = row.dimensionValues.map(d => d.value);
+      if (!message || message === '(not set)') continue;
+      m[message] = m[message] || { message, shown: 0, expanded: 0, donateClicks: 0 };
+      const n = parseInt(row.metricValues[0].value) || 0;
+      if (event === 'nudge_shown') m[message].shown += n;
+      if (event === 'nudge_expand') m[message].expanded += n;
+      if (event === 'nudge_donate_click') m[message].donateClicks += n;
+    }
+    byMessage = Object.values(m).sort((a, b) => b.shown - a.shown || a.message.localeCompare(b.message));
+  }
+  let byState = null;
+  if (byStateReport) {
+    byState = { minimized: 0, expanded: 0 };
+    for (const row of byStateReport.rows || []) {
+      const [event, state] = row.dimensionValues.map(d => d.value);
+      if (event === 'nudge_donate_click' && (state === 'minimized' || state === 'expanded')) {
+        byState[state] += parseInt(row.metricValues[0].value) || 0;
+      }
+    }
+  }
+  return { shown: c('nudge_shown'), expanded: c('nudge_expand'), donateClicks: c('nudge_donate_click'), byMessage, byState };
+}
+
 async function runGa4MetricsReport(accessToken, propertyId, startDate, endDate) {
   const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
   const res = await fetch(url, {
@@ -212,16 +266,19 @@ async function handleGa4Report(req, res) {
     'sd_form_start', 'sd_step1_complete', 'sd_step2_complete', 'sd_step3_complete', 'sd_generate_lead',
     'begin_checkout', 'add_payment_info', 'donation_payment_entered', 'purchase',
     'careers_view_positions_click', 'careers_job_click', 'careers_apply_click',
+    ...NUDGE_EVENTS,
   ];
 
   const yoyStart = `${range + 365}daysAgo`;
   const yoyEnd = `365daysAgo`;
 
-  const [funnelReport, overviewReport, trendCurrent, trendPriorYear] = await Promise.all([
+  const [funnelReport, overviewReport, trendCurrent, trendPriorYear, nudgeByMessage, nudgeByState] = await Promise.all([
     runGa4EventReport(accessToken, propertyId, startDate, endDate, funnelEvents),
     runGa4MetricsReport(accessToken, propertyId, '7daysAgo', endDate),
     runGa4DailyReport(accessToken, propertyId, startDate, endDate),
     runGa4DailyReport(accessToken, propertyId, yoyStart, yoyEnd),
+    runGa4NudgeBreakdown(accessToken, propertyId, startDate, endDate, 'nudge_message'),
+    runGa4NudgeBreakdown(accessToken, propertyId, startDate, endDate, 'nudge_state'),
   ]);
 
   // Build event count map
@@ -252,6 +309,7 @@ async function handleGa4Report(req, res) {
     configured: true,
     range,
     overview,
+    nudge: summariseNudge(eventCounts, nudgeByMessage, nudgeByState),
     trend: {
       current: parseDailyRows(trendCurrent),
       priorYear: parseDailyRows(trendPriorYear),

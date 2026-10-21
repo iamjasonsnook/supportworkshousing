@@ -9,6 +9,69 @@ function renderBold(text) {
   return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
 }
 
+// The donation nudge's performance, from GA4 events nudge_shown,
+// nudge_expand and nudge_donate_click. The per-message table needs the
+// event parameters registered as custom dimensions in GA4.
+const NUDGE_LABELS = {
+  muhammad: 'Meet Muhammad', joel: 'Meet Joel', curtis: 'Meet Curtis', mark: 'Meet Mark',
+  retention: '96%+ stay housed', served: '1,650 served each year',
+};
+const pctOf = (n, d) => (d > 0 ? `${Math.round((n / d) * 100)}%` : '–');
+
+function NudgePanel({ nudge }) {
+  const { shown, expanded, donateClicks, byMessage, byState } = nudge;
+  return (
+    <div className="nudge-panel">
+      <h3>Donation nudge</h3>
+      <div className="nudge-panel-metrics">
+        <div className="nudge-metric">
+          <span className="nudge-metric-value">{shown.toLocaleString()}</span>
+          <span className="nudge-metric-label">Shown</span>
+        </div>
+        <div className="nudge-metric">
+          <span className="nudge-metric-value">{expanded.toLocaleString()}</span>
+          <span className="nudge-metric-label">Expanded</span>
+          <span className="nudge-metric-rate">{pctOf(expanded, shown)} of times shown</span>
+        </div>
+        <div className="nudge-metric">
+          <span className="nudge-metric-value">{donateClicks.toLocaleString()}</span>
+          <span className="nudge-metric-label">Donate clicks</span>
+          <span className="nudge-metric-rate">{pctOf(donateClicks, shown)} of times shown</span>
+          {byState && (
+            <span className="nudge-metric-rate">
+              {byState.minimized.toLocaleString()} from the pill, {byState.expanded.toLocaleString()} from the card
+            </span>
+          )}
+        </div>
+      </div>
+      {byMessage && byMessage.length > 0 ? (
+        <table className="nudge-table">
+          <thead>
+            <tr><th>Message</th><th>Shown</th><th>Expanded</th><th>Donate clicks</th><th>Click rate</th></tr>
+          </thead>
+          <tbody>
+            {byMessage.map(r => (
+              <tr key={r.message}>
+                <td>{NUDGE_LABELS[r.message] || r.message}</td>
+                <td>{r.shown.toLocaleString()}</td>
+                <td>{r.expanded.toLocaleString()}</td>
+                <td>{r.donateClicks.toLocaleString()}</td>
+                <td>{pctOf(r.donateClicks, r.shown)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="nudge-panel-note">
+          {byMessage
+            ? 'No per-message data yet for this period.'
+            : 'To see results by message and by pill or card, register nudge_message, nudge_type and nudge_state as event-scoped custom dimensions in Google Analytics (Admin > Custom definitions).'}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function TrendChart({ current, priorYear }) {
   const [hovered, setHovered] = useState(null);
   const W = 600, H = 80, PL = 4, PR = 4, PT = 6, PB = 6;
@@ -2038,6 +2101,8 @@ function Admin() {
                     );
                   })}
                 </div>
+
+                {ga4Data.nudge && <NudgePanel nudge={ga4Data.nudge} />}
 
                 {/* AI Analysis */}
                 <div className="ai-analysis-section">

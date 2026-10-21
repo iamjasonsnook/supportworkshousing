@@ -2619,3 +2619,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Donation nudge panel (analytics tab) */
+.nudge-panel { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px 24px; margin-top: 20px; }
+.nudge-panel h3 { color: #9B1B5D; margin: 0 0 16px; font-size: 1rem; }
+.nudge-panel-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.nudge-metric { display: flex; flex-direction: column; gap: 2px; }
+.nudge-metric-value { font-size: 1.6rem; font-weight: 700; color: #1A1A1A; font-variant-numeric: tabular-nums; }
+.nudge-metric-label { font-size: 0.85rem; font-weight: 600; color: #4A4A4A; }
+.nudge-metric-rate { font-size: 0.8rem; color: #6B7280; }
+.nudge-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.nudge-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; color: #6B7280;
+  padding: 8px 10px; border-bottom: 1px solid #E5E7EB; }
+.nudge-table td { padding: 8px 10px; border-bottom: 1px solid #F3F4F6; font-variant-numeric: tabular-nums; }
+.nudge-table th:not(:first-child), .nudge-table td:not(:first-child) { text-align: right; }
+.nudge-panel-note { margin: 0; font-size: 0.85rem; color: #6B7280; }
+@media (max-width: 640px) { .nudge-panel-metrics { grid-template-columns: 1fr; } }
