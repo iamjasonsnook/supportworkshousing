@@ -106,14 +106,25 @@ export default async function handler(req, res) {
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        // Stripe's current API (2025-03-31 onward, which stripe-node 20 uses)
+        // no longer puts payment_intent on the invoice; the secret for the
+        // first payment is invoice.confirmation_secret. The older field is
+        // still read as a fallback.
+        expand: ['latest_invoice.confirmation_secret'],
         metadata: donorMetadata,
       });
 
+      const invoice = subscription.latest_invoice || {};
+      const clientSecret = invoice.confirmation_secret?.client_secret || invoice.payment_intent?.client_secret;
+      if (!clientSecret) {
+        console.error('Stripe: subscription has no payment secret', subscription.id);
+        return res.status(500).json({ error: 'Failed to process donation. Please try again.' });
+      }
       return res.status(200).json({
-        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        clientSecret,
         subscriptionId: subscription.id,
-        paymentIntentId: subscription.latest_invoice.payment_intent.id,
+        // A PaymentIntent secret is "<pi id>_secret_<token>".
+        paymentIntentId: clientSecret.split('_secret_')[0],
       });
     }
 
