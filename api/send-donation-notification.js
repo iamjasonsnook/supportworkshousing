@@ -1,6 +1,7 @@
 import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
+import Stripe from 'stripe';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const ACCOUNTING_EMAIL = 'accountsreceivable@supportworkshousing.org';
@@ -184,6 +185,66 @@ ${row('Your gift', d.gift)}${row('Expected transfer', fmtDate(d.transferDate))}
   };
 }
 
+// ─── Card donation thank-you ─────────────────────────────────────────────────
+//
+// Sent to the donor after a card donation, alongside Stripe's own receipt.
+// This endpoint is public, so the request is never trusted for who to email:
+// the payment is looked up in Stripe and must have succeeded recently for the
+// amount claimed, and the email goes to the address Stripe holds for it.
+// Monthly donors are thanked once, at sign-up (the only time the donate form
+// calls this); later monthly charges do not come through here.
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export async function verifiedDonation(stripe, paymentIntentId, claimedAmount) {
+  if (!/^pi_[A-Za-z0-9]+$/.test(String(paymentIntentId || ''))) return null;
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['customer', 'payment_method'] });
+  if (pi.status !== 'succeeded') return null;
+  if (Date.now() - pi.created * 1000 > 2 * DAY_MS) return null;
+  if (Math.round(Number(claimedAmount) * 100) !== pi.amount_received) return null;
+  const customer = pi.customer && typeof pi.customer === 'object' ? pi.customer : null;
+  const email = pi.metadata?.donor_email || pi.receipt_email || customer?.email || '';
+  if (!email) return null;
+  const name = pi.metadata?.donor_name || customer?.name || '';
+  const card = pi.payment_method && typeof pi.payment_method === 'object' ? pi.payment_method.card : null;
+  return {
+    email,
+    firstName: name.trim().split(/\s+/)[0] || '',
+    amount: pi.amount_received / 100,
+    monthly: (pi.metadata?.donation_type || customer?.metadata?.donation_type) === 'monthly' || (!pi.metadata?.donation_type && !!customer),
+    date: new Date(pi.created * 1000),
+    cardBrand: card?.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : '',
+    cardLast4: card?.last4 || '',
+  };
+}
+
+export function donorThankYouEmail(d) {
+  const amount = d.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  const date = d.date.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' });
+  return {
+    subject: 'Thank you for your gift to SupportWorks Housing',
+    html: shell('Thank You for Your Gift', `
+<p>Dear ${esc(d.firstName || 'friend')},</p>
+<p>Thank you for your donation. Your generous gift will help us end homelessness in your community.</p>
+<p>For 37 years, SupportWorks Housing has helped older adults, veterans, and people with disabilities across Virginia find a home and keep it. Year over year, 96% or more of our residents and program participants do not return to homelessness. Gifts like yours make that possible.</p>
+<div class="box">${row('Gift', d.monthly ? `${amount} per month` : amount)}${row('Date', date)}${d.cardLast4 ? row('Payment', `${d.cardBrand || 'Card'} ending in ${d.cardLast4}`) : ''}</div>
+${d.monthly ? '<p>Your monthly gift will continue each month. If you ever want to change or stop it, just reply to this email.</p>' : ''}
+<p style="font-size:13px;color:#6B7280;">SupportWorks Housing is a 501(c)(3) nonprofit organization, EIN 54-1444564. No goods or services were provided in exchange for this gift. Please keep this email for your tax records.</p>
+<p>With gratitude,<br />The SupportWorks Housing team</p>`),
+  };
+}
+
+async function sendDonorThankYou(req, data) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return;
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip, 'donor-thank-you', 10)) return;
+  const donor = await verifiedDonation(new Stripe(key), data.transactionId, data.amount);
+  if (!donor) return;
+  const email = donorThankYouEmail(donor);
+  await sendEmail({ to: donor.email, subject: email.subject, html: email.html, replyTo: ADMIN_EMAIL });
+}
+
 async function handleStockPledge(req, res) {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
   if (!checkRateLimit(ip, 'stock-pledge', 5)) {
@@ -231,6 +292,13 @@ export default async function handler(req, res) {
       sendEmail({ to: ADMIN_EMAIL, subject: adminEmail.subject, html: adminEmail.html, replyTo: data.email }),
       sendEmail({ to: ACCOUNTING_EMAIL, subject: accountingEmail.subject, html: accountingEmail.html, replyTo: ADMIN_EMAIL }),
     ]);
+
+    // The donor's thank-you. Its failure must not hide the staff emails' success.
+    try {
+      await sendDonorThankYou(req, data);
+    } catch (error) {
+      console.error('Donor thank-you error:', error);
+    }
 
     return res.status(200).json({ success: true });
   } catch (error) {
