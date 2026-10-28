@@ -713,3 +713,14 @@
     display: none;
   }
 }
+
+/* Optional fee cover on the amount step */
+.cover-fees {
+  display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 16px;
+  padding: 12px 14px; border: 1px solid var(--color-gray-200); border-radius: var(--radius-md);
+  background: var(--color-gray-50); font-size: 0.9rem; line-height: 1.45; color: var(--color-text-body);
+  cursor: pointer;
+}
+.cover-fees input { width: 18px; height: 18px; margin-top: 1px; flex: none; accent-color: var(--color-primary); cursor: pointer; }
+.cover-fees strong { color: var(--color-text-dark); }
+.review-fee-note { display: block; font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px; }

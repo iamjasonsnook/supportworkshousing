@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import StockGift from './StockGift';
+import { coverFeeFor, money } from '../utils/fees';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './Donate.css';
 
@@ -71,6 +72,7 @@ function DonateForm() {
     donationType: window.location.hash === '#donatestock' ? 'stock' : 'one-time',
     amount: 100,
     customAmount: '',
+    coverFees: false,
     startDate: '',
     // Personal info
     firstName: '',
@@ -86,6 +88,11 @@ function DonateForm() {
   });
 
   const [errors, setErrors] = useState({});
+
+  // What the donor chose, the optional fee cover, and what is charged.
+  const giftAmount = Number(formData.customAmount || formData.amount) || 0;
+  const feeAmount = formData.coverFees ? coverFeeFor(giftAmount) : 0;
+  const chargeAmount = Math.round((giftAmount + feeAmount) * 100) / 100;
 
   // A #donatestock link followed while already on the page switches to Stock
   // (App.jsx does the scrolling for both #donate and #donatestock).
@@ -166,7 +173,7 @@ function DonateForm() {
 
   const handleNext = async () => {
     if (currentStep === 0) {
-      const donationAmount = formData.customAmount || formData.amount;
+      const donationAmount = chargeAmount;
       window.gtag?.('event', 'begin_checkout', {
         currency: 'USD',
         value: Number(donationAmount),
@@ -190,7 +197,7 @@ function DonateForm() {
       try {
         setIsSubmitting(true);
         setSubmitError(null);
-        const donationAmount = formData.customAmount || formData.amount;
+        const donationAmount = chargeAmount;
         const response = await fetch(`${API_BASE}/api/create-payment-intent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -215,7 +222,7 @@ function DonateForm() {
         if (data.subscriptionId) setSubscriptionId(data.subscriptionId);
         window.gtag?.('event', 'add_payment_info', {
           currency: 'USD',
-          value: Number(formData.customAmount || formData.amount),
+          value: chargeAmount,
         });
         setCurrentStep(2);
       } catch (error) {
@@ -248,7 +255,7 @@ function DonateForm() {
     if (currentStep === 2) {
       window.gtag?.('event', 'donation_payment_entered', {
         currency: 'USD',
-        value: Number(formData.customAmount || formData.amount),
+        value: chargeAmount,
       });
     }
     setCurrentStep(prev => Math.min(prev + 1, 3));
@@ -343,7 +350,7 @@ function DonateForm() {
       });
 
       // Payment succeeded — send server-side notification emails (non-blocking)
-      const donationAmount = formData.customAmount || formData.amount;
+      const donationAmount = chargeAmount;
       fetch(`${API_BASE}/api/send-donation-notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,6 +368,9 @@ function DonateForm() {
           cardBrand: formatCardBrand(confirmedBrand),
           cardLast4,
           transactionId: paymentIntent.id,
+          coverFees: formData.coverFees,
+          feeAmount: feeAmount ? feeAmount.toFixed(2) : '',
+          giftAmount: String(giftAmount),
         }),
       }).catch(err => console.error('Donation notification error (non-blocking):', err));
 
@@ -412,7 +422,7 @@ function DonateForm() {
     setErrors({});
   };
 
-  const displayAmount = formData.customAmount || formData.amount;
+  const displayAmount = money(chargeAmount);
   const formatCardBrand = (brand) => {
     if (!brand || brand === 'unknown') return 'Card';
     return brand.charAt(0).toUpperCase() + brand.slice(1);
@@ -552,6 +562,20 @@ function DonateForm() {
                     className="start-date-input"
                   />
                 </div>
+              )}
+
+              {giftAmount > 0 && (
+                <label className="cover-fees">
+                  <input
+                    type="checkbox"
+                    checked={formData.coverFees}
+                    onChange={(e) => updateField('coverFees', e.target.checked)}
+                  />
+                  <span>
+                    Add <strong>${money(coverFeeFor(giftAmount))}</strong>{formData.donationType === 'monthly' ? ' a month' : ''} to
+                    cover card processing fees, so 100% of my gift goes to SupportWorks Housing.
+                  </span>
+                </label>
               )}
 
               <button className="donate-btn" onClick={handleNext}>
@@ -839,6 +863,9 @@ function DonateForm() {
                     <div className="donate-review-item">
                       <strong>Amount:</strong>
                       <span>${displayAmount}{formData.donationType === 'monthly' ? '/month' : ' (one-time)'}</span>
+                      {feeAmount > 0 && (
+                        <span className="review-fee-note">Includes ${money(feeAmount)} to cover processing fees</span>
+                      )}
                     </div>
                     {formData.donationType === 'monthly' && formData.startDate && (
                       <div className="donate-review-item">

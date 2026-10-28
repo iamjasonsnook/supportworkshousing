@@ -42,6 +42,7 @@ const getAdminNotificationEmail = (data) => {
 
             <h2 style="color: #9B1B5D; margin-top: 30px;">Donation Details</h2>
             <div class="info-row"><span class="info-label">Amount:</span> <strong>$${data.amount}</strong> (${donationTypeText})</div>
+            ${data.coverFees && data.feeAmount ? `<div class="info-row"><span class="info-label">Covers fees:</span> Yes, $${data.feeAmount} of this was added by the donor to cover processing fees (gift $${data.giftAmount})</div>` : ''}
             <div class="info-row"><span class="info-label">Card:</span> •••• •••• •••• ${data.cardLast4} (${data.cardBrand})</div>
             <div class="info-row"><span class="info-label">Transaction ID:</span> ${data.transactionId}</div>
 
