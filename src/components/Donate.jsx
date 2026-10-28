@@ -68,8 +68,8 @@ function DonateForm() {
   });
 
   const [formData, setFormData] = useState({
-    // Donation details. /#donatestock opens the form on the Stock tab.
-    donationType: window.location.hash === '#donatestock' ? 'stock' : 'one-time',
+    // Donation details. /#donatestock and /#donatemonthly open those tabs.
+    donationType: ({ '#donatestock': 'stock', '#donatemonthly': 'monthly' })[window.location.hash] || 'one-time',
     amount: 100,
     customAmount: '',
     // Ticked by default; the donor can untick it.
@@ -95,13 +95,14 @@ function DonateForm() {
   const feeAmount = formData.coverFees ? coverFeeFor(giftAmount) : 0;
   const chargeAmount = Math.round((giftAmount + feeAmount) * 100) / 100;
 
-  // A #donatestock link followed while already on the page switches to Stock
-  // (App.jsx does the scrolling for both #donate and #donatestock).
+  // A #donatestock or #donatemonthly link followed while already on the page
+  // switches to that tab (App.jsx does the scrolling for all the #donate links).
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash === '#donatestock') {
+      const type = ({ '#donatestock': 'stock', '#donatemonthly': 'monthly' })[window.location.hash];
+      if (type) {
         setCurrentStep(0);
-        setFormData(f => ({ ...f, donationType: 'stock' }));
+        setFormData(f => ({ ...f, donationType: type }));
       }
     };
     window.addEventListener('hashchange', onHash);

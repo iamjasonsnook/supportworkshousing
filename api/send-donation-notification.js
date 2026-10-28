@@ -158,7 +158,7 @@ const STYLE = `body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe 
 .info-row{margin:8px 0}.info-label{font-weight:600;color:#1A1A1A;display:inline-block;min-width:150px;vertical-align:top}
 .footer{text-align:center;padding:20px;color:#6B7280;font-size:13px}`;
 
-const shell = (title, inner) => `<!DOCTYPE html><html><head><style>${STYLE}</style></head><body><div class="container">
+export const shell = (title, inner) => `<!DOCTYPE html><html><head><style>${STYLE}</style></head><body><div class="container">
 <div class="header"><img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display:block;margin:0 auto 12px;height:40px;width:auto;" /><h1>${title}</h1></div>
 <div class="content">${inner}</div><div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div></div></body></html>`;
 

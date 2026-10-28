@@ -41,6 +41,7 @@ function HomePage() {
       const hashTargets = {
         'donate': 'donate',
         'donatestock': 'donate',
+        'donatemonthly': 'donate',
         'volunteer': 'get-involved',
       };
       const targetId = hashTargets[hash] || hash;
