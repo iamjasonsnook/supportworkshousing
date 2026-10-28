@@ -25,6 +25,49 @@ async function getRawBody(req) {
   return Buffer.concat(chunks);
 }
 
+// A monthly charge's PaymentIntent is created by Stripe from the invoice and
+// carries none of the donor details the website puts on one-time payments.
+// Those live on the Stripe customer (set at sign-up), so fall back to it and
+// mark the gift monthly. Never returns blank donor details if Stripe has them.
+export async function donorDetails(stripe, paymentIntent) {
+  const md = paymentIntent.metadata || {};
+  if (md.donor_email) return md;
+  const customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : paymentIntent.customer?.id;
+  if (!customerId) return md;
+  try {
+    const c = await stripe.customers.retrieve(customerId);
+    if (!c || c.deleted) return md;
+    return {
+      ...(c.metadata || {}),
+      donor_email: c.metadata?.donor_email || c.email || '',
+      donor_name: c.metadata?.donor_name || c.name || '',
+      donor_phone: c.metadata?.donor_phone || c.phone || '',
+      donation_type: 'monthly',
+    };
+  } catch (e) {
+    console.error('Stripe customer lookup failed:', e.message);
+    return md;
+  }
+}
+
+// Stripe moved these in API 2025-03-31: invoice.subscription is now
+// invoice.parent.subscription_details.subscription, and invoice.payment_intent
+// is now found through the invoice's payments. Read whichever is present.
+export const invoiceSubscriptionId = invoice =>
+  invoice.subscription || invoice.parent?.subscription_details?.subscription || null;
+
+export async function invoicePaymentIntentId(stripe, invoice) {
+  if (invoice.payment_intent) return typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent.id;
+  try {
+    const list = await stripe.invoicePayments.list({ invoice: invoice.id, limit: 3 });
+    const pi = list.data.map(p => p.payment?.payment_intent).find(Boolean);
+    return pi ? (typeof pi === 'string' ? pi : pi.id) : null;
+  } catch (e) {
+    console.error('Invoice payment lookup failed:', e.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   // Webhooks are server-to-server, no CORS needed
   if (req.method !== 'POST') {
@@ -58,6 +101,7 @@ export default async function handler(req, res) {
     const paymentIntent = event.data.object;
 
     console.log('Payment confirmed via webhook:', paymentIntent.id, '$' + paymentIntent.amount / 100);
+    const donor = await donorDetails(stripe, paymentIntent);
 
     // Supabase config — declared early so Bloomerang cache check can use it
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -88,7 +132,7 @@ export default async function handler(req, res) {
       console.error('BLOOMERANG_API_KEY not configured');
     } else {
       try {
-        const { donor_name, donor_email, donation_type, donor_phone, donor_address, donor_city, donor_state, donor_zip } = paymentIntent.metadata;
+        const { donor_name, donor_email, donation_type, donor_phone, donor_address, donor_city, donor_state, donor_zip } = donor;
         const donorAmount = paymentIntent.amount / 100;
         const nameParts = (donor_name || '').split(' ');
         const firstName = nameParts[0] || '';
@@ -221,8 +265,10 @@ export default async function handler(req, res) {
           }
         }
 
-        // 4. No match found — create new constituent
-        if (!accountId) {
+        // 4. No match found — create new constituent (never a blank one)
+        if (!accountId && !donor_email && !firstName) {
+          console.error('Bloomerang: no donor details for', paymentIntent.id, '- not recorded');
+        } else if (!accountId) {
           // Create new constituent with all available info
           const constituentBody = {
             Type: 'Individual',
@@ -323,7 +369,7 @@ export default async function handler(req, res) {
     if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-        const { donor_name, donor_email, donation_type, donor_phone, donor_address } = paymentIntent.metadata;
+        const { donor_name, donor_email, donation_type, donor_phone, donor_address } = donor;
 
         const { error: upsertError } = await supabase
           .from('donations')
@@ -351,9 +397,9 @@ export default async function handler(req, res) {
             name: donor_name,
             phone: donor_phone,
             address: donor_address,
-            city: paymentIntent.metadata.donor_city,
-            state: paymentIntent.metadata.donor_state,
-            zip: paymentIntent.metadata.donor_zip,
+            city: donor.donor_city,
+            state: donor.donor_state,
+            zip: donor.donor_zip,
             role: 'donor',
           });
 
@@ -394,18 +440,20 @@ export default async function handler(req, res) {
 
   if (event.type === 'invoice.payment_succeeded') {
     const invoice = event.data.object;
+    const subscriptionId = invoiceSubscriptionId(invoice);
     // Only handle subscription invoices (not one-off invoices)
-    if (invoice.subscription && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    if (subscriptionId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-        const metadata = invoice.subscription_details?.metadata || invoice.metadata || {};
+        const paymentIntentId = await invoicePaymentIntentId(stripe, invoice);
+        const metadata = invoice.parent?.subscription_details?.metadata || invoice.subscription_details?.metadata || invoice.metadata || {};
         const donorName = metadata.donor_name || 'Anonymous';
         const donorEmail = metadata.donor_email || invoice.customer_email || '';
         const amount = invoice.amount_paid / 100;
 
         // Upsert donation record
         await supabase.from('donations').upsert({
-          stripe_payment_intent_id: invoice.payment_intent,
+          stripe_payment_intent_id: paymentIntentId,
           amount,
           donation_type: 'monthly',
           donor_name: donorName,
@@ -418,13 +466,13 @@ export default async function handler(req, res) {
         const { data: recurring } = await supabase
           .from('recurring_donations')
           .select('id, person_id')
-          .eq('stripe_subscription_id', invoice.subscription)
+          .eq('stripe_subscription_id', subscriptionId)
           .maybeSingle();
 
         if (recurring) {
           await supabase.from('donations')
             .update({ recurring_donation_id: recurring.id, person_id: recurring.person_id })
-            .eq('stripe_payment_intent_id', invoice.payment_intent);
+            .eq('stripe_payment_intent_id', paymentIntentId);
 
           // Log interaction
           if (recurring.person_id) {
@@ -432,7 +480,7 @@ export default async function handler(req, res) {
               person_id: recurring.person_id,
               type: 'donation',
               subject: `$${amount.toFixed(2)} monthly donation (recurring)`,
-              metadata: { stripe_payment_intent_id: invoice.payment_intent, amount, donation_type: 'monthly' },
+              metadata: { stripe_payment_intent_id: paymentIntentId, amount, donation_type: 'monthly' },
               direction: 'inbound',
               created_by: 'stripe-webhook',
             });
@@ -446,7 +494,7 @@ export default async function handler(req, res) {
           if (person) {
             await supabase.from('donations')
               .update({ person_id: person.id })
-              .eq('stripe_payment_intent_id', invoice.payment_intent);
+              .eq('stripe_payment_intent_id', paymentIntentId);
           }
         }
 
@@ -546,14 +594,15 @@ export default async function handler(req, res) {
 
   if (event.type === 'invoice.payment_failed') {
     const invoice = event.data.object;
-    if (invoice.subscription && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    const subscriptionId = invoiceSubscriptionId(invoice);
+    if (subscriptionId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
         await supabase.from('recurring_donations')
           .update({ status: 'past_due' })
-          .eq('stripe_subscription_id', invoice.subscription);
+          .eq('stripe_subscription_id', subscriptionId);
 
-        console.log('Recurring donation past_due:', invoice.subscription);
+        console.log('Recurring donation past_due:', subscriptionId);
       } catch (err) {
         console.error('invoice.payment_failed error:', err.message);
       }
