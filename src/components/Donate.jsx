@@ -72,7 +72,8 @@ function DonateForm() {
     donationType: window.location.hash === '#donatestock' ? 'stock' : 'one-time',
     amount: 100,
     customAmount: '',
-    coverFees: false,
+    // Ticked by default; the donor can untick it.
+    coverFees: true,
     startDate: '',
     // Personal info
     firstName: '',
@@ -408,6 +409,7 @@ function DonateForm() {
       donationType: 'one-time',
       amount: 100,
       customAmount: '',
+      coverFees: true,
       startDate: '',
       firstName: '',
       lastName: '',
