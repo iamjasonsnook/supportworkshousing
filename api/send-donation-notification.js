@@ -2,6 +2,7 @@ import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
 import Stripe from 'stripe';
+import { findOrCreateConstituent, createPledge } from './_bloomerang.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const ACCOUNTING_EMAIL = 'accountsreceivable@supportworkshousing.org';
@@ -130,15 +131,19 @@ export const TRANSFER_DETAILS = [
   ['Account number', '758-02792'],
 ];
 
+const MAX_PLEDGE = 10000000;
+
 export function cleanStockPledge(body) {
+  const value = Number(String(body.approxValue ?? '').replace(/[$,\s]/g, ''));
   const d = {
     name: clip(body.name, 120), email: clip(body.email, 254),
-    gift: clip(body.gift, 300), transferDate: clip(body.transferDate, 10),
+    approxValue: Number.isFinite(value) ? Math.round(value * 100) / 100 : NaN,
+    transferDate: clip(body.transferDate, 10),
   };
   const errors = [];
   if (!d.name) errors.push('name');
   if (!isEmail(d.email)) errors.push('email');
-  if (!d.gift) errors.push('gift');
+  if (!(d.approxValue >= 1 && d.approxValue <= MAX_PLEDGE)) errors.push('approxValue');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.transferDate)) errors.push('transferDate');
   return { data: d, errors };
 }
@@ -160,14 +165,20 @@ const row = (label, value) => value ? `<div class="info-row"><span class="info-l
 const transferRows = () => TRANSFER_DETAILS.map(([k, v]) => row(k, v)).join('');
 const fmtDate = (iso) => { const [y, m, dd] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, dd)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' }); };
 
-export function stockPledgeStaffEmail(d) {
-  const gift = d.gift.length > 60 ? `${d.gift.slice(0, 57)}...` : d.gift;
+const usd = v => Number(v).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+// bloomerang: { ok, transactionId, matched } or { ok: false }.
+export function stockPledgeStaffEmail(d, bloomerang = { ok: false }) {
+  const logged = bloomerang.ok
+    ? `Logged in Bloomerang as a pledge of ${usd(d.approxValue)} due ${fmtDate(d.transferDate)} (transaction ${bloomerang.transactionId}; donor ${bloomerang.matched === 'created' ? 'added as a new constituent' : `matched by ${bloomerang.matched}`}). When the shares arrive, record their value as a pledge payment against it.`
+    : 'This pledge could NOT be logged in Bloomerang automatically. Please enter it by hand.';
   return {
-    subject: `Stock gift on the way from ${d.name}: ${gift}`,
+    subject: `Stock gift pledged: about ${usd(d.approxValue)} from ${d.name}`,
     html: shell('Stock Gift Pledged', `
-<div class="box">A donor has told us about a stock transfer to our Merrill Lynch account. Watch for it around the date below, match it to this donor, and follow up to confirm and collect anything else we need.</div>
-${row('Gift', d.gift)}${row('Expected transfer', fmtDate(d.transferDate))}
-${row('Name', d.name)}${row('Email', d.email)}`),
+<div class="box">A donor has pledged a gift of stock to our Merrill Lynch account. Watch for the transfer around the date below, match it to this donor, and follow up to confirm and collect anything else we need.</div>
+${row('Approximate value', usd(d.approxValue))}${row('Expected transfer', fmtDate(d.transferDate))}
+${row('Name', d.name)}${row('Email', d.email)}
+<p style="margin-top:20px;">${esc(logged)}</p>`),
   };
 }
 
@@ -177,12 +188,30 @@ export function stockPledgeDonorEmail(d) {
     subject: 'Thank you for your gift of stock to SupportWorks Housing',
     html: shell('Thank You for Your Gift of Stock', `
 <p>Dear ${esc(first)},</p>
-<p>Thank you for choosing to give stock to SupportWorks Housing. We'll be in touch to confirm your gift and collect any other information we need, and we will send you a receipt once the shares arrive.</p>
-${row('Your gift', d.gift)}${row('Expected transfer', fmtDate(d.transferDate))}
+<p>Thank you for your pledge of stock to SupportWorks Housing. Your generous gift will help us end homelessness in your community.</p>
+${row('Approximate value', usd(d.approxValue))}${row('Expected transfer', fmtDate(d.transferDate))}
+<p>The value of your gift will be the value of the shares on the day they arrive, and your receipt will show that amount. We'll be in touch to confirm your gift and collect any other information we need.</p>
 <h2 style="color:#9B1B5D;margin-top:24px;">Transfer instructions for your broker</h2><div class="box">${transferRows()}</div>
 <p>Please consult your tax advisor about your situation. If anything changes, just reply to this email.</p>
 <p>With gratitude,<br />The SupportWorks Housing team</p>`),
   };
+}
+
+// Logs the pledge in Bloomerang. Never throws: the donor's thank-you and the
+// staff notification go out regardless, and the staff email says if this failed.
+export async function logPledgeInBloomerang(d) {
+  const key = process.env.BLOOMERANG_API_KEY;
+  if (!key) return { ok: false };
+  try {
+    const [firstName, ...rest] = d.name.split(/\s+/);
+    const who = await findOrCreateConstituent(key, { firstName, lastName: rest.join(' '), email: d.email });
+    const note = `Stock pledge via website: approximately ${usd(d.approxValue)}, transfer expected ${d.transferDate} to Merrill Lynch (DTC 8862).`;
+    const { transactionId } = await createPledge(key, { accountId: who.id, amount: d.approxValue, dueDate: d.transferDate, note });
+    return { ok: true, transactionId, matched: who.matched };
+  } catch (error) {
+    console.error('Bloomerang pledge error:', error.message);
+    return { ok: false };
+  }
 }
 
 // ─── Card donation thank-you ─────────────────────────────────────────────────
@@ -242,14 +271,17 @@ async function handleStockPledge(req, res) {
   const { data, errors } = cleanStockPledge(req.body || {});
   if (errors.length) return res.status(400).json({ error: `Please check: ${errors.join(', ')}` });
 
-  const staff = stockPledgeStaffEmail(data);
+  // Bloomerang first, so the staff email can say whether it worked.
+  const bloomerang = await logPledgeInBloomerang(data);
+  const staff = stockPledgeStaffEmail(data, bloomerang);
   const donor = stockPledgeDonorEmail(data);
   try {
     await Promise.all([
-      // Two emails: the donor's thank-you with the transfer instructions, and
-      // a notification to staff, as for card donations.
+      // The donor's thank-you with the transfer instructions, and the staff
+      // notification to jsnook and accounting, as for card donations.
       sendEmail({ to: data.email, subject: donor.subject, html: donor.html, replyTo: ADMIN_EMAIL }),
       sendEmail({ to: ADMIN_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
+      sendEmail({ to: ACCOUNTING_EMAIL, subject: staff.subject, html: staff.html, replyTo: data.email }),
     ]);
   } catch (error) {
     // The cause goes to the logs, never to the donor.

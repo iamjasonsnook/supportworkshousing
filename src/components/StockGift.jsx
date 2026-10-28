@@ -34,7 +34,7 @@ function CopyAll() {
 }
 
 export default function StockGift() {
-  const [form, setForm] = useState({ name: '', email: '', gift: '', transferDate: '' });
+  const [form, setForm] = useState({ name: '', email: '', approxValue: '', transferDate: '' });
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [submitError, setSubmitError] = useState('');
@@ -45,7 +45,8 @@ export default function StockGift() {
     const e = {};
     if (!form.name.trim()) e.name = 'Required';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Enter a valid email';
-    if (!form.gift.trim()) e.gift = 'Tell us the stock and number of shares';
+    const value = Number(form.approxValue.replace(/[$,\s]/g, ''));
+    if (!(value >= 1)) e.approxValue = 'Enter the approximate value in dollars';
     if (!form.transferDate) e.transferDate = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -128,10 +129,11 @@ export default function StockGift() {
             {errors.email && <span className="stock-err">{errors.email}</span>}</label>
         </div>
         <div className="stock-row">
-          <label>What you&rsquo;re giving<input value={form.gift}
-            placeholder="e.g. 50 shares of Apple (AAPL)" onChange={e => set('gift', e.target.value)}
-            aria-invalid={!!errors.gift} />
-            {errors.gift && <span className="stock-err">{errors.gift}</span>}</label>
+          <label>Approximate value
+            <span className="stock-money"><span aria-hidden="true">$</span>
+              <input value={form.approxValue} inputMode="decimal" placeholder="e.g. 5,000"
+                onChange={e => set('approxValue', e.target.value)} aria-invalid={!!errors.approxValue} /></span>
+            {errors.approxValue && <span className="stock-err">{errors.approxValue}</span>}</label>
           <label>Expected transfer date<input type="date" value={form.transferDate}
             onChange={e => set('transferDate', e.target.value)} aria-invalid={!!errors.transferDate} />
             {errors.transferDate && <span className="stock-err">{errors.transferDate}</span>}</label>
