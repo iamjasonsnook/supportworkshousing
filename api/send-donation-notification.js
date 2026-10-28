@@ -234,17 +234,6 @@ ${d.monthly ? '<p>Your monthly gift will continue each month. If you ever want t
   };
 }
 
-async function sendDonorThankYou(req, data) {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) return;
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-  if (!checkRateLimit(ip, 'donor-thank-you', 10)) return;
-  const donor = await verifiedDonation(new Stripe(key), data.transactionId, data.amount);
-  if (!donor) return;
-  const email = donorThankYouEmail(donor);
-  await sendEmail({ to: donor.email, subject: email.subject, html: email.html, replyTo: ADMIN_EMAIL });
-}
-
 async function handleStockPledge(req, res) {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
   if (!checkRateLimit(ip, 'stock-pledge', 5)) {
@@ -281,21 +270,44 @@ export default async function handler(req, res) {
     if (data && data.kind === 'stock-pledge') return await handleStockPledge(req, res);
 
     // Basic validation — must have required fields from a real payment
-    if (!data.transactionId || !data.amount || !data.firstName || !data.email) {
+    if (!data || !data.transactionId || !data.amount || !data.firstName || !data.email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const adminEmail = getAdminNotificationEmail(data);
-    const accountingEmail = getAccountingNotificationEmail(data);
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(ip, 'donation-notification', 20)) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    // Nothing is sent, to staff or donor, unless Stripe confirms the payment:
+    // succeeded, recent, and for the amount claimed. The amount and donor
+    // email in every message then come from Stripe, not from the request.
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) return res.status(500).json({ error: 'Payments not configured' });
+    let donor = null;
+    try {
+      donor = await verifiedDonation(new Stripe(key), data.transactionId, data.amount);
+    } catch (error) {
+      console.error('Donation verification error:', error.message);
+    }
+    if (!donor) return res.status(400).json({ error: 'Donation could not be verified' });
+
+    // Request fields are escaped: they are inserted into the staff emails' HTML.
+    const clean = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, typeof v === 'string' ? esc(v.slice(0, 200)) : v]));
+    const verified = { ...clean, amount: String(donor.amount), email: esc(donor.email),
+      cardBrand: esc(donor.cardBrand || clean.cardBrand || ''), cardLast4: esc(donor.cardLast4 || clean.cardLast4 || '') };
+    const adminEmail = getAdminNotificationEmail(verified);
+    const accountingEmail = getAccountingNotificationEmail(verified);
 
     await Promise.all([
-      sendEmail({ to: ADMIN_EMAIL, subject: adminEmail.subject, html: adminEmail.html, replyTo: data.email }),
+      sendEmail({ to: ADMIN_EMAIL, subject: adminEmail.subject, html: adminEmail.html, replyTo: donor.email }),
       sendEmail({ to: ACCOUNTING_EMAIL, subject: accountingEmail.subject, html: accountingEmail.html, replyTo: ADMIN_EMAIL }),
     ]);
 
     // The donor's thank-you. Its failure must not hide the staff emails' success.
     try {
-      await sendDonorThankYou(req, data);
+      const thanks = donorThankYouEmail(donor);
+      await sendEmail({ to: donor.email, subject: thanks.subject, html: thanks.html, replyTo: ADMIN_EMAIL });
     } catch (error) {
       console.error('Donor thank-you error:', error);
     }
@@ -303,6 +315,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Donation notification error:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Notification failed' });
   }
 }

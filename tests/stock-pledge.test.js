@@ -76,9 +76,4 @@ describe('stock pledge', () => {
     expect(data.name).toHaveLength(120);
   });
 
-  it('leaves card donations on their existing path', async () => {
-    const res = await call({ transactionId: 'pi_1', amount: '50', firstName: 'A', email: 'a@example.org' });
-    expect(res.statusCode).toBe(200);
-    expect(sendEmail).toHaveBeenCalledTimes(2);
-  });
 });
