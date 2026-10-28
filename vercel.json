@@ -3,12 +3,39 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/admin/:path*", "destination": "/api/admin/[...path]" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/careers", "destination": "/index.html" },
-    { "source": "/careers/(.*)", "destination": "/index.html" },
-    { "source": "/impact-report", "destination": "/index.html" },
-    { "source": "/SWHCapitalCampaign", "destination": "/index.html" }
+    {
+      "source": "/api/admin/:path*",
+      "destination": "/api/admin/[...path]"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/careers",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/careers/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/impact-report",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/SWHCapitalCampaign",
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/admin/recurring-overlap-check",
+      "schedule": "0 13 * * 1"
+    }
   ]
 }

@@ -58,3 +58,55 @@ export async function createPledge(key, { accountId, amount, dueDate, note, fund
   });
   return { transactionId: txn?.Id ?? null };
 }
+
+// ─── Old Bloomerang recurring gifts ──────────────────────────────────────────
+//
+// Monthly donors are moving from Bloomerang's own recurring payments to the
+// website's Stripe subscriptions. Bloomerang's API cannot cancel a recurring
+// card payment (that is done in Bloomerang: open the payment, Cancel Recurring
+// Payment), so these helpers only FIND schedules that are still charging, to
+// warn staff before a donor is charged twice.
+
+// The constituent with exactly this email, or null. Never creates one.
+export async function findConstituentIdByEmail(key, email) {
+  const lower = String(email || '').toLowerCase().trim();
+  if (!lower) return null;
+  const found = await call(key, 'GET', `/constituents/search?search=${encodeURIComponent(lower)}&take=10`);
+  const hit = (found?.Results || []).find(c => c.PrimaryEmail?.Value?.toLowerCase() === lower);
+  return hit ? hit.Id : null;
+}
+
+// A schedule Bloomerang may still charge: Active or Overdue (failing but not
+// cancelled), paid by card or bank. Manual records (method None) never charge.
+export const isChargingSchedule = t => {
+  const g = t.Designations?.[0] || {};
+  return g.Type === 'RecurringDonation' && ['Active', 'Overdue'].includes(g.RecurringDonationStatus)
+    && ['CreditCard', 'Eft'].includes(t.Method);
+};
+
+const scheduleSummary = t => {
+  const g = t.Designations[0];
+  return { transactionId: t.Id, accountId: t.AccountId, amount: g.Amount, frequency: g.RecurringDonationFrequency,
+    status: g.RecurringDonationStatus, method: t.Method, since: (g.RecurringDonationStartDate || '').slice(0, 10) };
+};
+
+export async function chargingSchedulesFor(key, accountId) {
+  const d = await call(key, 'GET', `/transactions?accountId=${accountId}&type=RecurringDonation&take=50`);
+  return (d?.Results || []).filter(isChargingSchedule).map(scheduleSummary);
+}
+
+export async function allChargingSchedules(key) {
+  const out = [];
+  for (let skip = 0; skip < 5000; skip += 50) {
+    const d = await call(key, 'GET', `/transactions?type=RecurringDonation&take=50&skip=${skip}`);
+    const rows = d?.Results || [];
+    out.push(...rows.filter(isChargingSchedule).map(scheduleSummary));
+    if (rows.length < 50) break;
+  }
+  return out;
+}
+
+export async function constituentContact(key, accountId) {
+  const c = await call(key, 'GET', `/constituent/${accountId}`);
+  return { name: [c?.FirstName, c?.LastName].filter(Boolean).join(' '), email: c?.PrimaryEmail?.Value || '' };
+}

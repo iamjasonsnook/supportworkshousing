@@ -12,6 +12,8 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from '../_cors.js';
 import { sendEmail } from '../_email.js';
+import Stripe from 'stripe';
+import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -486,6 +488,66 @@ async function handleEveryOrgWebhook(req, res) {
     console.error('Every.org webhook email error:', error);
     // A non-2xx asks Every.org to retry, which is what we want if email failed.
     return res.status(500).json({ error: 'Notification failed' });
+  }
+}
+
+// ─── Weekly check: old Bloomerang recurring gifts still charging ─────────────
+//
+// Run by Vercel Cron every Monday (vercel.json), authenticated with
+// CRON_SECRET, which Vercel sends as a bearer token. Lists donors who now give
+// monthly through Stripe but whose old Bloomerang recurring gift is still
+// charging, and emails jsnook only when there is someone to act on.
+
+export async function findRecurringOverlaps({ stripe, bloomerangKey }) {
+  const stripeEmails = new Map();
+  for await (const sub of stripe.subscriptions.list({ status: 'active', expand: ['data.customer'], limit: 100 })) {
+    const email = (sub.customer?.email || sub.metadata?.donor_email || '').toLowerCase();
+    const item = sub.items?.data?.[0]?.price;
+    if (email && item) stripeEmails.set(email, { amount: item.unit_amount / 100, since: new Date(sub.created * 1000).toISOString().slice(0, 10) });
+  }
+  const schedules = await allChargingSchedules(bloomerangKey);
+  const overlaps = [];
+  const contacts = new Map();
+  for (const s of schedules) {
+    if (!contacts.has(s.accountId)) contacts.set(s.accountId, await constituentContact(bloomerangKey, s.accountId));
+    const c = contacts.get(s.accountId);
+    const stripeGift = stripeEmails.get(c.email.toLowerCase());
+    if (c.email && stripeGift) overlaps.push({ name: c.name, email: c.email, bloomerang: s, stripe: stripeGift });
+  }
+  return { overlaps, bloomerangCharging: schedules.length, stripeActive: stripeEmails.size };
+}
+
+export function overlapEmail(overlaps) {
+  const rows = overlaps.map(o => `<tr><td style="padding:8px 10px;border-bottom:1px solid #eee;">${escHtml(o.name)}<br /><span style="color:#6B7280;font-size:13px;">${escHtml(o.email)}</span></td>
+<td style="padding:8px 10px;border-bottom:1px solid #eee;">$${Number(o.bloomerang.amount).toFixed(2)} ${escHtml(String(o.bloomerang.frequency).toLowerCase())}, since ${escHtml(o.bloomerang.since)}${o.bloomerang.status === 'Overdue' ? ' (failing)' : ''}</td>
+<td style="padding:8px 10px;border-bottom:1px solid #eee;">$${o.stripe.amount.toFixed(2)} monthly, since ${escHtml(o.stripe.since)}</td></tr>`).join('');
+  return {
+    subject: `Action needed: ${overlaps.length} donor${overlaps.length === 1 ? '' : 's'} may be charged twice for monthly giving`,
+    html: `<div style="font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;color:#4A4A4A;max-width:680px;">
+<p>These donors now give monthly through the website (Stripe), but their old Bloomerang recurring gift is still charging. In Bloomerang, open each recurring payment and choose <strong>Cancel Recurring Payment</strong>.</p>
+<table style="border-collapse:collapse;width:100%;font-size:14px;"><thead><tr style="text-align:left;color:#6B7280;"><th style="padding:8px 10px;">Donor</th><th style="padding:8px 10px;">Old Bloomerang gift</th><th style="padding:8px 10px;">New website gift</th></tr></thead><tbody>${rows}</tbody></table>
+<p style="color:#6B7280;font-size:13px;">Sent by the website's weekly check. It matches donors by email address.</p></div>`,
+  };
+}
+
+const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+async function handleRecurringOverlapCheck(req, res) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(503).json({ error: 'Check not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!safeCompare(token, secret)) return res.status(401).json({ error: 'Unauthorized' });
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.BLOOMERANG_API_KEY) return res.status(503).json({ error: 'Keys not configured' });
+  try {
+    const result = await findRecurringOverlaps({ stripe: new Stripe(process.env.STRIPE_SECRET_KEY), bloomerangKey: process.env.BLOOMERANG_API_KEY });
+    if (result.overlaps.length) {
+      const { subject, html } = overlapEmail(result.overlaps);
+      await sendEmail({ to: ADMIN_EMAIL, subject, html });
+    }
+    return res.status(200).json({ overlaps: result.overlaps.length, bloomerangCharging: result.bloomerangCharging, stripeActive: result.stripeActive });
+  } catch (error) {
+    console.error('Recurring overlap check error:', error.message);
+    return res.status(500).json({ error: 'Check failed' });
   }
 }
 
@@ -1328,6 +1390,12 @@ export default async function handler(req, res) {
   // agent; authenticated with its own bearer secret, not an admin session.
   if (method === 'POST' && path === 'careers-sync-notify') {
     return handleCareersSyncNotify(req, res);
+  }
+
+  // GET /api/admin/recurring-overlap-check — weekly Vercel Cron job;
+  // authenticated with CRON_SECRET, not an admin session.
+  if (method === 'GET' && path === 'recurring-overlap-check') {
+    return handleRecurringOverlapCheck(req, res);
   }
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;

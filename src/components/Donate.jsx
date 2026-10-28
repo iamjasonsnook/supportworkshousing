@@ -67,11 +67,20 @@ function DonateForm() {
     cardCvc: null,
   });
 
+  // ?amount=50 pre-fills the amount (used in emails asking donors to move a
+  // monthly gift to the website). Preset amounts select their button; anything
+  // else fills the custom field. Ignored unless it is a sensible amount.
+  const linkedAmount = (() => {
+    const n = Number(new URLSearchParams(window.location.search).get('amount'));
+    return Number.isFinite(n) && n >= 1 && n <= 50000 ? Math.round(n * 100) / 100 : null;
+  })();
+  const PRESETS = [25, 50, 100, 250, 500];
+
   const [formData, setFormData] = useState({
     // Donation details. /#donatestock and /#donatemonthly open those tabs.
     donationType: ({ '#donatestock': 'stock', '#donatemonthly': 'monthly' })[window.location.hash] || 'one-time',
-    amount: 100,
-    customAmount: '',
+    amount: linkedAmount && PRESETS.includes(linkedAmount) ? linkedAmount : 100,
+    customAmount: linkedAmount && !PRESETS.includes(linkedAmount) ? String(linkedAmount) : '',
     // Ticked by default; the donor can untick it.
     coverFees: true,
     startDate: '',

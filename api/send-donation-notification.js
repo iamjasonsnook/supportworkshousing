@@ -2,12 +2,12 @@ import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
 import Stripe from 'stripe';
-import { findOrCreateConstituent, createPledge } from './_bloomerang.js';
+import { findOrCreateConstituent, createPledge, findConstituentIdByEmail, chargingSchedulesFor } from './_bloomerang.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const ACCOUNTING_EMAIL = 'accountsreceivable@supportworkshousing.org';
 
-const getAdminNotificationEmail = (data) => {
+const getAdminNotificationEmail = (data, legacy = null) => {
   const donationTypeText = data.donationType === 'monthly' ? 'Monthly' : 'One-time';
   const addressLine = data.address ? `${data.address}, ${data.city}, ${data.state} ${data.zip}` : null;
 
@@ -39,6 +39,7 @@ const getAdminNotificationEmail = (data) => {
             <div class="alert-box">
               A new donation has been processed through Stripe on the SupportWorks Housing website.
             </div>
+            ${legacyRecurringHtml(legacy)}
 
             <h2 style="color: #9B1B5D; margin-top: 30px;">Donation Details</h2>
             <div class="info-row"><span class="info-label">Amount:</span> <strong>$${data.amount}</strong> (${donationTypeText})</div>
@@ -157,6 +158,34 @@ const STYLE = `body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe 
 .box{background-color:#FDF2F4;border-left:4px solid #9B1B5D;padding:15px;margin:20px 0;border-radius:4px}
 .info-row{margin:8px 0}.info-label{font-weight:600;color:#1A1A1A;display:inline-block;min-width:150px;vertical-align:top}
 .footer{text-align:center;padding:20px;color:#6B7280;font-size:13px}`;
+
+// For a new monthly gift: does this donor still have an old Bloomerang
+// recurring gift that Bloomerang will keep charging? null = not a monthly
+// gift or not checked; { checked: false } = could not check; otherwise the
+// schedules found (possibly none).
+export async function legacyRecurringCheck(email) {
+  const key = process.env.BLOOMERANG_API_KEY;
+  if (!key) return { checked: false, reason: 'Bloomerang is not configured' };
+  try {
+    const accountId = await findConstituentIdByEmail(key, email);
+    if (!accountId) return { checked: false, reason: 'no Bloomerang record has this email' };
+    return { checked: true, schedules: await chargingSchedulesFor(key, accountId) };
+  } catch (error) {
+    console.error('Bloomerang recurring check error:', error.message);
+    return { checked: false, reason: 'Bloomerang could not be reached' };
+  }
+}
+
+export function legacyRecurringHtml(legacy) {
+  if (!legacy) return '';
+  const box = (bg, border, html) => `<div style="background:${bg};border-left:4px solid ${border};padding:15px;margin:20px 0;border-radius:4px;">${html}</div>`;
+  if (!legacy.checked) {
+    return box('#FFFBEB', '#D97706', `<strong>Check Bloomerang:</strong> could not confirm whether this donor still has an old Bloomerang recurring gift (${esc(legacy.reason)}). If they do, cancel it so they aren't charged twice.`);
+  }
+  if (!legacy.schedules.length) return '';
+  const list = legacy.schedules.map(s => `$${Number(s.amount).toFixed(2)} ${esc(String(s.frequency).toLowerCase())} by ${s.method === 'Eft' ? 'bank' : 'card'}, since ${esc(s.since)}${s.status === 'Overdue' ? ' (payments failing)' : ''}`).join('<br />');
+  return box('#FEF2F2', '#DC2626', `<strong>&#9888; Action needed: cancel this donor's old Bloomerang recurring gift.</strong><br />${list}<br />Bloomerang will keep charging it alongside this new Stripe gift. In Bloomerang, open the recurring payment and choose <strong>Cancel Recurring Payment</strong>.`);
+}
 
 export const shell = (title, inner) => `<!DOCTYPE html><html><head><style>${STYLE}</style></head><body><div class="container">
 <div class="header"><img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display:block;margin:0 auto 12px;height:40px;width:auto;" /><h1>${title}</h1></div>
@@ -329,7 +358,9 @@ export default async function handler(req, res) {
     const clean = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, typeof v === 'string' ? esc(v.slice(0, 200)) : v]));
     const verified = { ...clean, amount: String(donor.amount), email: esc(donor.email),
       cardBrand: esc(donor.cardBrand || clean.cardBrand || ''), cardLast4: esc(donor.cardLast4 || clean.cardLast4 || '') };
-    const adminEmail = getAdminNotificationEmail(verified);
+    // A new monthly gift: warn staff if an old Bloomerang recurring gift is still charging.
+    const legacy = donor.monthly ? await legacyRecurringCheck(donor.email) : null;
+    const adminEmail = getAdminNotificationEmail(verified, legacy);
     const accountingEmail = getAccountingNotificationEmail(verified);
 
     await Promise.all([
