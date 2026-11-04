@@ -326,8 +326,8 @@ async function handleGa4Report(req, res) {
       connectionNights: [
         { step: 'Form started', event: 'cn_form_start', count: c('cn_form_start') },
         { step: 'Location & time', event: 'cn_step1_complete', count: c('cn_step1_complete') },
-        { step: 'Group info', event: 'cn_step2_complete', count: c('cn_step2_complete') },
-        { step: 'Meal & activity', event: 'cn_step3_complete', count: c('cn_step3_complete') },
+        { step: 'Meal & activity', event: 'cn_step2_complete', count: c('cn_step2_complete') },
+        { step: 'Group info', event: 'cn_step3_complete', count: c('cn_step3_complete') },
         { step: 'Submitted', event: 'cn_generate_lead', count: c('cn_generate_lead') },
       ],
       supplyDrives: [

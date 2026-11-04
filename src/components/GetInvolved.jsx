@@ -150,6 +150,12 @@ function GetInvolved({
     }
 
     if (step === 2) {
+      if (!cnFormData.foodPlan) newErrors.foodPlan = 'Please select a food plan';
+      if (!cnFormData.activityPlan) newErrors.activityPlan = 'Please select an activity';
+      if (cnFormData.activityPlan === 'other' && !cnFormData.otherActivity.trim()) newErrors.otherActivity = 'Please describe your activity';
+    }
+
+    if (step === 3) {
       if (!cnFormData.contactName.trim()) newErrors.contactName = 'Contact name is required';
       if (!cnFormData.contactEmail.trim()) {
         newErrors.contactEmail = 'Contact email is required';
@@ -169,12 +175,6 @@ function GetInvolved({
       if (!cnFormData.groupName.trim()) {
         newErrors.groupName = 'Group/Organization name is required';
       }
-    }
-
-    if (step === 3) {
-      if (!cnFormData.foodPlan) newErrors.foodPlan = 'Please select a food plan';
-      if (!cnFormData.activityPlan) newErrors.activityPlan = 'Please select an activity';
-      if (cnFormData.activityPlan === 'other' && !cnFormData.otherActivity.trim()) newErrors.otherActivity = 'Please describe your activity';
     }
 
     setErrors(newErrors);
@@ -590,6 +590,61 @@ function GetInvolved({
                 {currentStep === 2 && (
                   <div className="gi-step">
                     <div className="gi-step-header">
+                      <div className="gi-step-icon"><ChefHat size={24} color="#9B1B5D" /></div>
+                      <div>
+                        <h3>Meal & Activity Plan</h3>
+                        <p>Share your plans for food and activities during the Community Connection</p>
+                      </div>
+                    </div>
+
+                    <div className="gi-form-group">
+                      <label>Food Plan</label>
+                      <div className="gi-radio-group">
+                        <label className="gi-radio">
+                          <input type="radio" name="foodPlan" value="bring" checked={cnFormData.foodPlan === 'bring'} onChange={(e) => updateCNField('foodPlan', e.target.value)} />
+                          <span>Bring food</span>
+                        </label>
+                        <label className="gi-radio">
+                          <input type="radio" name="foodPlan" value="cater" checked={cnFormData.foodPlan === 'cater'} onChange={(e) => updateCNField('foodPlan', e.target.value)} />
+                          <span>Cater/deliver food</span>
+                        </label>
+                      </div>
+                      {errors.foodPlan && <span className="gi-error">{errors.foodPlan}</span>}
+                    </div>
+
+                    <div className="gi-form-group">
+                      <label>Activity Plan</label>
+                      <div className="gi-radio-group">
+                        {['board-games', 'bingo', 'trivia', 'crafts'].map(activity => (
+                          <label key={activity} className="gi-radio">
+                            <input type="radio" name="activityPlan" value={activity} checked={cnFormData.activityPlan === activity} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
+                            <span>{activity === 'board-games' ? 'Board games' : activity.charAt(0).toUpperCase() + activity.slice(1)}</span>
+                          </label>
+                        ))}
+                        <label className={`gi-radio gi-radio-other${cnFormData.activityPlan === 'other' ? ' gi-radio-other-active' : ''}`}>
+                          <input type="radio" name="activityPlan" value="other" checked={cnFormData.activityPlan === 'other'} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
+                          <span>Other</span>
+                          {cnFormData.activityPlan === 'other' && (
+                            <input
+                              type="text"
+                              className="gi-other-input"
+                              placeholder="Describe your activity..."
+                              value={cnFormData.otherActivity}
+                              onChange={(e) => updateCNField('otherActivity', e.target.value)}
+                              autoFocus
+                            />
+                          )}
+                        </label>
+                      </div>
+                      {errors.activityPlan && <span className="gi-error">{errors.activityPlan}</span>}
+                      {errors.otherActivity && <span className="gi-error">{errors.otherActivity}</span>}
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="gi-step">
+                    <div className="gi-step-header">
                       <div className="gi-step-icon"><Users size={24} color="#9B1B5D" /></div>
                       <div>
                         <h3>Group Information</h3>
@@ -666,61 +721,6 @@ function GetInvolved({
                         />
                         {errors.contactPhone && <span className="gi-error">{errors.contactPhone}</span>}
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentStep === 3 && (
-                  <div className="gi-step">
-                    <div className="gi-step-header">
-                      <div className="gi-step-icon"><ChefHat size={24} color="#9B1B5D" /></div>
-                      <div>
-                        <h3>Meal & Activity Plan</h3>
-                        <p>Share your plans for food and activities during the Community Connection</p>
-                      </div>
-                    </div>
-
-                    <div className="gi-form-group">
-                      <label>Food Plan</label>
-                      <div className="gi-radio-group">
-                        <label className="gi-radio">
-                          <input type="radio" name="foodPlan" value="bring" checked={cnFormData.foodPlan === 'bring'} onChange={(e) => updateCNField('foodPlan', e.target.value)} />
-                          <span>Bring food</span>
-                        </label>
-                        <label className="gi-radio">
-                          <input type="radio" name="foodPlan" value="cater" checked={cnFormData.foodPlan === 'cater'} onChange={(e) => updateCNField('foodPlan', e.target.value)} />
-                          <span>Cater/deliver food</span>
-                        </label>
-                      </div>
-                      {errors.foodPlan && <span className="gi-error">{errors.foodPlan}</span>}
-                    </div>
-
-                    <div className="gi-form-group">
-                      <label>Activity Plan</label>
-                      <div className="gi-radio-group">
-                        {['board-games', 'bingo', 'trivia', 'crafts'].map(activity => (
-                          <label key={activity} className="gi-radio">
-                            <input type="radio" name="activityPlan" value={activity} checked={cnFormData.activityPlan === activity} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
-                            <span>{activity === 'board-games' ? 'Board games' : activity.charAt(0).toUpperCase() + activity.slice(1)}</span>
-                          </label>
-                        ))}
-                        <label className={`gi-radio gi-radio-other${cnFormData.activityPlan === 'other' ? ' gi-radio-other-active' : ''}`}>
-                          <input type="radio" name="activityPlan" value="other" checked={cnFormData.activityPlan === 'other'} onChange={(e) => updateCNField('activityPlan', e.target.value)} />
-                          <span>Other</span>
-                          {cnFormData.activityPlan === 'other' && (
-                            <input
-                              type="text"
-                              className="gi-other-input"
-                              placeholder="Describe your activity..."
-                              value={cnFormData.otherActivity}
-                              onChange={(e) => updateCNField('otherActivity', e.target.value)}
-                              autoFocus
-                            />
-                          )}
-                        </label>
-                      </div>
-                      {errors.activityPlan && <span className="gi-error">{errors.activityPlan}</span>}
-                      {errors.otherActivity && <span className="gi-error">{errors.otherActivity}</span>}
                     </div>
                   </div>
                 )}
