@@ -574,9 +574,10 @@ async function handleGivingDigest(req, res) {
     for await (const c of stripe.charges.list({ created: { gte: Math.floor(start / 1000), lt: Math.floor(end / 1000) }, limit: 100, expand: ['data.customer', 'data.balance_transaction'] })) charges.push(c);
     const { gifts, tests } = digestGifts(charges, { adminEmail: ADMIN_EMAIL });
     const { subject, html } = givingDigestEmail({ gifts, tests, start, last });
+    // One email with everyone on the To line, so each recipient sees who else has it.
     const to = q.get('only') === 'admin' ? [ADMIN_EMAIL] : DIGEST_RECIPIENTS;
-    for (const addr of to) await sendEmail({ to: addr, subject, html, replyTo: ADMIN_EMAIL });
-    return res.status(200).json({ sent: to.length, gifts: gifts.length, from: start.toISOString(), to: end.toISOString() });
+    await sendEmail({ to: to.join(', '), subject, html, replyTo: ADMIN_EMAIL });
+    return res.status(200).json({ recipients: to.length, gifts: gifts.length, from: start.toISOString(), to: end.toISOString() });
   } catch (error) {
     console.error('Giving digest error:', error.message);
     return res.status(500).json({ error: 'Digest failed' });
