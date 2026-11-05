@@ -14,6 +14,7 @@ import { setCorsHeaders } from '../_cors.js';
 import { sendEmail } from '../_email.js';
 import Stripe from 'stripe';
 import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
+import { emailLayout } from '../_emailLayout.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -451,9 +452,7 @@ export function everyOrgDonationEmail(d) {
   const row = (k, v) => (v ? `<div style="margin:8px 0"><strong style="display:inline-block;min-width:150px;color:#1A1A1A">${escWh(k)}:</strong> ${v}</div>` : '');
   return {
     subject: `Every.org donation: ${usd(d.amount)}${isStock ? ' in stock' : ''} from ${name}`,
-    html: `<div style="font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.6;color:#4A4A4A;max-width:600px;margin:0 auto;padding:20px">
-<div style="background:#9B1B5D;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center"><h1 style="margin:0;font-size:22px">Every.org Donation Received</h1></div>
-<div style="border:1px solid #E5E7EB;border-top:none;padding:24px;background:#fff">
+    html: emailLayout({ title: 'Every.org Donation Received', body: `
 ${isStock ? '<div style="background:#FDF2F4;border-left:4px solid #9B1B5D;padding:12px 15px;margin-bottom:16px;border-radius:4px">A gift of stock: Every.org sells the shares and sends the proceeds in its regular disbursement. The donor\'s tax receipt comes from Every.org.</div>' : ''}
 ${row('Amount', usd(d.amount))}${row('Net to us', d.netAmount != null ? usd(d.netAmount) : '')}
 ${row('Method', escWh(method))}${row('Frequency', escWh(d.frequency))}
@@ -461,7 +460,7 @@ ${row('Date', escWh(d.donationDate ? new Date(d.donationDate).toLocaleString('en
 ${row('Donor', escWh(name))}${row('Email', d.email ? `<a href="mailto:${escWh(d.email)}" style="color:#9B1B5D">${escWh(d.email)}</a>` : 'Not shared')}
 ${row('Private note', escWh(d.privateNote))}${row('Public testimony', escWh(d.publicTestimony))}
 ${row('Every.org charge', escWh(d.chargeId))}
-</div></div>`,
+` }),
   };
 }
 
@@ -523,10 +522,11 @@ export function overlapEmail(overlaps) {
 <td style="padding:8px 10px;border-bottom:1px solid #eee;">$${o.stripe.amount.toFixed(2)} monthly, since ${escHtml(o.stripe.since)}</td></tr>`).join('');
   return {
     subject: `Action needed: ${overlaps.length} donor${overlaps.length === 1 ? '' : 's'} may be charged twice for monthly giving`,
-    html: `<div style="font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;color:#4A4A4A;max-width:680px;">
+    html: emailLayout({ title: 'Possible Double Charges', body: `
 <p>These donors now give monthly through the website (Stripe), but their old Bloomerang recurring gift is still charging. In Bloomerang, open each recurring payment and choose <strong>Cancel Recurring Payment</strong>.</p>
 <table style="border-collapse:collapse;width:100%;font-size:14px;"><thead><tr style="text-align:left;color:#6B7280;"><th style="padding:8px 10px;">Donor</th><th style="padding:8px 10px;">Old Bloomerang gift</th><th style="padding:8px 10px;">New website gift</th></tr></thead><tbody>${rows}</tbody></table>
-<p style="color:#6B7280;font-size:13px;">Sent by the website's weekly check. It matches donors by email address.</p></div>`,
+<p style="color:#6B7280;font-size:13px;">Sent by the website's weekly check. It matches donors by email address.</p>
+` }),
   };
 }
 
@@ -615,44 +615,29 @@ async function handleApproveEvent(req, res, id) {
     await sendEmail({
       to: eventData.contact_email,
       subject: 'Your Community Connection is Confirmed! - SupportWorks Housing',
-      html: `<!DOCTYPE html><html><head><style>
-        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #4A4A4A; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
-        .header h1 { margin: 0; font-size: 22px; }
-        .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-        .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-row { margin: 10px 0; }
-        .info-label { font-weight: 600; color: #1A1A1A; }
-        .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
-      </style></head><body>
-      <div class="container">
-        <div class="header">
-          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-          <h1>Your Community Connection is Confirmed!</h1>
-        </div>
-        <div class="content">
-          <p>Dear ${eventData.contact_name},</p>
-          <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your Community Connection has been confirmed by our team.</p></div>
-          <p>We're excited to have you create meaningful connections with our residents!</p>
-          <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
-          <div class="info-row"><span class="info-label">Location:</span> ${eventData.location_name}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${eventData.location_address}</div>
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
-          <div class="info-row"><span class="info-label">Group Size:</span> ${eventData.group_size} people</div>
-          <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
-          <ul style="line-height: 2;">
-            <li>The property manager has been notified and will be ready to welcome you</li>
-            <li>Please arrive 15 minutes early to coordinate with property staff</li>
-            <li>Bring any materials or food you planned for the event</li>
-          </ul>
-          <p style="margin-top: 30px;">If you have any questions, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-          <p><strong>Thank you for making a difference!</strong></p>
-          <p>SupportWorks Housing Team</p>
-        </div>
-        <div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div>
-      </div></body></html>`,
+      html: emailLayout({
+          title: `Your Community Connection is Confirmed!`,
+          css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; }`,
+          body: `
+        <p>Dear ${eventData.contact_name},</p>
+        <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your Community Connection has been confirmed by our team.</p></div>
+        <p>We're excited to have you create meaningful connections with our residents!</p>
+        <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
+        <div class="info-row"><span class="info-label">Location:</span> ${eventData.location_name}</div>
+        <div class="info-row"><span class="info-label">Address:</span> ${eventData.location_address}</div>
+        <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
+        <div class="info-row"><span class="info-label">Group Size:</span> ${eventData.group_size} people</div>
+        <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
+        <ul style="line-height: 2;">
+          <li>The property manager has been notified and will be ready to welcome you</li>
+          <li>Please arrive 15 minutes early to coordinate with property staff</li>
+          <li>Bring any materials or food you planned for the event</li>
+        </ul>
+        <p style="margin-top: 30px;">If you have any questions, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+        <p><strong>Thank you for making a difference!</strong></p>
+        <p>SupportWorks Housing Team</p>
+        `,
+      }),
     });
   } catch (emailErr) {
     console.error('Confirmation email error:', emailErr.message);
@@ -718,41 +703,25 @@ async function handleApproveSupplyDrive(req, res, id) {
     await sendEmail({
       to: driveData.contact_email,
       subject: 'Your Supply Drop-Off is Confirmed! - SupportWorks Housing',
-      html: `<!DOCTYPE html><html><head><style>
-        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #4A4A4A; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
-        .header h1 { margin: 0; font-size: 22px; }
-        .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-        .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-row { margin: 10px 0; }
-        .info-label { font-weight: 600; color: #1A1A1A; }
-        .items-list { margin: 10px 0; padding-left: 20px; }
-        .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
-      </style></head><body>
-      <div class="container">
-        <div class="header">
-          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-          <h1>Your Drop-Off is Confirmed!</h1>
-        </div>
-        <div class="content">
-          <p>Dear ${driveData.contact_name},</p>
-          <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p></div>
-          <p>Thank you for donating essential items to support our residents!</p>
-          <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
-          <div class="info-row"><span class="info-label">Location:</span> ${driveData.location_name}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${driveData.location_address}</div>
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${driveData.drop_off_date}, ${driveData.drop_off_time}</div>
-          ${driveData.selected_items && driveData.selected_items.length > 0 ? `
-          <div class="info-row"><span class="info-label">Items:</span></div>
-          <ul class="items-list">${driveData.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
-          <p style="margin-top: 30px;">If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-          <p><strong>Thank you for making a difference!</strong></p>
-          <p>SupportWorks Housing Team</p>
-        </div>
-        <div class="footer"><p>SupportWorks Housing | Making Homelessness History</p></div>
-      </div></body></html>`,
+      html: emailLayout({
+          title: `Your Drop-Off is Confirmed!`,
+          css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; } .items-list { margin: 10px 0; padding-left: 20px; }`,
+          body: `
+        <p>Dear ${driveData.contact_name},</p>
+        <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p></div>
+        <p>Thank you for donating essential items to support our residents!</p>
+        <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
+        <div class="info-row"><span class="info-label">Location:</span> ${driveData.location_name}</div>
+        <div class="info-row"><span class="info-label">Address:</span> ${driveData.location_address}</div>
+        <div class="info-row"><span class="info-label">Date & Time:</span> ${driveData.drop_off_date}, ${driveData.drop_off_time}</div>
+        ${driveData.selected_items && driveData.selected_items.length > 0 ? `
+        <div class="info-row"><span class="info-label">Items:</span></div>
+        <ul class="items-list">${driveData.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
+        <p style="margin-top: 30px;">If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+        <p><strong>Thank you for making a difference!</strong></p>
+        <p>SupportWorks Housing Team</p>
+        `,
+      }),
     });
   } catch (emailErr) {
     console.error('Confirmation email error:', emailErr.message);

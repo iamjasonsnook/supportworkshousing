@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
+import { emailLayout } from './_emailLayout.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
@@ -11,50 +12,27 @@ const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt
 
 const getDenialEmail = (data, reason) => ({
   subject: 'Supply Drop-Off Request Update - SupportWorks Housing',
-  html: `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-        .info-box { background-color: #FEF2F2; border-left: 4px solid #EF4444; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-          <h1>Supply Drop-Off Request Update</h1>
-        </div>
-        <div class="content">
-          <p>Dear ${escHtml(data.contact_name)},</p>
-          <p>Thank you for your interest in donating to SupportWorks Housing.</p>
-          <div class="info-box">
-            <p style="margin: 0;"><strong>We're unable to accommodate your drop-off request at this time.</strong></p>
-          </div>
-          ${reason ? `<p><strong>Reason:</strong> ${escHtml(reason)}</p>` : ''}
-          <p>We truly appreciate your generosity. While we can't accommodate this particular request, we'd love to work with you on future opportunities.</p>
-          <h3 style="color: #1A1A1A; margin-top: 25px;">What's Next?</h3>
-          <ul style="line-height: 2;">
-            <li>You can submit a new request for a different date</li>
-            <li>Contact us to discuss alternative ways to donate</li>
-          </ul>
-          <p style="margin-top: 30px;">If you have questions, please reach out at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-          <p><strong>Thank you for your understanding and continued support!</strong></p>
-          <p>SupportWorks Housing Team</p>
-        </div>
-        <div class="footer">
-          <p>SupportWorks Housing | Making Homelessness History</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `,
+  html: emailLayout({
+      title: `Supply Drop-Off Request Update`,
+      css: `.info-box { background-color: #FEF2F2; border-left: 4px solid #EF4444; padding: 15px; margin: 20px 0; border-radius: 4px; }`,
+      body: `
+    <p>Dear ${escHtml(data.contact_name)},</p>
+    <p>Thank you for your interest in donating to SupportWorks Housing.</p>
+    <div class="info-box">
+      <p style="margin: 0;"><strong>We're unable to accommodate your drop-off request at this time.</strong></p>
+    </div>
+    ${reason ? `<p><strong>Reason:</strong> ${escHtml(reason)}</p>` : ''}
+    <p>We truly appreciate your generosity. While we can't accommodate this particular request, we'd love to work with you on future opportunities.</p>
+    <h3 style="color: #1A1A1A; margin-top: 25px;">What's Next?</h3>
+    <ul style="line-height: 2;">
+      <li>You can submit a new request for a different date</li>
+      <li>Contact us to discuss alternative ways to donate</li>
+    </ul>
+    <p style="margin-top: 30px;">If you have questions, please reach out at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+    <p><strong>Thank you for your understanding and continued support!</strong></p>
+    <p>SupportWorks Housing Team</p>
+    `,
+  }),
 });
 
 export default async function handler(req, res) {

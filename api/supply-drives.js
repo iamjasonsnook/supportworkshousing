@@ -6,6 +6,7 @@ import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
+import { emailLayout } from './_emailLayout.js';
 
 const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const isValidEmail = (e) => /^[^\s@]{1,64}@[^\s@]{1,255}$/.test(String(e ?? ''));
@@ -15,62 +16,36 @@ const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
 
 const getVolunteerReceiptEmail = (data) => ({
   subject: 'Supply Drive Drop-Off Confirmed - SupportWorks Housing',
-  html: `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #9B1B5D; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-        .info-box { background-color: #FDF2F4; border-left: 4px solid #9B1B5D; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-row { margin: 10px 0; }
-        .info-label { font-weight: 600; color: #1A1A1A; }
-        .items-list { margin: 10px 0; padding-left: 20px; }
-        .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-          <h1>Thank You for Your Donation!</h1>
-        </div>
-        <div class="content">
-          <p>Dear ${escHtml(data.contact_name)},</p>
-          <p>Thank you for scheduling a supply drop-off at SupportWorks Housing! We've received your request and a SupportWorks team member will be in touch to confirm.</p>
+  html: emailLayout({
+      title: `Thank You for Your Donation!`,
+      css: `.info-box { background-color: #FDF2F4; border-left: 4px solid #9B1B5D; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; } .items-list { margin: 10px 0; padding-left: 20px; }`,
+      body: `
+    <p>Dear ${escHtml(data.contact_name)},</p>
+    <p>Thank you for scheduling a supply drop-off at SupportWorks Housing! We've received your request and a SupportWorks team member will be in touch to confirm.</p>
 
-          <div class="info-box">
-            <p style="margin-top: 0;"><strong>What happens next?</strong></p>
-            <ol style="margin: 10px 0; padding-left: 20px;">
-              <li>A SupportWorks team member will review and confirm your drop-off</li>
-              <li>You'll receive a confirmation email once your drop-off is approved</li>
-            </ol>
-          </div>
+    <div class="info-box">
+      <p style="margin-top: 0;"><strong>What happens next?</strong></p>
+      <ol style="margin: 10px 0; padding-left: 20px;">
+        <li>A SupportWorks team member will review and confirm your drop-off</li>
+        <li>You'll receive a confirmation email once your drop-off is approved</li>
+      </ol>
+    </div>
 
-          <h2 style="color: #9B1B5D; margin-top: 30px;">Your Drop-Off Details</h2>
-          <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
+    <h2 style="color: #9B1B5D; margin-top: 30px;">Your Drop-Off Details</h2>
+    <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+    <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+    <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
 
-          ${data.selected_items && data.selected_items.length > 0 ? `
-          <div class="info-row"><span class="info-label">Items to Donate:</span></div>
-          <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
-          ` : ''}
+    ${data.selected_items && data.selected_items.length > 0 ? `
+    <div class="info-row"><span class="info-label">Items to Donate:</span></div>
+    <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
+    ` : ''}
 
-          <p style="margin-top: 30px;">If you have any questions, please reach out at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-          <p>Thank you for making a difference in our community!</p>
-          <p><strong>SupportWorks Housing Team</strong></p>
-        </div>
-        <div class="footer">
-          <p>SupportWorks Housing | Making Homelessness History</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `,
+    <p style="margin-top: 30px;">If you have any questions, please reach out at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+    <p>Thank you for making a difference in our community!</p>
+    <p><strong>SupportWorks Housing Team</strong></p>
+    `,
+  }),
 });
 
 const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
@@ -78,56 +53,30 @@ const getAdminNotificationEmail = (data, confirmationToken, appUrl) => {
 
   return {
     subject: `New Supply Drive Drop-Off - ${data.contact_name} on ${data.drop_off_date}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #4A4A4A; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 22px; }
-          .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-          .alert-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
-          .info-row { margin: 10px 0; }
-          .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; vertical-align: top; }
-          .items-list { margin: 10px 0; padding-left: 20px; }
-          .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 13px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-            <h1>New Supply Drive Drop-Off</h1>
-          </div>
-          <div class="content">
-            <div class="alert-box">
-              <strong>Action Required:</strong> A new supply drop-off request needs your review. <a href="${portalUrl}" style="color: #9B1B5D;">Log in to the admin portal</a> to approve or deny.
-            </div>
+    html: emailLayout({
+        title: `New Supply Drive Drop-Off`,
+        css: `.alert-box { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; vertical-align: top; } .items-list { margin: 10px 0; padding-left: 20px; }`,
+        body: `
+      <div class="alert-box">
+        <strong>Action Required:</strong> A new supply drop-off request needs your review. <a href="${portalUrl}" style="color: #9B1B5D;">Log in to the admin portal</a> to approve or deny.
+      </div>
 
-            <h2 style="color: #9B1B5D;">Drop-Off Details</h2>
-            <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
-            <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
-            <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
+      <h2 style="color: #9B1B5D;">Drop-Off Details</h2>
+      <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+      <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+      <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
 
-            <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Contact</h3>
-            <div class="info-row"><span class="info-label">Name:</span> ${escHtml(data.contact_name)}</div>
-            <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${escHtml(data.contact_email)}" style="color: #9B1B5D;">${escHtml(data.contact_email)}</a></div>
-            <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${escHtml(data.contact_phone)}" style="color: #9B1B5D;">${escHtml(data.contact_phone)}</a></div>
+      <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Contact</h3>
+      <div class="info-row"><span class="info-label">Name:</span> ${escHtml(data.contact_name)}</div>
+      <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${escHtml(data.contact_email)}" style="color: #9B1B5D;">${escHtml(data.contact_email)}</a></div>
+      <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${escHtml(data.contact_phone)}" style="color: #9B1B5D;">${escHtml(data.contact_phone)}</a></div>
 
-            ${data.selected_items && data.selected_items.length > 0 ? `
-            <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Items to Donate</h3>
-            <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
-            ` : ''}
-          </div>
-          <div class="footer">
-            <p>SupportWorks Housing | Making Homelessness History</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
+      ${data.selected_items && data.selected_items.length > 0 ? `
+      <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Items to Donate</h3>
+      <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
+      ` : ''}
+      `,
+    }),
   };
 };
 

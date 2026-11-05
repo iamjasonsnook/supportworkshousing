@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
+import { emailLayout } from './_emailLayout.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -12,58 +13,31 @@ const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt
 
 const getApprovalEmail = (data) => ({
   subject: 'Supply Drop-Off Confirmed! - SupportWorks Housing',
-  html: `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #4A4A4A; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #9B1B5D; color: white; padding: 24px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header img { display: block; margin: 0 auto 12px; height: 40px; width: auto; }
-        .header h1 { margin: 0; font-size: 22px; }
-        .content { background-color: #FFFFFF; padding: 30px; border: 1px solid #E5E7EB; border-top: none; }
-        .success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        .info-row { margin: 10px 0; }
-        .info-label { font-weight: 600; color: #1A1A1A; }
-        .items-list { margin: 10px 0; padding-left: 20px; }
-        .footer { text-align: center; padding: 20px; color: #6B7280; font-size: 14px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" style="display: block; margin: 0 auto 12px; height: 40px; width: auto;" />
-          <h1>Your Drop-Off is Confirmed!</h1>
-        </div>
-        <div class="content">
-          <p>Dear ${data.contact_name},</p>
-          <div class="success-box">
-            <p style="margin: 0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p>
-          </div>
-          <p>Thank you for donating essential items to support our residents!</p>
+  html: emailLayout({
+      title: `Your Drop-Off is Confirmed!`,
+      css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; } .items-list { margin: 10px 0; padding-left: 20px; }`,
+      body: `
+    <p>Dear ${data.contact_name},</p>
+    <div class="success-box">
+      <p style="margin: 0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p>
+    </div>
+    <p>Thank you for donating essential items to support our residents!</p>
 
-          <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
-          <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-          <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-          <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
+    <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
+    <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
+    <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
+    <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
 
-          ${data.selected_items && data.selected_items.length > 0 ? `
-          <div class="info-row"><span class="info-label">Items:</span></div>
-          <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
-          ` : ''}
+    ${data.selected_items && data.selected_items.length > 0 ? `
+    <div class="info-row"><span class="info-label">Items:</span></div>
+    <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
+    ` : ''}
 
-          <p style="margin-top: 30px;">You'll receive a reminder 3 days before your drop-off. If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-          <p><strong>Thank you for making a difference!</strong></p>
-          <p>SupportWorks Housing Team</p>
-        </div>
-        <div class="footer">
-          <p>SupportWorks Housing | Making Homelessness History</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `,
+    <p style="margin-top: 30px;">You'll receive a reminder 3 days before your drop-off. If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
+    <p><strong>Thank you for making a difference!</strong></p>
+    <p>SupportWorks Housing Team</p>
+    `,
+  }),
 });
 
 export default async function handler(req, res) {
