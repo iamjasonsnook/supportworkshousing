@@ -15,6 +15,7 @@ import { sendEmail } from '../_email.js';
 import Stripe from 'stripe';
 import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 import { emailLayout } from '../_emailLayout.js';
+import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, nyParts, weekWindow } from '../_givingDigest.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -548,6 +549,37 @@ async function handleRecurringOverlapCheck(req, res) {
   } catch (error) {
     console.error('Recurring overlap check error:', error.message);
     return res.status(500).json({ error: 'Check failed' });
+  }
+}
+
+// ─── Weekly giving digest ────────────────────────────────────────────────────
+//
+// Vercel Cron calls this at 13:00 and 14:00 UTC on Fridays (vercel.json). Only
+// the run that lands in the 9 o'clock hour in New York sends, so it arrives at
+// 9am ET in both summer and winter. ?force=1 skips the hour check and
+// ?only=admin sends to ADMIN_EMAIL alone, for testing.
+
+async function handleGivingDigest(req, res) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(503).json({ error: 'Digest not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!safeCompare(token, secret)) return res.status(401).json({ error: 'Unauthorized' });
+  if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' });
+  const q = new URL(req.url || '', 'https://x').searchParams;
+  if (q.get('force') !== '1' && nyParts(new Date()).hour !== 9) return res.status(200).json({ skipped: 'not 9am in New York' });
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const { start, end, last } = weekWindow();
+    const charges = [];
+    for await (const c of stripe.charges.list({ created: { gte: Math.floor(start / 1000), lt: Math.floor(end / 1000) }, limit: 100, expand: ['data.customer', 'data.balance_transaction'] })) charges.push(c);
+    const { gifts, tests } = digestGifts(charges, { adminEmail: ADMIN_EMAIL });
+    const { subject, html } = givingDigestEmail({ gifts, tests, start, last });
+    const to = q.get('only') === 'admin' ? [ADMIN_EMAIL] : DIGEST_RECIPIENTS;
+    for (const addr of to) await sendEmail({ to: addr, subject, html, replyTo: ADMIN_EMAIL });
+    return res.status(200).json({ sent: to.length, gifts: gifts.length, from: start.toISOString(), to: end.toISOString() });
+  } catch (error) {
+    console.error('Giving digest error:', error.message);
+    return res.status(500).json({ error: 'Digest failed' });
   }
 }
 
@@ -1365,6 +1397,11 @@ export default async function handler(req, res) {
   // authenticated with CRON_SECRET, not an admin session.
   if (method === 'GET' && path === 'recurring-overlap-check') {
     return handleRecurringOverlapCheck(req, res);
+  }
+
+  // GET /api/admin/giving-digest — Friday Vercel Cron job; CRON_SECRET auth.
+  if (method === 'GET' && path === 'giving-digest') {
+    return handleGivingDigest(req, res);
   }
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;

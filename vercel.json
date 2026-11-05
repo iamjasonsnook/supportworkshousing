@@ -2,6 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "crons": [
+    { "path": "/api/admin/giving-digest?slot=13", "schedule": "0 13 * * 5" },
+    { "path": "/api/admin/giving-digest?slot=14", "schedule": "0 14 * * 5" }
+  ],
   "rewrites": [
     { "source": "/api/admin/:path*", "destination": "/api/admin/[...path]" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
