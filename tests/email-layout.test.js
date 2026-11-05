@@ -35,8 +35,9 @@ describe('every website email uses the shared layout', () => {
   });
 
   // A new email written the old way (its own <!DOCTYPE> and header) would
-  // drift from the brand. Pages shown in the browser after approve/deny are
-  // not emails and keep their own HTML; they are the ones sent with res.send.
+  // drift from the brand. Pages shown in the browser are not emails and keep
+  // their own HTML: the approve/deny pages sent with res.send, and the check
+  // review page built by _checkIntake.js's page() helper.
   it('no api file builds its own email page', () => {
     const dir = path.resolve(__dirname, '../api');
     const files = [];
@@ -47,7 +48,7 @@ describe('every website email uses the shared layout', () => {
       if (f.endsWith('_emailLayout.js')) continue;
       const src = fs.readFileSync(f, 'utf8');
       for (let i = src.indexOf('<!DOCTYPE'); i >= 0; i = src.indexOf('<!DOCTYPE', i + 1)) {
-        if (!/res\.status\(\d+\)\.send\(`\s*$/.test(src.slice(Math.max(0, i - 60), i))) offenders.push(`${path.basename(f)}:${src.slice(0, i).split('\n').length}`);
+        if (!/(res\.status\(\d+\)\.send\(`|const page = \(title, inner\) => `)\s*$/.test(src.slice(Math.max(0, i - 60), i))) offenders.push(`${path.basename(f)}:${src.slice(0, i).split('\n').length}`);
       }
     }
     expect(offenders).toEqual([]);

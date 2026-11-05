@@ -4,7 +4,8 @@
   "framework": "vite",
   "crons": [
     { "path": "/api/admin/giving-digest?slot=13", "schedule": "0 13 * * 5" },
-    { "path": "/api/admin/giving-digest?slot=14", "schedule": "0 14 * * 5" }
+    { "path": "/api/admin/giving-digest?slot=14", "schedule": "0 14 * * 5" },
+    { "path": "/api/admin/check-intake/sweep", "schedule": "0 11 * * *" }
   ],
   "rewrites": [
     { "source": "/api/admin/:path*", "destination": "/api/admin/[...path]" },

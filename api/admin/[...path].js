@@ -16,6 +16,9 @@ import Stripe from 'stripe';
 import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 import { emailLayout } from '../_emailLayout.js';
 import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, nyParts, weekWindow } from '../_givingDigest.js';
+import { waitUntil } from '@vercel/functions';
+import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed } from '../_checkIntake.js';
+import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage } from '../_graph.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -581,6 +584,118 @@ async function handleGivingDigest(req, res) {
   } catch (error) {
     console.error('Giving digest error:', error.message);
     return res.status(500).json({ error: 'Digest failed' });
+  }
+}
+
+// ─── Donation check intake ───────────────────────────────────────────────────
+//
+// Staff email a check scan to the donation checks mailbox. Microsoft notifies
+// check-intake/notify; the message is claimed by moving it to "Processed",
+// read by Claude, matched to Bloomerang, and a review email goes to the
+// sender and ADMIN_EMAIL. Nothing is written until someone approves on the
+// review page (check-intake/review). check-intake/sweep runs daily to renew
+// the Microsoft notification and catch anything left in the Inbox.
+
+const SITE = 'https://supportworkshousing.org';
+const graphClientState = () => crypto.createHash('sha256').update(`${process.env.CRON_SECRET}:check-intake`).digest('hex');
+const reviewSecret = () => process.env.ADMIN_TOKEN_SECRET;
+const intakeRecipients = sender => [...new Set([sender, ADMIN_EMAIL].filter(Boolean).map(a => a.toLowerCase()))].join(', ');
+
+async function processCheckMessage(id) {
+  const claimed = await moveMessage(id, PROCESSED);
+  if (!claimed) return { skipped: 'already handled' };
+  let m;
+  try {
+    m = await getMessage(claimed);
+    if (!senderAllowed(m)) {
+      await moveMessage(claimed, NEEDS_ATTENTION);
+      const { subject, html } = problemEmail({ subject: 'Donation check email not accepted', message: `An email from ${escHtml(m.from || 'an unknown sender')} ("${escHtml(m.subject)}") reached ${MAILBOX} but did not come from inside ${'supportworkshousing.org'}, so it was not read. It is in the "${NEEDS_ATTENTION}" folder.` });
+      await sendEmail({ to: ADMIN_EMAIL, subject, html });
+      return { rejected: true };
+    }
+    const files = m.attachments.filter(a => SUPPORTED_TYPES[a.mediaType]);
+    if (!files.length) {
+      await moveMessage(claimed, NEEDS_ATTENTION);
+      const odd = m.attachments.map(a => a.name).join(', ');
+      const { subject, html } = problemEmail({ subject: `No check scan found: ${m.subject || 'your email'}`, message: `Your email to ${MAILBOX} had no PDF, JPG or PNG attached${odd ? ` (it had: ${escHtml(odd)})` : ''}. Please send the scan again as a PDF or JPG. iPhone photos in HEIC format can't be read; share them as JPG or scan with the Notes app to make a PDF.` });
+      await sendEmail({ to: intakeRecipients(m.from), subject, html });
+      return { noFiles: true };
+    }
+    const { checks } = await extractChecks({ apiKey: process.env.ANTHROPIC_API_KEY, files });
+    if (!checks.length) {
+      await moveMessage(claimed, NEEDS_ATTENTION);
+      const { subject, html } = problemEmail({ subject: `No check found in: ${m.subject || 'your scan'}`, message: `No check could be found in ${escHtml(files.map(f => f.name).join(', '))}. If it is a check, try a clearer scan, flat and with the whole check in view.` });
+      await sendEmail({ to: intakeRecipients(m.from), subject, html });
+      return { checks: 0 };
+    }
+    for (const check of checks) {
+      const proposal = await proposeEntry({ bloomerangKey: process.env.BLOOMERANG_API_KEY, check });
+      const t = signReview({ v: 1, sender: m.from, check: slim(check), proposal }, reviewSecret());
+      const { subject, html } = reviewEmail({ check, proposal, sender: m.from, reviewUrl: `${SITE}/api/admin/check-intake/review?t=${t}` });
+      await sendEmail({ to: intakeRecipients(m.from), subject, html, replyTo: m.from });
+    }
+    return { checks: checks.length };
+  } catch (error) {
+    console.error('Check intake error:', error.message);
+    try { await moveMessage(claimed, NEEDS_ATTENTION); } catch { /* already reported below */ }
+    const { subject, html } = problemEmail({ subject: 'Donation check could not be processed', message: `An email${m ? ` from ${escHtml(m.from)} ("${escHtml(m.subject)}")` : ''} in ${MAILBOX} hit an error: ${escHtml(error.message)}. It is in the "${NEEDS_ATTENTION}" folder; enter the gift by hand or send it again.` });
+    await sendEmail({ to: ADMIN_EMAIL, subject, html }).catch(() => {});
+    return { error: error.message };
+  }
+}
+
+async function handleCheckIntakeNotify(req, res) {
+  const q = new URL(req.url || '', 'https://x').searchParams;
+  // Microsoft confirms the address by asking us to echo a token.
+  if (q.get('validationToken')) return res.status(200).setHeader('Content-Type', 'text/plain').send(q.get('validationToken'));
+  if (!process.env.CRON_SECRET || !graphConfigured()) return res.status(503).json({ error: 'Check intake not configured' });
+  const want = graphClientState();
+  const ids = (req.body?.value || []).filter(n => typeof n.clientState === 'string' && safeCompare(n.clientState, want)).map(n => n.resourceData?.id).filter(Boolean);
+  // Microsoft wants an answer within seconds; reading a scan takes longer.
+  waitUntil((async () => { for (const id of ids) await processCheckMessage(id); })());
+  return res.status(202).json({ accepted: ids.length });
+}
+
+async function handleCheckIntakeSweep(req, res) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(503).json({ error: 'Not configured' });
+  if (!safeCompare((req.headers.authorization || '').replace('Bearer ', ''), secret)) return res.status(401).json({ error: 'Unauthorized' });
+  if (!graphConfigured()) return res.status(200).json({ skipped: 'Microsoft 365 credentials not set yet' });
+  try {
+    const subscription = await ensureSubscription({ notifyUrl: `${SITE}/api/admin/check-intake/notify`, clientState: graphClientState() });
+    const results = [];
+    for (const id of await inboxMessageIds()) results.push(await processCheckMessage(id));
+    return res.status(200).json({ subscription, processed: results.length });
+  } catch (error) {
+    console.error('Check intake sweep error:', error.message);
+    return res.status(500).json({ error: 'Sweep failed' });
+  }
+}
+
+async function handleCheckIntakeReview(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  const send = (status, html) => res.status(status).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+  if (!reviewSecret() || !process.env.BLOOMERANG_API_KEY) return send(503, resultPage('Not Available', '<p>Check intake is not configured.</p>'));
+  const token = req.method === 'POST' ? req.body?.t : new URL(req.url || '', 'https://x').searchParams.get('t');
+  const payload = verifyReview(token, reviewSecret());
+  if (!payload) return send(400, resultPage('Link Expired', '<p>This review link has expired or is not valid. Nothing was entered. Send the scan to the donation checks inbox again for a new link, or enter the gift in Bloomerang by hand.</p>'));
+  // GET only shows the page, so link scanners that open it change nothing.
+  if (req.method !== 'POST') return send(200, reviewPage(token, payload));
+  const { form, errors } = readForm(req.body || {});
+  if (errors.length) return send(400, reviewPage(token, payload).replace('<form method="post">', `<div class="warn bad"><b>Fix this first:</b> ${errors.map(escHtml).join(' ')}</div><form method="post">`));
+  try {
+    const result = await approveEntry({ bloomerangKey: process.env.BLOOMERANG_API_KEY, payload, form });
+    if (result.refused) {
+      return send(409, resultPage('Already Entered', `<p>Bloomerang already has a gift with check #${escHtml(form.check_number)} for $${form.amount.toFixed(2)} (transaction #${escHtml(result.refused.TransactionNumber)}, ID ${escHtml(result.refused.Id)}). Nothing new was entered.</p>`));
+    }
+    const approvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'long', timeStyle: 'short' });
+    const { subject, html } = enteredEmail({ check: { ...payload.check, ...form }, ...result, approvedAt });
+    await sendEmail({ to: intakeRecipients(payload.sender), subject, html }).catch(e => console.error('Entered email failed:', e.message));
+    return send(200, resultPage('Gift Entered', `<p><b>Done.</b> $${form.amount.toFixed(2)} from ${escHtml(result.accountName)} is in Bloomerang as transaction #${escHtml(result.transaction.number)} (ID ${escHtml(result.transaction.id)})${result.created ? ', on a new constituent record' : ''}. A confirmation email is on its way.</p><p class="muted">The acknowledgment still needs to be sent; it shows as "No" in Bloomerang.</p>`));
+  } catch (error) {
+    console.error('Check approval error:', error.message);
+    return send(500, resultPage('Not Entered', `<p>Bloomerang returned an error, so nothing was entered: ${escHtml(error.message)}. Try again, or enter the gift by hand.</p>`));
   }
 }
 
@@ -1404,6 +1519,12 @@ export default async function handler(req, res) {
   if (method === 'GET' && path === 'giving-digest') {
     return handleGivingDigest(req, res);
   }
+
+  // Donation check intake: Microsoft's new-mail notification (clientState
+  // auth), the daily sweep (CRON_SECRET), and the review page (signed link).
+  if (method === 'POST' && path === 'check-intake/notify') return handleCheckIntakeNotify(req, res);
+  if (method === 'GET' && path === 'check-intake/sweep') return handleCheckIntakeSweep(req, res);
+  if ((method === 'GET' || method === 'POST') && path === 'check-intake/review') return handleCheckIntakeReview(req, res);
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;
   // authenticated by the secret token in its URL, not an admin session.
