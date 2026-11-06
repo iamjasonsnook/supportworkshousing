@@ -15,7 +15,7 @@ import { sendEmail } from '../_email.js';
 import Stripe from 'stripe';
 import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 import { emailLayout } from '../_emailLayout.js';
-import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, nyParts, weekWindow } from '../_givingDigest.js';
+import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, loadCheckGifts, nyParts, weekWindow } from '../_givingDigest.js';
 import { waitUntil } from '@vercel/functions';
 import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed, donorContact, checkThankYouEmail, acknowledgeGift, ackLine } from '../_checkIntake.js';
 import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage, getAttachment } from '../_graph.js';
@@ -576,11 +576,14 @@ async function handleGivingDigest(req, res) {
     const charges = [];
     for await (const c of stripe.charges.list({ created: { gte: Math.floor(start / 1000), lt: Math.floor(end / 1000) }, limit: 100, expand: ['data.customer', 'data.balance_transaction'] })) charges.push(c);
     const { gifts, tests } = digestGifts(charges, { adminEmail: ADMIN_EMAIL });
-    const { subject, html } = givingDigestEmail({ gifts, tests, start, last });
+    // Checks come from Bloomerang; if it is down, send the online gifts and say so.
+    let checks = [], checksUnavailable = false;
+    try { checks = await loadCheckGifts({ bloomerangKey: process.env.BLOOMERANG_API_KEY, start, end }); } catch (e) { console.error('Digest check gifts error:', e.message); checksUnavailable = true; }
+    const { subject, html } = givingDigestEmail({ gifts: [...gifts, ...checks], tests, start, last, checksUnavailable });
     // One email with everyone on the To line, so each recipient sees who else has it.
     const to = q.get('only') === 'admin' ? [ADMIN_EMAIL] : DIGEST_RECIPIENTS;
     await sendEmail({ to: to.join(', '), subject, html, replyTo: ADMIN_EMAIL });
-    return res.status(200).json({ recipients: to.length, gifts: gifts.length, from: start.toISOString(), to: end.toISOString() });
+    return res.status(200).json({ recipients: to.length, gifts: gifts.length, checks: checks.length, from: start.toISOString(), to: end.toISOString() });
   } catch (error) {
     console.error('Giving digest error:', error.message);
     return res.status(500).json({ error: 'Digest failed' });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weekWindow, nyParts, digestGifts, givingDigestEmail, DIGEST_RECIPIENTS } from '../api/_givingDigest.js';
+import { weekWindow, nyParts, digestGifts, givingDigestEmail, checkGifts, loadCheckGifts, DIGEST_RECIPIENTS } from '../api/_givingDigest.js';
 
 const charge = (o = {}) => ({
   status: 'succeeded', refunded: false, amount: 5000, created: Date.parse('2026-11-03T15:00:00Z') / 1000,
@@ -63,11 +63,52 @@ describe('givingDigestEmail', () => {
 
   it('says so when nothing came in', () => {
     const { subject, html } = givingDigestEmail({ gifts: [], start, last });
-    expect(subject).toBe('Weekly Giving Digest: no online gifts this week');
+    expect(subject).toBe('Weekly Giving Digest: no gifts this week');
     expect(html).toContain('No gifts came in');
   });
 
   it('goes to the three people asked for', () => {
     expect(DIGEST_RECIPIENTS).toEqual(['jsnook@supportworkshousing.org', 'abogdanovic@supportworkshousing.org', 'jeffrey@themonumentgroup.net']);
+  });
+});
+
+describe('check gifts from Bloomerang', () => {
+  const { start, end } = weekWindow(new Date('2026-11-13T14:05:00Z')); // Fri Nov 6 to Thu Nov 12
+  const tx = (o) => ({ Method: 'Check', Amount: 50, AccountId: 24042, CheckNumber: '12301', Date: '2026-11-06T00:00:00', IsRefunded: 'false', ...o });
+
+  it('takes only checks dated inside the week, never card gifts (those come from Stripe)', () => {
+    const got = checkGifts([
+      tx(), tx({ Date: '2026-11-12T00:00:00', Amount: 100 }), tx({ Date: '2026-11-13T00:00:00' }), tx({ Date: '2026-11-05T00:00:00' }),
+      tx({ Method: 'CreditCard' }), tx({ IsRefunded: 'true' }),
+    ], { 24042: 'Eugene and Jane Smith' }, { start, end });
+    expect(got.map(g => g.amount)).toEqual([50, 100]);
+    expect(got[0]).toMatchObject({ name: 'Eugene and Jane Smith', channel: 'check', checkNumber: '12301', fee: 0 });
+  });
+
+  it('labels each gift online or check, and totals both', () => {
+    const online = digestGifts([charge({ amount: 10000 }), charge({ amount: 3098, metadata: {}, description: 'Subscription creation', customer: { name: 'Margaret E' } })]).gifts;
+    const checks = checkGifts([tx()], { 24042: 'Eugene and Jane Smith' }, { start, end });
+    const { subject, html } = givingDigestEmail({ gifts: [...online, ...checks], start, last: new Date(end - 1) });
+    expect(subject).toBe('Weekly Giving Digest: $180.98 from 3 gifts');
+    expect(html).toContain('Online, one-time');
+    expect(html).toContain('Online, monthly');
+    expect(html).toContain('Check #12301');
+    expect(html).toContain('$131 online, $50 by check');
+    expect(html).toContain('2 online, 1 by check');
+    expect(html).toContain('1 check gift totaling $50.00 (Eugene and Jane Smith)');
+  });
+
+  it('says when checks could not be loaded', () => {
+    const { html } = givingDigestEmail({ gifts: digestGifts([charge()]).gifts, start, last: new Date(end - 1), checksUnavailable: true });
+    expect(html).toContain('check gifts, because Bloomerang could not be reached this week');
+  });
+
+  it('pages back through Bloomerang until it passes the start of the week', async () => {
+    const pages = [Array.from({ length: 50 }, () => tx({ Method: 'CreditCard', Date: '2026-11-10T00:00:00' })), [tx(), tx({ Date: '2026-10-30T00:00:00' })]];
+    const calls = [];
+    const fetchImpl = async url => { calls.push(url); const body = url.includes('/constituent/') ? { FullName: 'Eugene and Jane Smith' } : { Results: pages[calls.filter(u => u.includes('/transactions')).length - 1] || [] }; return { ok: true, json: async () => body }; };
+    const got = await loadCheckGifts({ bloomerangKey: 'k', start, end, fetchImpl });
+    expect(got).toHaveLength(1);
+    expect(calls.filter(u => u.includes('/transactions'))).toHaveLength(2);
   });
 });
