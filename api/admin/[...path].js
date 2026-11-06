@@ -742,6 +742,22 @@ async function thankDonor({ result, form, check }) {
   }
 }
 
+// Content-Security-Policy reports. While the policy is report-only, these
+// show in the Vercel logs what it would block, so it can be switched to
+// enforcing without breaking the donate page. Only the essentials are logged.
+function handleCspReport(req, res) {
+  let body = req.body;
+  try { if (Buffer.isBuffer(body)) body = body.toString('utf8'); if (typeof body === 'string') body = JSON.parse(body); } catch { body = null; }
+  const reports = Array.isArray(body) ? body.map(r => r.body || r) : [body?.['csp-report'] || body].filter(Boolean);
+  for (const r of reports.slice(0, 5)) {
+    const page = String(r['document-uri'] || r.documentURL || '').split('?')[0].slice(0, 120);
+    const blocked = String(r['blocked-uri'] || r.blockedURL || '').split('?')[0].slice(0, 120);
+    const rule = String(r['effective-directive'] || r['violated-directive'] || r.effectiveDirective || '').slice(0, 40);
+    console.log(`CSP report: ${rule} blocked ${blocked} on ${page}`);
+  }
+  return res.status(204).end();
+}
+
 async function handlePledgeReview(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
@@ -1618,6 +1634,8 @@ export default async function handler(req, res) {
   // Stock pledge review: signed link from the staff email; nothing is
   // written to Bloomerang until staff approve here.
   if ((method === 'GET' || method === 'POST') && path === 'pledge-review') return handlePledgeReview(req, res);
+  // Browsers report what the content security policy would block (vercel.json).
+  if (method === 'POST' && path === 'csp-report') return handleCspReport(req, res);
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;
   // authenticated by the secret token in its URL, not an admin session.
