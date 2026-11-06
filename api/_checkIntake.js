@@ -279,7 +279,12 @@ ${box('#FBEFF5', '#9B1B5D', matchHtml(p))}
   };
 }
 
-export function enteredEmail({ check, accountId, accountName, created, transaction, approvedAt }) {
+// ack: { sent: true, date } | { sent: false, reason }
+export const ackLine = ack => ack?.sent
+  ? `The donor was emailed a thank-you and the gift is marked acknowledged in Bloomerang (${fmtDate(ack.date)}).`
+  : `<b>The donor has not been thanked yet:</b> ${esc(ack?.reason || 'no thank-you was sent.')}`;
+
+export function enteredEmail({ check, accountId, accountName, created, transaction, approvedAt, ack }) {
   return {
     subject: `Entered in Bloomerang: ${usd(check.amount)} from ${accountName}`,
     html: emailLayout({
@@ -289,9 +294,72 @@ export function enteredEmail({ check, accountId, accountName, created, transacti
 <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%">
 ${row('Donor', `${accountName} (ID ${accountId})${created ? ', new constituent' : ''}`)}${row('Transaction', `#${transaction.number} (ID ${transaction.id})`)}
 ${row('Amount', usd(check.amount))}${row('Check #', check.check_number)}${row('Check date', fmtDate(check.check_date))}${row('Gift date', fmtDate(check.gift_date))}${row('Fund', 'Unrestricted Fund')}${row('Note', check.note)}</table>
-<p style="font-size:13px;color:#76666F;margin:18px 0 0">The acknowledgment has not been sent; it shows as "No" in Bloomerang until it is.</p>`,
+<p style="font-size:14px;margin:18px 0 0">${ackLine(ack)}</p>`,
     }),
   };
+}
+
+// The donor's thank-you for a check gift, in the same voice as the online
+// thank-you. The tax line depends on how the gift was made: a donor-advised
+// fund grant was already deducted when the donor funded the account, so it
+// gets no receipt language; an IRA distribution gets QCD wording.
+export function checkThankYouEmail({ salutation, amount, checkNumber, checkDate, vehicle }) {
+  const longDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' }) : ''; };
+  const tax = vehicle === 'Donor-advised fund'
+    ? 'Thank you for recommending this grant from your donor-advised fund. Because the fund\'s sponsor has already provided your tax receipt, this letter is our thank-you only.'
+    : vehicle === 'IRA distribution'
+      ? 'SupportWorks Housing is a 501(c)(3) nonprofit organization, EIN 54-1444564. This gift was paid directly from your IRA, and no goods or services were provided in exchange for it. Please keep this email for your records and talk with your tax advisor about reporting it as a qualified charitable distribution.'
+      : 'SupportWorks Housing is a 501(c)(3) nonprofit organization, EIN 54-1444564. No goods or services were provided in exchange for this gift. Please keep this email for your tax records.';
+  const r = (k, v) => v ? `<tr><td style="padding:4px 18px 4px 0;font-weight:600;color:#1A1A1A">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>` : '';
+  return {
+    subject: 'Thank you for your gift to SupportWorks Housing',
+    html: emailLayout({
+      title: 'Thank You for Your Gift',
+      body: `<p>Dear ${esc(salutation || 'friend')},</p>
+<p>Thank you for your donation. Your generous gift will help us end homelessness in your community.</p>
+<p>For 37 years, SupportWorks Housing has helped older adults, veterans, and people with disabilities across Virginia find a home and keep it. Year over year, 96% or more of our residents and program participants do not return to homelessness. Gifts like yours make that possible.</p>
+${box('#FDF2F4', '#9B1B5D', `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${r('Gift', usd(amount))}${r('Check', checkNumber ? `#${checkNumber}` : '')}${r('Check date', longDate(checkDate))}</table>`)}
+<p style="font-size:13px;color:#6B7280">${tax}</p>
+<p>With gratitude,<br>The SupportWorks Housing team</p>`,
+    }),
+  };
+}
+
+// Who to thank and where: the record's email and the name staff chose for
+// letters (Informal name, e.g. "Gene and Jane"), else the first name.
+export async function donorContact({ bloomerangKey: key, accountId, fetchImpl = fetch }) {
+  const c = await bloom(key, `/constituent/${accountId}`, {}, fetchImpl);
+  return { email: c.PrimaryEmail?.Value || '', salutation: c.InformalName || c.FirstName || c.FullName || '', name: c.FullName };
+}
+
+// Record the thank-you in Bloomerang: an Acknowledgement interaction on the
+// donor, linked from the gift, and the gift's status set to Yes. Bloomerang's
+// update replaces a gift's designations wholesale, so this only touches the
+// simple gifts the intake creates (one Donation designation, no soft credits,
+// custom values or attachments) and rebuilds every field it read.
+export async function acknowledgeGift({ bloomerangKey: key, transactionId, subject, note, fetchImpl = fetch, today = new Date().toISOString().slice(0, 10) }) {
+  const t = await bloom(key, `/transaction/${transactionId}`, {}, fetchImpl);
+  const g = t.Designations || [];
+  if (g.length !== 1 || g[0].Type !== 'Donation' || (g[0].SoftCreditIds || []).length || (g[0].CustomValues || []).length || (g[0].AttachmentIds || []).length || (t.AttachmentIds || []).length || g[0].Tribute) {
+    throw new Error('This gift has more than one part, a soft credit, a tribute or attachments; mark the acknowledgment in Bloomerang by hand.');
+  }
+  const i = await bloom(key, '/interaction', { method: 'POST', body: JSON.stringify({ AccountId: t.AccountId, Date: today, Channel: 'Email', Purpose: 'Acknowledgement', Subject: subject, Note: note, IsInbound: false }) }, fetchImpl);
+  const d = g[0];
+  const updated = await bloom(key, `/transaction/${transactionId}`, { method: 'PUT', body: JSON.stringify({
+    AccountId: t.AccountId, Date: t.Date.slice(0, 10), Amount: t.Amount, Method: t.Method,
+    ...(t.CheckNumber ? { CheckNumber: t.CheckNumber } : {}), ...(t.CheckDate ? { CheckDate: t.CheckDate.slice(0, 10) } : {}),
+    Designations: [{
+      Type: 'Donation', Amount: d.Amount, FundId: d.Fund?.Id,
+      ...(d.NonDeductibleAmount ? { NonDeductibleAmount: d.NonDeductibleAmount } : {}), ...(d.Note ? { Note: d.Note } : {}),
+      ...(d.Campaign?.Id ? { CampaignId: d.Campaign.Id } : {}), ...(d.Appeal?.Id ? { AppealId: d.Appeal.Id } : {}), ...(d.QuickbooksAccount?.Id ? { QuickbooksAccountId: d.QuickbooksAccount.Id } : {}),
+      AcknowledgementStatus: 'Yes', AcknowledgementInteractionIds: [...(d.AcknowledgementInteractionIds || []), i.Id],
+    }],
+  }) }, fetchImpl);
+  const after = updated?.Designations?.[0];
+  if (after?.AcknowledgementStatus !== 'Yes' || Math.abs(Number(updated.Amount) - Number(t.Amount)) > 0.005 || after?.Fund?.Id !== d.Fund?.Id) {
+    throw new Error('Bloomerang did not save the acknowledgment as expected; check the gift by hand.');
+  }
+  return { interactionId: i.Id, date: today };
 }
 
 export function problemEmail({ subject, message }) {
@@ -341,6 +409,8 @@ ${opts}
 <div class="grid">${f('first_name', 'First name', c.first_name)}${f('last_name', 'Last name', c.last_name)}</div>
 ${f('organization_name', 'Organization name', c.organization_name)}
 ${f('street', 'Street', c.street)}<div class="grid">${f('city', 'City', c.city)}${f('state', 'State', c.state)}</div>${f('postal_code', 'ZIP', c.postal_code)}
+<h2>Thank-you</h2>
+<label class="opt"><input type="checkbox" name="send_thanks" value="1" checked><span><b>Email the donor a thank-you</b> and mark the gift acknowledged in Bloomerang<br><span class="muted">Sent to the email on the donor's Bloomerang record, with you copied. Untick it for anonymous gifts or a donor who should get a letter instead. A new constituent has no email yet, so no email is sent.</span></span></label>
 <button type="submit">Approve and enter in Bloomerang</button>
 <p class="muted">Not a gift, or not ready? Close this page. Nothing is entered unless you approve.</p>
 </form>`;
@@ -358,6 +428,7 @@ export function readForm(body) {
     account: clean(body.account), donor_type: clean(body.donor_type) === 'Organization' ? 'Organization' : 'Individual',
     first_name: clean(body.first_name), last_name: clean(body.last_name), organization_name: clean(body.organization_name),
     street: clean(body.street), city: clean(body.city), state: clean(body.state), postal_code: clean(body.postal_code),
+    send_thanks: body.send_thanks === '1' || body.send_thanks === 'on' || body.send_thanks === true,
   };
   const errors = [];
   if (!(amount > 0 && amount < 10_000_000)) errors.push('Enter the amount.');

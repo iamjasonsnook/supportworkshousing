@@ -17,7 +17,7 @@ import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 import { emailLayout } from '../_emailLayout.js';
 import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, nyParts, weekWindow } from '../_givingDigest.js';
 import { waitUntil } from '@vercel/functions';
-import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed } from '../_checkIntake.js';
+import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed, donorContact, checkThankYouEmail, acknowledgeGift, ackLine } from '../_checkIntake.js';
 import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage, getAttachment } from '../_graph.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
@@ -692,13 +692,37 @@ async function handleCheckIntakeReview(req, res) {
     if (result.refused) {
       return send(409, resultPage('Already Entered', `<p>Bloomerang already has a gift with check #${escHtml(form.check_number)} for $${form.amount.toFixed(2)} (transaction #${escHtml(result.refused.TransactionNumber)}, ID ${escHtml(result.refused.Id)}). Nothing new was entered.</p>`));
     }
+    const ack = await thankDonor({ result, form, check: payload.check });
     const approvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'long', timeStyle: 'short' });
-    const { subject, html } = enteredEmail({ check: { ...payload.check, ...form }, ...result, approvedAt });
+    const { subject, html } = enteredEmail({ check: { ...payload.check, ...form }, ...result, approvedAt, ack });
     await sendEmail({ to: intakeRecipients(payload.sender), subject, html }).catch(e => console.error('Entered email failed:', e.message));
-    return send(200, resultPage('Gift Entered', `<p><b>Done.</b> $${form.amount.toFixed(2)} from ${escHtml(result.accountName)} is in Bloomerang as transaction #${escHtml(result.transaction.number)} (ID ${escHtml(result.transaction.id)})${result.created ? ', on a new constituent record' : ''}. A confirmation email is on its way.</p><p class="muted">The acknowledgment still needs to be sent; it shows as "No" in Bloomerang.</p>`));
+    return send(200, resultPage('Gift Entered', `<p><b>Done.</b> $${form.amount.toFixed(2)} from ${escHtml(result.accountName)} is in Bloomerang as transaction #${escHtml(result.transaction.number)} (ID ${escHtml(result.transaction.id)})${result.created ? ', on a new constituent record' : ''}. A confirmation email is on its way.</p><p>${ackLine(ack)}</p>`));
   } catch (error) {
     console.error('Check approval error:', error.message);
     return send(500, resultPage('Not Entered', `<p>Bloomerang returned an error, so nothing was entered: ${escHtml(error.message)}. Try again, or enter the gift by hand.</p>`));
+  }
+}
+
+// After a gift is entered: email the donor a thank-you (BCC ADMIN_EMAIL) and
+// mark the gift acknowledged in Bloomerang. Every way this can stop short is
+// reported, and the gift itself is already safely entered either way.
+async function thankDonor({ result, form, check }) {
+  const key = process.env.BLOOMERANG_API_KEY;
+  if (!form.send_thanks) return { sent: false, reason: 'the reviewer chose not to email a thank-you. Send a letter, then mark the acknowledgment in Bloomerang.' };
+  let who;
+  try { who = await donorContact({ bloomerangKey: key, accountId: result.accountId }); } catch { return { sent: false, reason: 'the donor record could not be read. Send the thank-you by hand.' }; }
+  if (!who.email) return { sent: false, reason: 'Bloomerang has no email for this donor. Send a letter, then mark the acknowledgment in Bloomerang.' };
+  const e = checkThankYouEmail({ salutation: who.salutation, amount: form.amount, checkNumber: form.check_number, checkDate: form.check_date, vehicle: check.vehicle });
+  try { await sendEmail({ to: who.email, subject: e.subject, html: e.html, bcc: ADMIN_EMAIL, replyTo: ADMIN_EMAIL }); } catch (error) {
+    console.error('Thank-you email failed:', error.message);
+    return { sent: false, reason: 'the thank-you email could not be sent. Send it by hand, then mark the acknowledgment in Bloomerang.' };
+  }
+  try {
+    const r = await acknowledgeGift({ bloomerangKey: key, transactionId: result.transaction.id, subject: e.subject, note: `Thank-you email sent by the website (check gift${form.check_number ? `, check #${form.check_number}` : ''}).` });
+    return { sent: true, date: r.date };
+  } catch (error) {
+    console.error('Acknowledgment update failed:', error.message);
+    return { sent: false, reason: `the thank-you email was sent, but Bloomerang could not be updated (${error.message}). Mark the acknowledgment as Yes in Bloomerang.` };
   }
 }
 

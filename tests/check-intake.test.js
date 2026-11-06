@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   sameCheckNumber, scoreCandidate, decide, withHistory, plausible, findDuplicate, signReview, verifyReview, senderAllowed,
-  readForm, approveEntry, proposeEntry, extractChecks, reviewEmail, reviewPage, slim, REVIEW_DAYS,
+  readForm, approveEntry, proposeEntry, extractChecks, reviewEmail, reviewPage, slim, REVIEW_DAYS, acknowledgeGift, checkThankYouEmail, donorContact,
 } from '../api/_checkIntake.js';
 
 // A fake Bloomerang/Claude: routes by URL, records every call.
@@ -232,6 +232,26 @@ describe('the routes', () => {
       expect(ok.statusCode).toBe(200);
       expect(ok.body).toContain('transaction #14001');
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'staff@supportworkshousing.org, jsnook@supportworkshousing.org', subject: 'Entered in Bloomerang: $2,000.00 from W. Barry and Karen Hofheimer' }));
+      expect(ok.body).toContain('chose not to email a thank-you');
+    } finally { globalThis.fetch = realFetch; }
+
+    // With the thank-you box ticked: the donor is emailed (BCC jsnook) and the gift marked Yes.
+    sendEmail.mockClear();
+    const entered = { Id: 602, AccountId: 23573, Date: '2026-11-06T00:00:00', Amount: 2000, Method: 'Check', CheckNumber: '0006831083', Designations: [{ Type: 'Donation', Amount: 2000, Fund: { Id: 13317 }, AcknowledgementStatus: 'No', AcknowledgementInteractionIds: [] }] };
+    globalThis.fetch = fakeFetch([
+      ['/transaction/602', { method: 'PUT', data: { ...entered, Designations: [{ ...entered.Designations[0], AcknowledgementStatus: 'Yes' }] } }],
+      ['/transaction/602', { data: entered }],
+      ['/transaction', { method: 'POST', data: { Id: 602, TransactionNumber: 14002 } }],
+      ['/interaction', { method: 'POST', data: { Id: 901 } }],
+      ['/constituent/23573', { data: { FullName: 'W. Barry and Karen Hofheimer', InformalName: 'Barry and Karen', PrimaryEmail: { Value: 'donor@example.org' } } }],
+    ]);
+    try {
+      const thanked = await run(handler, { method: 'POST', url: '/api/admin/check-intake/review', body: { t, amount: '2000', gift_date: '2026-11-06', check_number: '0006831083', account: '23573', send_thanks: '1' } });
+      expect(thanked.statusCode).toBe(200);
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'donor@example.org', bcc: 'jsnook@supportworkshousing.org', subject: 'Thank you for your gift to SupportWorks Housing' }));
+      expect(sendEmail.mock.calls.find(c => c[0].to === 'donor@example.org')[0].html).toContain('Dear Barry and Karen,');
+      expect(thanked.body).toContain('marked acknowledged');
+      expect(globalThis.fetch.calls.find(c => c.method === 'PUT').body.Designations[0]).toMatchObject({ AcknowledgementStatus: 'Yes', AcknowledgementInteractionIds: [901] });
     } finally { globalThis.fetch = realFetch; }
 
     const expired = await run(handler, { url: '/api/admin/check-intake/review?t=nonsense' });
@@ -271,5 +291,45 @@ describe('the routes', () => {
       globalThis.fetch = realFetch;
       for (const k of ['MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET']) delete process.env[k];
     }
+  });
+});
+
+describe('acknowledging the gift', () => {
+  const tx = { Id: 44016641, AccountId: 24042, Date: '2026-11-06T00:00:00', Amount: 50, Method: 'Check', CheckNumber: '12301', CheckDate: '2026-10-18T00:00:00',
+    Designations: [{ Id: 44016642, Type: 'Donation', Amount: 50, Fund: { Id: 13317 }, Note: 'Memo: 2026', AcknowledgementStatus: 'No', AcknowledgementInteractionIds: [] }] };
+
+  it('logs an Acknowledgement interaction and sets the gift to Yes, keeping every other field', async () => {
+    const f = fakeFetch([
+      ['/interaction', { method: 'POST', data: { Id: 900 } }],
+      ['/transaction/44016641', { method: 'PUT', data: (u, init) => ({ ...JSON.parse(init.body), Designations: [{ ...JSON.parse(init.body).Designations[0], Fund: { Id: 13317 } }] }) }],
+      ['/transaction/44016641', { data: tx }],
+    ]);
+    const r = await acknowledgeGift({ bloomerangKey: 'k', transactionId: 44016641, subject: 'Thank you', note: 'sent', fetchImpl: f, today: '2026-11-06' });
+    expect(r).toEqual({ interactionId: 900, date: '2026-11-06' });
+    expect(f.calls.find(c => c.url.endsWith('/interaction')).body).toMatchObject({ AccountId: 24042, Channel: 'Email', Purpose: 'Acknowledgement', Date: '2026-11-06' });
+    expect(f.calls.find(c => c.method === 'PUT').body).toEqual({ AccountId: 24042, Date: '2026-11-06', Amount: 50, Method: 'Check', CheckNumber: '12301', CheckDate: '2026-10-18',
+      Designations: [{ Type: 'Donation', Amount: 50, FundId: 13317, Note: 'Memo: 2026', AcknowledgementStatus: 'Yes', AcknowledgementInteractionIds: [900] }] });
+  });
+
+  it('will not rewrite a gift with soft credits or several parts', async () => {
+    for (const d of [{ ...tx.Designations[0], SoftCreditIds: [5] }, { ...tx.Designations[0], Tribute: { Id: 1 } }]) {
+      const f = fakeFetch([['/transaction/44016641', { data: { ...tx, Designations: [d] } }]]);
+      await expect(acknowledgeGift({ bloomerangKey: 'k', transactionId: 44016641, subject: 's', fetchImpl: f })).rejects.toThrow('by hand');
+      expect(f.calls.some(c => c.method !== 'GET')).toBe(false);
+    }
+  });
+
+  it('thanks the donor with the right tax wording for how they gave', () => {
+    const personal = checkThankYouEmail({ salutation: 'Gene and Jane', amount: 50, checkNumber: '12301', checkDate: '2026-10-18', vehicle: 'Personal check' });
+    expect(personal.html).toContain('Dear Gene and Jane,');
+    expect(personal.html).toContain('October 18, 2026');
+    expect(personal.html).toContain('EIN 54-1444564');
+    expect(checkThankYouEmail({ amount: 500, vehicle: 'Donor-advised fund' }).html).not.toContain('tax records');
+    expect(checkThankYouEmail({ amount: 500, vehicle: 'IRA distribution' }).html).toContain('qualified charitable distribution');
+  });
+
+  it('uses the name staff chose for letters', async () => {
+    const f = fakeFetch([['/constituent/24042', { data: { FullName: 'Eugene and Jane Smith', FirstName: 'Eugene and Jane', InformalName: 'Gene and Jane', PrimaryEmail: { Value: 'g@example.org' } } }]]);
+    expect(await donorContact({ bloomerangKey: 'k', accountId: 24042, fetchImpl: f })).toEqual({ email: 'g@example.org', salutation: 'Gene and Jane', name: 'Eugene and Jane Smith' });
   });
 });
