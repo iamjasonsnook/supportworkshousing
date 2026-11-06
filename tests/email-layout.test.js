@@ -48,7 +48,7 @@ describe('every website email uses the shared layout', () => {
       if (f.endsWith('_emailLayout.js')) continue;
       const src = fs.readFileSync(f, 'utf8');
       for (let i = src.indexOf('<!DOCTYPE'); i >= 0; i = src.indexOf('<!DOCTYPE', i + 1)) {
-        if (!/(res\.status\(\d+\)\.send\(`|const page = \(title, inner\) => `)\s*$/.test(src.slice(Math.max(0, i - 60), i))) offenders.push(`${path.basename(f)}:${src.slice(0, i).split('\n').length}`);
+        if (!/(res\.status\(\d+\)\.send\(`|const page = \([^)]*\) => `)\s*$/.test(src.slice(Math.max(0, i - 60), i))) offenders.push(`${path.basename(f)}:${src.slice(0, i).split('\n').length}`);
       }
     }
     expect(offenders).toEqual([]);

@@ -8,7 +8,8 @@ import {
 function fakeFetch(routes) {
   const calls = [];
   const fn = vi.fn(async (url, init = {}) => {
-    calls.push({ url, method: init.method || 'GET', body: init.body ? JSON.parse(init.body) : null });
+    let body = null; try { body = init.body ? JSON.parse(init.body) : null; } catch { body = String(init.body); }
+    calls.push({ url, method: init.method || 'GET', body });
     for (const [match, reply] of routes) {
       if (url.includes(match) && (!reply.method || reply.method === (init.method || 'GET'))) {
         const data = typeof reply.data === 'function' ? reply.data(url, init) : reply.data;
@@ -236,5 +237,39 @@ describe('the routes', () => {
     const expired = await run(handler, { url: '/api/admin/check-intake/review?t=nonsense' });
     expect(expired.statusCode).toBe(400);
     expect(expired.body).toContain('expired or is not valid');
+  });
+
+  it('serve the check image only with a valid review link, never cached', async () => {
+    vi.resetModules();
+    vi.doMock('../api/_email.js', () => ({ sendEmail: vi.fn(async () => ({})) }));
+    Object.assign(process.env, { ADMIN_TOKEN_SECRET: 'test-secret', MS_TENANT_ID: 't', MS_CLIENT_ID: 'c', MS_CLIENT_SECRET: 's' });
+    const { default: handler } = await import('../api/admin/[...path].js');
+    const realFetch = globalThis.fetch;
+    const pdf = Buffer.from('%PDF-1.4 fake').toString('base64');
+    globalThis.fetch = fakeFetch([
+      ['login.microsoftonline.com', { method: 'POST', data: { access_token: 'tok', expires_in: 3600 } }],
+      ['/messages/MSG1/attachments/ATT1', { data: { name: 'check.pdf', contentType: 'application/pdf', contentBytes: pdf } }],
+    ]);
+    try {
+      const withScan = signReview({ v: 1, sender: 's', check: slim(hofheimer), proposal: { decision: 'new', candidates: [] }, scan: { m: 'MSG1', a: 'ATT1', type: 'application/pdf' } }, 'test-secret');
+      const r = await run(handler, { url: `/api/admin/check-intake/scan?t=${withScan}` });
+      expect(r.statusCode).toBe(200);
+      expect(r.headers['content-type']).toBe('application/pdf');
+      expect(r.headers['cache-control']).toBe('private, no-store');
+      expect(Buffer.from(r.body).toString()).toBe('%PDF-1.4 fake');
+      expect(globalThis.fetch.calls.find(c => c.url.includes('/attachments/'))).toBeTruthy();
+
+      const page = await run(handler, { url: `/api/admin/check-intake/review?t=${withScan}` });
+      expect(page.body).toContain('<iframe src="/api/admin/check-intake/scan?t=');
+      expect(page.body).toContain('The check');
+
+      expect((await run(handler, { url: '/api/admin/check-intake/scan?t=forged.sig' })).statusCode).toBe(400);
+      const noScan = signReview({ v: 1, sender: 's', check: slim(hofheimer), proposal: { decision: 'new', candidates: [] } }, 'test-secret');
+      expect((await run(handler, { url: `/api/admin/check-intake/scan?t=${noScan}` })).statusCode).toBe(404);
+      expect((await run(handler, { url: `/api/admin/check-intake/review?t=${noScan}` })).body).not.toContain('The check');
+    } finally {
+      globalThis.fetch = realFetch;
+      for (const k of ['MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET']) delete process.env[k];
+    }
   });
 });

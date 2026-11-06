@@ -84,7 +84,7 @@ export async function extractChecks({ apiKey, files, fetchImpl = fetch }) {
     if (!res.ok) throw new Error(`Claude could not read ${f.name} (${res.status})`);
     const data = await res.json();
     const tool = (data.content || []).find(b => b.type === 'tool_use');
-    for (const c of tool?.input?.checks || []) out.push({ ...c, source_file: f.name });
+    for (const c of tool?.input?.checks || []) out.push({ ...c, source_file: f.name, ...(f.id ? { source_attachment: f.id } : {}) });
   }
   return { checks: out };
 }
@@ -300,26 +300,32 @@ export function problemEmail({ subject, message }) {
 
 // ─── 5. Review page and approval ─────────────────────────────────────────────
 
-const page = (title, inner) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+const page = (title, inner, wide = false) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>body{margin:0;font:15px/1.55 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;color:#4A4A4A;background:#F6F2F4}
 header{background:#9B1B5D;background-image:linear-gradient(120deg,#7D1649,#9B1B5D 60%,#B4246C);color:#fff;padding:26px 20px}
 header div,main{max-width:640px;margin:0 auto}header h1{margin:18px 0 0;font:800 26px/1.2 Montserrat,Inter,sans-serif}
-main{background:#fff;padding:26px 24px 32px}h2{color:#9B1B5D;font-size:16px;margin:24px 0 8px}
+main{background:#fff;padding:26px 24px 32px}main.wide,header.wide div{max-width:1080px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}.scan{position:sticky;top:16px}
+.scan iframe,.scan img{width:100%;border:1px solid #E9DEE5;border-radius:8px;background:#F6F2F4;display:block}.scan iframe{height:78vh;min-height:420px}
+@media(max-width:900px){.split{grid-template-columns:1fr}.scan{position:static}.scan iframe{height:46vh;min-height:300px}}h2{color:#9B1B5D;font-size:16px;margin:24px 0 8px}
 label{display:block;font-size:13px;color:#76666F;margin:12px 0 4px}input,select,textarea{width:100%;box-sizing:border-box;font:inherit;padding:9px 11px;border:1px solid #D5C6CF;border-radius:8px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #E9DEE5;border-radius:8px;margin:8px 0}
 .opt input{width:auto;margin-top:4px}.muted{color:#76666F;font-size:13px}.warn{background:#FBF0DE;border-left:4px solid #965700;padding:12px 14px;border-radius:4px;margin:14px 0}
 .bad{background:#FBE7E9;border-left-color:#B3202D}button{background:#9B1B5D;color:#fff;border:0;border-radius:8px;padding:13px 22px;font:700 15px Inter,sans-serif;cursor:pointer;margin-top:22px}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}</style></head>
-<body><header><div><img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" height="26"><h1>${esc(title)}</h1></div></header><main>${inner}</main></body></html>`;
+<body><header${wide ? ' class="wide"' : ''}><div><img src="https://supportworkshousing.org/images/logo-white.png" alt="SupportWorks Housing" height="26"><h1>${esc(title)}</h1></div></header><main${wide ? ' class="wide"' : ''}>${inner}</main></body></html>`;
 
-export function reviewPage(token, p) {
+// scanUrl: where the page can load the scan (the mailbox copy); none means no image.
+export function reviewPage(token, p, { scanUrl = null } = {}) {
   const c = p.check, prop = p.proposal;
   const unsure = new Set(c.uncertain_fields || []);
   const f = (name, label, value, type = 'text') => `<div><label for="${name}">${label}${unsure.has(name) ? ' <b style="color:#965700">(check this)</b>' : ''}</label><input id="${name}" name="${name}" type="${type}" value="${esc(value ?? '')}"${type === 'number' ? ' step="0.01" min="0.01"' : ''}></div>`;
   const opts = prop.candidates.map((cand, i) => `<label class="opt"><input type="radio" name="account" value="${cand.id}"${(prop.decision === 'existing' && i === 0) ? ' checked' : ''}><span><b>${esc(cand.name)}</b> (ID ${cand.id})<br><span class="muted">${esc([cand.street, cand.city].filter(Boolean).join(', ') || 'No address on file')}. ${cand.lastGift ? `Last gift ${usd(cand.lastGift.amount)} on ${fmtDate(cand.lastGift.date)}.` : 'No gifts yet.'} Match: ${esc(cand.why.join(', '))}.</span></span></label>`).join('');
   const via = c.vehicle && c.vehicle !== 'Personal check' ? `${c.vehicle}${c.payer_name && c.donor_type !== 'Organization' ? ` via ${c.payer_name}` : ''}` : '';
   const note = [via, c.memo ? `Memo: ${c.memo}` : ''].filter(Boolean).join('. ');
-  return page('Review Check Gift', `
+  const scan = scanUrl ? `<div class="scan"><h2 style="margin-top:0">The check</h2>${/pdf/.test(p.scan?.type || '') ? `<iframe src="${esc(scanUrl)}#toolbar=0&navpanes=0&view=FitH" title="Check scan"></iframe>` : `<img src="${esc(scanUrl)}" alt="Check scan">`}
+<p class="muted"><a href="${esc(scanUrl)}" target="_blank" rel="noopener" style="color:#9B1B5D">Open the scan full size</a></p></div>` : '';
+  const form = `
 ${prop.duplicate ? `<div class="warn bad"><b>Already in Bloomerang?</b> Transaction #${prop.duplicate.number} (ID ${prop.duplicate.id}) has the same check number and amount. Approval will be refused while it exists.</div>` : ''}
 ${c.is_donation === false ? `<div class="warn"><b>This may not be a donation.</b> ${esc(c.non_donation_reason || '')}</div>` : ''}
 <p class="muted">Sent by ${esc(p.sender)}. Scan: ${esc(c.source_file || '')}. Correct anything below, then approve. The gift goes to the <b>Unrestricted Fund</b>.</p>
@@ -337,7 +343,8 @@ ${f('organization_name', 'Organization name', c.organization_name)}
 ${f('street', 'Street', c.street)}<div class="grid">${f('city', 'City', c.city)}${f('state', 'State', c.state)}</div>${f('postal_code', 'ZIP', c.postal_code)}
 <button type="submit">Approve and enter in Bloomerang</button>
 <p class="muted">Not a gift, or not ready? Close this page. Nothing is entered unless you approve.</p>
-</form>`);
+</form>`;
+  return scan ? page('Review Check Gift', `<div class="split">${scan}<div>${form}</div></div>`, true) : page('Review Check Gift', form);
 }
 
 export const resultPage = (title, html) => page(title, html);

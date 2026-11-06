@@ -18,7 +18,7 @@ import { emailLayout } from '../_emailLayout.js';
 import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, nyParts, weekWindow } from '../_givingDigest.js';
 import { waitUntil } from '@vercel/functions';
 import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed } from '../_checkIntake.js';
-import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage } from '../_graph.js';
+import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage, getAttachment } from '../_graph.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
 
@@ -630,7 +630,9 @@ async function processCheckMessage(id) {
     }
     for (const check of checks) {
       const proposal = await proposeEntry({ bloomerangKey: process.env.BLOOMERANG_API_KEY, check });
-      const t = signReview({ v: 1, sender: m.from, check: slim(check), proposal }, reviewSecret());
+      const file = files.find(f => f.id === check.source_attachment);
+      const scan = file ? { m: claimed, a: file.id, type: file.mediaType } : null;
+      const t = signReview({ v: 1, sender: m.from, check: slim(check), proposal, scan }, reviewSecret());
       const { subject, html } = reviewEmail({ check, proposal, sender: m.from, reviewUrl: `${SITE}/api/admin/check-intake/review?t=${t}` });
       await sendEmail({ to: intakeRecipients(m.from), subject, html, replyTo: m.from });
     }
@@ -681,9 +683,10 @@ async function handleCheckIntakeReview(req, res) {
   const payload = verifyReview(token, reviewSecret());
   if (!payload) return send(400, resultPage('Link Expired', '<p>This review link has expired or is not valid. Nothing was entered. Send the scan to the donation checks inbox again for a new link, or enter the gift in Bloomerang by hand.</p>'));
   // GET only shows the page, so link scanners that open it change nothing.
-  if (req.method !== 'POST') return send(200, reviewPage(token, payload));
+  const scanUrl = payload.scan && graphConfigured() ? `/api/admin/check-intake/scan?t=${encodeURIComponent(token)}` : null;
+  if (req.method !== 'POST') return send(200, reviewPage(token, payload, { scanUrl }));
   const { form, errors } = readForm(req.body || {});
-  if (errors.length) return send(400, reviewPage(token, payload).replace('<form method="post">', `<div class="warn bad"><b>Fix this first:</b> ${errors.map(escHtml).join(' ')}</div><form method="post">`));
+  if (errors.length) return send(400, reviewPage(token, payload, { scanUrl }).replace('<form method="post">', `<div class="warn bad"><b>Fix this first:</b> ${errors.map(escHtml).join(' ')}</div><form method="post">`));
   try {
     const result = await approveEntry({ bloomerangKey: process.env.BLOOMERANG_API_KEY, payload, form });
     if (result.refused) {
@@ -696,6 +699,28 @@ async function handleCheckIntakeReview(req, res) {
   } catch (error) {
     console.error('Check approval error:', error.message);
     return send(500, resultPage('Not Entered', `<p>Bloomerang returned an error, so nothing was entered: ${escHtml(error.message)}. Try again, or enter the gift by hand.</p>`));
+  }
+}
+
+// The check image for a review page, fetched from the mailbox each time and
+// never stored. The same signed link that opens the review is required: the
+// scan shows the donor's bank account and routing numbers.
+async function handleCheckIntakeScan(req, res) {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  const payload = reviewSecret() && verifyReview(new URL(req.url || '', 'https://x').searchParams.get('t'), reviewSecret());
+  if (!payload) return res.status(400).json({ error: 'Link expired or not valid' });
+  if (!payload.scan || !graphConfigured()) return res.status(404).json({ error: 'No scan for this check' });
+  try {
+    const a = await getAttachment(payload.scan.m, payload.scan.a);
+    if (!SUPPORTED_TYPES[a.mediaType]) return res.status(415).json({ error: 'Not a scan type this page shows' });
+    res.setHeader('Content-Type', a.mediaType);
+    res.setHeader('Content-Disposition', `inline; filename="${String(a.name || 'check').replace(/[^\w.\- ]+/g, '_')}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.status(200).send(a.bytes);
+  } catch (error) {
+    console.error('Check scan fetch error:', error.message);
+    return res.status(error.status === 404 ? 404 : 502).json({ error: error.status === 404 ? 'The email with this scan was deleted or moved out of the mailbox' : 'Could not load the scan' });
   }
 }
 
@@ -1525,6 +1550,7 @@ export default async function handler(req, res) {
   if (method === 'POST' && path === 'check-intake/notify') return handleCheckIntakeNotify(req, res);
   if (method === 'GET' && path === 'check-intake/sweep') return handleCheckIntakeSweep(req, res);
   if ((method === 'GET' || method === 'POST') && path === 'check-intake/review') return handleCheckIntakeReview(req, res);
+  if (method === 'GET' && path === 'check-intake/scan') return handleCheckIntakeScan(req, res);
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;
   // authenticated by the secret token in its URL, not an admin session.

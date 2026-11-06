@@ -29,7 +29,9 @@ export async function graphToken(fetchImpl = fetch) {
 
 export async function graph(path, init = {}, fetchImpl = fetch) {
   const res = await fetchImpl(path.startsWith('http') ? path : GRAPH + path, {
-    ...init, headers: { Authorization: `Bearer ${await graphToken(fetchImpl)}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+    // Immutable IDs survive moving a message between folders, so a review
+    // link can still find its scan after the message is filed in Processed.
+    ...init, headers: { Authorization: `Bearer ${await graphToken(fetchImpl)}`, 'Content-Type': 'application/json', Prefer: 'IdType="ImmutableId"', ...(init.headers || {}) },
   });
   if (res.status === 204) return null;
   const text = await res.text();
@@ -89,6 +91,12 @@ export async function getMessage(id, fetchImpl = fetch) {
     // Photos pasted into the body arrive as inline attachments; small inline
     // images are signature logos and are skipped.
     attachments: (atts?.value || []).filter(a => a['@odata.type'] === '#microsoft.graph.fileAttachment' && (!a.isInline || (/^image\//i.test(a.contentType || '') && a.size > 50_000)))
-      .map(a => ({ name: a.name, mediaType: (a.contentType || '').toLowerCase(), base64: a.contentBytes, size: a.size })),
+      .map(a => ({ id: a.id, name: a.name, mediaType: (a.contentType || '').toLowerCase(), base64: a.contentBytes, size: a.size })),
   };
+}
+
+// One attachment's bytes, for showing the scan on the review page.
+export async function getAttachment(messageId, attachmentId, fetchImpl = fetch) {
+  const a = await graph(`${box()}/messages/${messageId}/attachments/${attachmentId}`, {}, fetchImpl);
+  return { name: a.name, mediaType: (a.contentType || 'application/octet-stream').toLowerCase(), bytes: Buffer.from(a.contentBytes || '', 'base64') };
 }
