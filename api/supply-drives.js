@@ -6,6 +6,7 @@ import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
+import { LOCATIONS, clip, isOneEmail } from './_formInput.js';
 import { emailLayout } from './_emailLayout.js';
 
 const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -98,20 +99,27 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many submissions. Please try again tomorrow.' });
   }
 
-  const {
-    location_id,
-    location_name,
-    location_address,
-    drop_off_date,
-    drop_off_time,
-    contact_name,
-    contact_email,
-    contact_phone,
-    selected_items,
-  } = req.body || {};
+  // Only clean, length-limited values go any further (see _formInput.js).
+  const body = req.body || {};
+  const location_id = clip(body.location_id, 60);
+  const location = LOCATIONS[location_id];
+  const location_name = location?.name;
+  const location_address = location?.address;
+  const drop_off_date = clip(body.drop_off_date, 60);
+  const drop_off_time = clip(body.drop_off_time, 60);
+  const contact_name = clip(body.contact_name, 100);
+  const contact_email = clip(body.contact_email, 254);
+  const contact_phone = clip(body.contact_phone, 30);
+  const selected_items = (Array.isArray(body.selected_items) ? body.selected_items : []).slice(0, 60).map(i => clip(i, 80)).filter(Boolean);
 
   if (!contact_name || !contact_email || !drop_off_date) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  if (!isOneEmail(contact_email)) {
+    return res.status(400).json({ error: 'Please enter one valid email address.' });
+  }
+  if (!location) {
+    return res.status(400).json({ error: 'Please choose a drop-off location.' });
   }
 
   const appUrl = process.env.APP_URL || 'https://supportworkshousing.org';

@@ -17,20 +17,20 @@ const getApprovalEmail = (data) => ({
       title: `Your Drop-Off is Confirmed!`,
       css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; } .items-list { margin: 10px 0; padding-left: 20px; }`,
       body: `
-    <p>Dear ${data.contact_name},</p>
+    <p>Dear ${escHtml(data.contact_name)},</p>
     <div class="success-box">
       <p style="margin: 0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p>
     </div>
     <p>Thank you for donating essential items to support our residents!</p>
 
     <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
-    <div class="info-row"><span class="info-label">Location:</span> ${data.location_name}</div>
-    <div class="info-row"><span class="info-label">Address:</span> ${data.location_address}</div>
-    <div class="info-row"><span class="info-label">Date & Time:</span> ${data.drop_off_date}, ${data.drop_off_time}</div>
+    <div class="info-row"><span class="info-label">Location:</span> ${escHtml(data.location_name)}</div>
+    <div class="info-row"><span class="info-label">Address:</span> ${escHtml(data.location_address)}</div>
+    <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(data.drop_off_date)}, ${escHtml(data.drop_off_time)}</div>
 
     ${data.selected_items && data.selected_items.length > 0 ? `
     <div class="info-row"><span class="info-label">Items:</span></div>
-    <ul class="items-list">${data.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>
+    <ul class="items-list">${data.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>
     ` : ''}
 
     <p style="margin-top: 30px;">You'll receive a reminder 3 days before your drop-off. If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>

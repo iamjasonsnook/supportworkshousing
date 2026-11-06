@@ -7,6 +7,7 @@ import { setCorsHeaders } from './_cors.js';
 import { findOrCreatePerson } from './_people.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
+import { LOCATIONS, clip, isOneEmail } from './_formInput.js';
 import { emailLayout } from './_emailLayout.js';
 
 const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -113,54 +114,20 @@ const getMissionAdvancementEmail = (data, confirmationToken, appUrl) => {
   };
 };
 
-const getApprovalEmail = (data) => {
-  const locationInfo = `${data.location_name} - ${data.location_address}`;
-  const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
-
+function cleanRequest(raw) {
+  const b = raw && typeof raw === 'object' ? raw : {};
+  const g = b.group || {}, c = b.contact || {}, e = b.event || {}, t = b.timeSlot || {};
+  const id = clip(b.location?.id, 60);
+  const size = parseInt(g.size, 10);
   return {
-    subject: 'Connection Night Request Approved! - SupportWorks Housing',
-    html: emailLayout({
-        title: `🎉 Your Connection Night is Confirmed!`,
-        css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; }`,
-        body: `
-      <p>Dear ${data.contact_name},</p>
-
-      <div class="success-box">
-        <p style="margin: 0;"><strong>Great news!</strong> Your Connection Night request has been approved by our team.</p>
-      </div>
-
-      <p>We're excited to have you host this event and create meaningful connections within our community!</p>
-
-      <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
-      <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
-      <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
-      <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
-
-      <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
-      <ul style="line-height: 2;">
-        <li>You'll receive a reminder email 3 days before the event</li>
-        <li>The property manager has been notified and will be ready to welcome you</li>
-        <li>Please arrive 15 minutes early to coordinate with property staff</li>
-        <li>Bring any materials or food you planned for the evening</li>
-      </ul>
-
-      <h3 style="color: #1A1A1A; margin-top: 25px;">Day of the Event:</h3>
-      <ul style="line-height: 2;">
-        <li>Check in with the property manager upon arrival</li>
-        <li>Set up in the designated common area</li>
-        <li>Welcome residents and create a warm, inclusive atmosphere</li>
-        <li>Enjoy building connections through food and activities!</li>
-      </ul>
-
-      <p style="margin-top: 30px;">If you have any questions or need to make changes, please contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
-
-      <p><strong>Thank you for making a difference!</strong></p>
-
-      <p style="margin-top: 20px;">SupportWorks Housing Team</p>
-      `,
-    }),
+    location: LOCATIONS[id] ? { id, ...LOCATIONS[id] } : null,
+    timeSlot: { id: clip(t.id, 60), day: clip(t.day, 60), time: clip(t.time, 60) },
+    alternateDateTime: clip(b.alternateDateTime, 200),
+    group: { isIndividual: !!g.isIndividual, name: clip(g.name, 150), size: Number.isFinite(size) ? Math.min(Math.max(size, 1), 500) : null },
+    contact: { name: clip(c.name, 100), email: clip(c.email, 254), phone: clip(c.phone, 30) },
+    event: { foodPlan: clip(e.foodPlan, 60), foodDetails: clip(e.foodDetails, 1000), activityPlan: clip(e.activityPlan, 60), activityDetails: clip(e.activityDetails, 1000), propertyNotes: clip(e.propertyNotes, 1000) },
   };
-};
+}
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -184,7 +151,17 @@ export default async function handler(req, res) {
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
     const appUrl = process.env.APP_URL || 'https://supportworkshousing.org';
 
-    const requestData = req.body;
+    // Only clean, length-limited values go any further (see _formInput.js).
+    const requestData = cleanRequest(req.body);
+    if (!requestData.contact.name || !requestData.contact.email || !requestData.timeSlot.id) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    if (!isOneEmail(requestData.contact.email)) {
+      return res.status(400).json({ error: 'Please enter one valid email address.' });
+    }
+    if (!requestData.location) {
+      return res.status(400).json({ error: 'Please choose a location.' });
+    }
 
     // Build data object for email templates
     const emailData = {
@@ -235,7 +212,8 @@ export default async function handler(req, res) {
             activity_details: requestData.event.activityDetails,
             property_notes: requestData.event.propertyNotes,
             mission_advancement_email: ADMIN_EMAIL,
-            property_manager_email: requestData.recipients?.propertyManager || ADMIN_EMAIL,
+            // Never taken from the form: it decides who gets the approval email.
+            property_manager_email: ADMIN_EMAIL,
             status: 'pending',
           },
         ])

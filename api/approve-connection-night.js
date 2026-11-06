@@ -12,8 +12,8 @@ const APP_URL = process.env.APP_URL || 'https://supportworkshousing.org';
 const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const getApprovalEmail = (data) => {
-  const locationInfo = `${data.location_name} - ${data.location_address}`;
-  const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
+  const locationInfo = `${escHtml(data.location_name)} - ${escHtml(data.location_address)}`;
+  const timeInfo = `${escHtml(data.time_slot_day)}, ${escHtml(data.time_slot_time)}`;
 
   return {
     subject: 'Community Connection Confirmed! - SupportWorks Housing',
@@ -21,7 +21,7 @@ const getApprovalEmail = (data) => {
         title: `Your Community Connection is Confirmed!`,
         css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; }`,
         body: `
-      <p>Dear ${data.contact_name},</p>
+      <p>Dear ${escHtml(data.contact_name)},</p>
 
       <div class="success-box">
         <p style="margin: 0;"><strong>Great news!</strong> Your Community Connection request has been confirmed by our team.</p>
@@ -32,7 +32,7 @@ const getApprovalEmail = (data) => {
       <h2 style="color: #9B1B5D;">Your Community Connection Details</h2>
       <div class="info-row"><span class="info-label">Location:</span> ${locationInfo}</div>
       <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
-      <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
+      <div class="info-row"><span class="info-label">Group Size:</span> ${escHtml(data.group_size)} people</div>
 
       <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
       <ul style="line-height: 2;">
@@ -61,12 +61,12 @@ const getApprovalEmail = (data) => {
 };
 
 const getPropertyManagerEmail = (data) => {
-  const locationInfo = `${data.location_name} - ${data.location_address}`;
-  const timeInfo = `${data.time_slot_day}, ${data.time_slot_time}`;
+  const locationInfo = `${escHtml(data.location_name)} - ${escHtml(data.location_address)}`;
+  const timeInfo = `${escHtml(data.time_slot_day)}, ${escHtml(data.time_slot_time)}`;
   const groupType = data.is_individual ? 'Individual' : 'Group/Organization';
 
   return {
-    subject: `Connection Night Scheduled - ${timeInfo}`,
+    subject: `Connection Night Scheduled - ${data.time_slot_day}, ${data.time_slot_time}`,
     html: emailLayout({
         title: `Community Connection Scheduled`,
         css: `.info-box { background-color: #FDF2F4; border-left: 4px solid #9B1B5D; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; display: inline-block; min-width: 140px; }`,
@@ -83,18 +83,18 @@ const getPropertyManagerEmail = (data) => {
 
       <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Volunteer Group</h3>
       <div class="info-row"><span class="info-label">Type:</span> ${groupType}</div>
-      <div class="info-row"><span class="info-label">Group Name:</span> ${data.group_name}</div>
-      <div class="info-row"><span class="info-label">Contact:</span> ${data.contact_name}</div>
-      <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${data.contact_email}" style="color: #9B1B5D;">${data.contact_email}</a></div>
-      <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${data.contact_phone}" style="color: #9B1B5D;">${data.contact_phone}</a></div>
-      <div class="info-row"><span class="info-label">Group Size:</span> ${data.group_size} people</div>
+      <div class="info-row"><span class="info-label">Group Name:</span> ${escHtml(data.group_name)}</div>
+      <div class="info-row"><span class="info-label">Contact:</span> ${escHtml(data.contact_name)}</div>
+      <div class="info-row"><span class="info-label">Email:</span> <a href="mailto:${escHtml(data.contact_email)}" style="color: #9B1B5D;">${escHtml(data.contact_email)}</a></div>
+      <div class="info-row"><span class="info-label">Phone:</span> <a href="tel:${escHtml(data.contact_phone)}" style="color: #9B1B5D;">${escHtml(data.contact_phone)}</a></div>
+      <div class="info-row"><span class="info-label">Group Size:</span> ${escHtml(data.group_size)} people</div>
 
       <h3 style="color: #1A1A1A; font-size: 16px; margin-top: 20px;">Event Plan</h3>
       <div class="info-row"><span class="info-label">Food Plan:</span> ${data.food_plan === 'bring' ? 'Bring food' : data.food_plan === 'cater' ? 'Cater/deliver food' : 'Request guidance'}</div>
-      ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${data.food_details}</div>` : ''}
-      <div class="info-row"><span class="info-label">Activity:</span> ${data.activity_plan}</div>
-      ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${data.activity_details}</div>` : ''}
-      ${data.property_notes ? `<div class="info-box" style="margin-top: 20px;"><strong>Special Notes:</strong><br>${data.property_notes}</div>` : ''}
+      ${data.food_details ? `<div class="info-row"><span class="info-label">Food Details:</span> ${escHtml(data.food_details)}</div>` : ''}
+      <div class="info-row"><span class="info-label">Activity:</span> ${escHtml(data.activity_plan)}</div>
+      ${data.activity_details ? `<div class="info-row"><span class="info-label">Activity Details:</span> ${escHtml(data.activity_details)}</div>` : ''}
+      ${data.property_notes ? `<div class="info-box" style="margin-top: 20px;"><strong>Special Notes:</strong><br>${escHtml(data.property_notes)}</div>` : ''}
 
       <h3 style="color: #1A1A1A; margin-top: 25px;">Preparation:</h3>
       <ul style="line-height: 2;">

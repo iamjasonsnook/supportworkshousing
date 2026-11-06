@@ -582,7 +582,7 @@ async function handleGivingDigest(req, res) {
     const { subject, html } = givingDigestEmail({ gifts: [...gifts, ...checks], tests, start, last, checksUnavailable });
     // One email with everyone on the To line, so each recipient sees who else has it.
     const to = q.get('only') === 'admin' ? [ADMIN_EMAIL] : DIGEST_RECIPIENTS;
-    await sendEmail({ to: to.join(', '), subject, html, replyTo: ADMIN_EMAIL });
+    await sendEmail({ to: to.join(', '), subject, html, replyTo: ADMIN_EMAIL, multipleRecipients: true });
     return res.status(200).json({ recipients: to.length, gifts: gifts.length, checks: checks.length, from: start.toISOString(), to: end.toISOString() });
   } catch (error) {
     console.error('Giving digest error:', error.message);
@@ -810,8 +810,8 @@ async function handleApproveEvent(req, res, id) {
   // Send volunteer confirmation email
   try {
     const appUrl = 'https://supportworkshousing.org';
-    const locationInfo = `${eventData.location_name} - ${eventData.location_address}`;
-    const timeInfo = `${eventData.time_slot_day}, ${eventData.time_slot_time}`;
+    const locationInfo = `${escHtml(eventData.location_name)} - ${escHtml(eventData.location_address)}`;
+    const timeInfo = `${escHtml(eventData.time_slot_day)}, ${escHtml(eventData.time_slot_time)}`;
     await sendEmail({
       to: eventData.contact_email,
       subject: 'Your Community Connection is Confirmed! - SupportWorks Housing',
@@ -819,14 +819,14 @@ async function handleApproveEvent(req, res, id) {
           title: `Your Community Connection is Confirmed!`,
           css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; }`,
           body: `
-        <p>Dear ${eventData.contact_name},</p>
+        <p>Dear ${escHtml(eventData.contact_name)},</p>
         <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your Community Connection has been confirmed by our team.</p></div>
         <p>We're excited to have you create meaningful connections with our residents!</p>
         <h2 style="color: #9B1B5D;">Confirmed Event Details</h2>
-        <div class="info-row"><span class="info-label">Location:</span> ${eventData.location_name}</div>
-        <div class="info-row"><span class="info-label">Address:</span> ${eventData.location_address}</div>
+        <div class="info-row"><span class="info-label">Location:</span> ${escHtml(eventData.location_name)}</div>
+        <div class="info-row"><span class="info-label">Address:</span> ${escHtml(eventData.location_address)}</div>
         <div class="info-row"><span class="info-label">Date & Time:</span> ${timeInfo}</div>
-        <div class="info-row"><span class="info-label">Group Size:</span> ${eventData.group_size} people</div>
+        <div class="info-row"><span class="info-label">Group Size:</span> ${escHtml(eventData.group_size)} people</div>
         <h3 style="color: #1A1A1A; margin-top: 25px;">Before the Event:</h3>
         <ul style="line-height: 2;">
           <li>The property manager has been notified and will be ready to welcome you</li>
@@ -907,16 +907,16 @@ async function handleApproveSupplyDrive(req, res, id) {
           title: `Your Drop-Off is Confirmed!`,
           css: `.success-box { background-color: #D1FAE5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 4px; } .info-row { margin: 10px 0; } .info-label { font-weight: 600; color: #1A1A1A; } .items-list { margin: 10px 0; padding-left: 20px; }`,
           body: `
-        <p>Dear ${driveData.contact_name},</p>
+        <p>Dear ${escHtml(driveData.contact_name)},</p>
         <div class="success-box"><p style="margin:0;"><strong>Great news!</strong> Your supply drop-off has been confirmed by our team.</p></div>
         <p>Thank you for donating essential items to support our residents!</p>
         <h2 style="color: #9B1B5D;">Confirmed Drop-Off Details</h2>
-        <div class="info-row"><span class="info-label">Location:</span> ${driveData.location_name}</div>
-        <div class="info-row"><span class="info-label">Address:</span> ${driveData.location_address}</div>
-        <div class="info-row"><span class="info-label">Date & Time:</span> ${driveData.drop_off_date}, ${driveData.drop_off_time}</div>
+        <div class="info-row"><span class="info-label">Location:</span> ${escHtml(driveData.location_name)}</div>
+        <div class="info-row"><span class="info-label">Address:</span> ${escHtml(driveData.location_address)}</div>
+        <div class="info-row"><span class="info-label">Date & Time:</span> ${escHtml(driveData.drop_off_date)}, ${escHtml(driveData.drop_off_time)}</div>
         ${driveData.selected_items && driveData.selected_items.length > 0 ? `
         <div class="info-row"><span class="info-label">Items:</span></div>
-        <ul class="items-list">${driveData.selected_items.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
+        <ul class="items-list">${driveData.selected_items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>` : ''}
         <p style="margin-top: 30px;">If you need to make any changes, contact us at <a href="mailto:${ADMIN_EMAIL}" style="color: #9B1B5D;">${ADMIN_EMAIL}</a>.</p>
         <p><strong>Thank you for making a difference!</strong></p>
         <p>SupportWorks Housing Team</p>
