@@ -17,6 +17,7 @@ import { allChargingSchedules, constituentContact } from '../_bloomerang.js';
 import { emailLayout } from '../_emailLayout.js';
 import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, loadCheckGifts, nyParts, weekWindow } from '../_givingDigest.js';
 import { waitUntil } from '@vercel/functions';
+import { loginLocked, recordLogin, LIMITS } from '../_loginGuard.js';
 import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed, donorContact, checkThankYouEmail, acknowledgeGift, ackLine } from '../_checkIntake.js';
 import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage, getAttachment } from '../_graph.js';
 
@@ -384,7 +385,7 @@ async function handleSendBroadcast(req, res) {
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-function handleLogin(req, res) {
+async function handleLogin(req, res) {
   const secret = process.env.ADMIN_TOKEN_SECRET;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -392,9 +393,20 @@ function handleLogin(req, res) {
     return res.status(500).json({ error: 'Admin auth not configured' });
   }
 
-  const { password: inputPassword } = req.body || {};
+  // Lockout first, before the password is even looked at (see _loginGuard.js).
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const supabase = getSupabase();
+  let lock = { locked: false };
+  try { lock = await loginLocked(supabase, ip); } catch (e) { console.error('Login lockout check failed:', e.message); }
+  if (lock.locked) {
+    return res.status(429).json({ success: false, error: `Too many failed attempts. Try again in ${LIMITS.minutes} minutes.` });
+  }
 
-  if (!inputPassword || !safeCompare(inputPassword, password)) {
+  const { password: inputPassword } = req.body || {};
+  const ok = !!inputPassword && safeCompare(inputPassword, password);
+  try { await recordLogin(supabase, ip, ok); } catch (e) { console.error('Login attempt record failed:', e.message); }
+
+  if (!ok) {
     // 1-second delay on failed attempts (brute-force mitigation)
     return new Promise((resolve) => {
       setTimeout(() => {
