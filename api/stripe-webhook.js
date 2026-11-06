@@ -7,6 +7,8 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { findOrCreatePerson } from './_people.js';
+import { sendEmail } from './_email.js';
+import { emailLayout } from './_emailLayout.js';
 
 // Vercel config: disable body parsing so we can verify the raw signature
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
@@ -66,6 +68,42 @@ export async function invoicePaymentIntentId(stripe, invoice) {
     console.error('Invoice payment lookup failed:', e.message);
     return null;
   }
+}
+
+// Stripe delivers events at least once, and staff can press Resend, so the
+// same payment can arrive twice. The donations table remembers which
+// payments already have a Bloomerang gift; returns that gift's id, or null.
+export async function bloomerangGiftAlreadyLogged(supabase, paymentIntentId) {
+  if (!supabase || !paymentIntentId) return null;
+  const { data } = await supabase.from('donations').select('bloomerang_transaction_id')
+    .eq('stripe_payment_intent_id', paymentIntentId).not('bloomerang_transaction_id', 'is', null).maybeSingle();
+  return data?.bloomerang_transaction_id || null;
+}
+
+// Several Bloomerang records with exactly the donor's name: use the one whose
+// email or phone also matches. If none does, return null rather than guess:
+// a gift on the wrong person's record is worse than a duplicate record, which
+// staff can merge (the caller creates a new record and tells staff).
+export async function pickAmongNameMatches(matches, { email, phone }, getDetail) {
+  const wantPhone = String(phone || '').replace(/\D/g, '');
+  for (const m of matches) {
+    const d = await getDetail(m.Id);
+    if (email && d.PrimaryEmail?.Value?.toLowerCase() === email.toLowerCase()) return { id: m.Id, by: 'email' };
+    const p = String(d.PrimaryPhone?.Number || '').replace(/\D/g, '');
+    if (wantPhone && p && p === wantPhone) return { id: m.Id, by: 'phone' };
+  }
+  return null;
+}
+
+export function sameNameEmail({ donorName, amount, paymentIntentId, newAccountId, matches }) {
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return {
+    subject: `Check Bloomerang: new record created for ${donorName}`,
+    html: emailLayout({ title: 'Possible Duplicate Donor', body: `<p>An online gift of $${Number(amount).toFixed(2)} came from <b>${esc(donorName)}</b>. Bloomerang already has ${matches.length} records with exactly that name, but none has the email or phone the donor gave, so the gift was <b>not</b> put on any of them.</p>
+<p>A new record was created instead (ID ${esc(newAccountId)}). If it is the same person as one of these, merge the records in Bloomerang:</p>
+<ul>${matches.map(m => `<li>${esc(m.FullName || `${m.FirstName} ${m.LastName}`)} (ID ${esc(m.Id)})</li>`).join('')}</ul>
+<p style="font-size:13px;color:#76666F">Stripe payment ${esc(paymentIntentId)}.</p>` }),
+  };
 }
 
 export default async function handler(req, res) {
@@ -128,7 +166,15 @@ export default async function handler(req, res) {
     // Record the donation server-side (more reliable than client-side)
     const BLOOMERANG_API_KEY = process.env.BLOOMERANG_API_KEY;
     let bloomerangTransactionId = null;
-    if (!BLOOMERANG_API_KEY) {
+    let alreadyLogged = null;
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try { alreadyLogged = await bloomerangGiftAlreadyLogged(createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY), paymentIntent.id); } catch { /* checked again by the upsert */ }
+    }
+    if (alreadyLogged) {
+      // A repeat delivery of a payment already in Bloomerang: change nothing.
+      bloomerangTransactionId = alreadyLogged;
+      console.log('Bloomerang: payment already recorded, skipping repeat delivery', paymentIntent.id);
+    } else if (!BLOOMERANG_API_KEY) {
       console.error('BLOOMERANG_API_KEY not configured');
     } else {
       try {
@@ -147,6 +193,7 @@ export default async function handler(req, res) {
         // Strategy: first check our people table for a cached bloomerang_id,
         // then search Bloomerang and verify email matches (their search is fuzzy).
         let accountId = null;
+        let sameNameMatches = null;
 
         // 1. Check if we already have a bloomerang_id cached in our people table
         if (SUPABASE_URL && SUPABASE_SERVICE_KEY && donor_email) {
@@ -229,35 +276,15 @@ export default async function handler(req, res) {
               accountId = exactMatches[0].Id;
               console.log('Bloomerang: matched constituent by name (unique)');
             } else if (exactMatches.length > 1) {
-              // Multiple name matches — cross-check with email and phone
-              console.log(`Bloomerang: ${exactMatches.length} name matches, verifying with email/phone`);
-              for (const candidate of exactMatches) {
-                const detail = await fetch(
-                  `https://api.bloomerang.co/v2/constituent/${candidate.Id}`,
-                  { headers: bloomerangHeaders }
-                ).then(r => r.json());
-
-                // Check email match
-                if (detail.PrimaryEmail?.Value?.toLowerCase() === donor_email?.toLowerCase()) {
-                  accountId = candidate.Id;
-                  console.log('Bloomerang: matched constituent by name + email');
-                  break;
-                }
-                // Check phone match
-                if (donor_phone) {
-                  const cPhone = (detail.PrimaryPhone?.Number || '').replace(/\D/g, '');
-                  const dPhone = donor_phone.replace(/\D/g, '');
-                  if (cPhone && dPhone && cPhone === dPhone) {
-                    accountId = candidate.Id;
-                    console.log('Bloomerang: matched constituent by name + phone');
-                    break;
-                  }
-                }
-              }
-              // Fallback to first exact name match
-              if (!accountId) {
-                accountId = exactMatches[0].Id;
-                console.log('Bloomerang: using first name match (multiple found)');
+              // Multiple name matches: only one whose email or phone agrees.
+              const getDetail = id => fetch(`https://api.bloomerang.co/v2/constituent/${id}`, { headers: bloomerangHeaders }).then(r => r.json());
+              const picked = await pickAmongNameMatches(exactMatches, { email: donor_email, phone: donor_phone }, getDetail);
+              if (picked) {
+                accountId = picked.id;
+                console.log(`Bloomerang: matched constituent by name + ${picked.by}`);
+              } else {
+                sameNameMatches = exactMatches;
+                console.log(`Bloomerang: ${exactMatches.length} records share this name, none confirmed; creating a new one`);
               }
             }
           } catch (nameSearchErr) {
@@ -339,6 +366,10 @@ export default async function handler(req, res) {
           } else {
             bloomerangTransactionId = txnResult.Id || null;
             console.log('Bloomerang: recorded donation $' + donorAmount);
+            if (sameNameMatches) {
+              const { subject, html } = sameNameEmail({ donorName: donor_name, amount: donorAmount, paymentIntentId: paymentIntent.id, newAccountId: accountId, matches: sameNameMatches });
+              await sendEmail({ to: ADMIN_EMAIL, subject, html }).catch(e => console.error('Same-name alert email failed:', e.message));
+            }
 
             // Cache bloomerang_id on our people record for faster future lookups
             if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
@@ -410,8 +441,8 @@ export default async function handler(req, res) {
               .update({ person_id: person.id })
               .eq('stripe_payment_intent_id', paymentIntent.id);
 
-            // Log interaction
-            await supabase.from('interactions').insert({
+            // Log interaction (once: not again for a repeat delivery)
+            if (!alreadyLogged) await supabase.from('interactions').insert({
               person_id: person.id,
               type: 'donation',
               subject: `$${(paymentIntent.amount / 100).toFixed(2)} ${donation_type || 'one-time'} donation`,
