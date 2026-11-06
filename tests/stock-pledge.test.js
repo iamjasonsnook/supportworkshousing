@@ -35,19 +35,25 @@ describe('stock pledge', () => {
       ['accountsreceivable@supportworkshousing.org', 'ada@example.org', 'jsnook@supportworkshousing.org']);
   });
 
-  it('logs a pledge in Bloomerang for the value, due on the transfer date', async () => {
+  it('writes nothing to Bloomerang: staff get a review link instead', async () => {
+    process.env.ADMIN_TOKEN_SECRET = 'test-secret';
     await call(valid);
-    expect(findOrCreateConstituent).toHaveBeenCalledWith('bl_test', { firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.org' });
-    expect(createPledge).toHaveBeenCalledWith('bl_test', expect.objectContaining({ accountId: 777, amount: 5000, dueDate: '2026-11-02' }));
-    expect(to('jsnook@supportworkshousing.org').html).toContain('Logged in Bloomerang as a pledge of $5,000.00');
+    expect(findOrCreateConstituent).not.toHaveBeenCalled();
+    expect(createPledge).not.toHaveBeenCalled();
+    const staff = to('jsnook@supportworkshousing.org').html;
+    expect(staff).toContain('Nothing is in Bloomerang yet.');
+    expect(staff).toMatch(/href="https:\/\/supportworkshousing\.org\/api\/admin\/pledge-review\?t=[\w-]+\.[\w-]+"/);
   });
 
-  it('still sends every email if Bloomerang fails, and says so to staff', async () => {
-    createPledge.mockRejectedValueOnce(new Error('Bloomerang POST /transaction failed (500)'));
-    const res = await call(valid);
-    expect(res.statusCode).toBe(200);
-    expect(sendEmail).toHaveBeenCalledTimes(3);
-    expect(to('accountsreceivable@supportworkshousing.org').html).toContain('could NOT be logged in Bloomerang');
+  it('refuses the form when the bot check is on and fails', async () => {
+    process.env.TURNSTILE_SECRET_KEY = 'ts';
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ json: async () => ({ success: false }) });
+    try {
+      const res = await call({ ...valid, turnstileToken: 'bad' });
+      expect(res.statusCode).toBe(400);
+      expect(sendEmail).not.toHaveBeenCalled();
+    } finally { globalThis.fetch = realFetch; delete process.env.TURNSTILE_SECRET_KEY; }
   });
 
   it('gives the donor the value, the date and the transfer instructions', async () => {

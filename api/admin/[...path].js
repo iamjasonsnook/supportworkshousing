@@ -18,6 +18,7 @@ import { emailLayout } from '../_emailLayout.js';
 import { DIGEST_RECIPIENTS, digestGifts, givingDigestEmail, loadCheckGifts, nyParts, weekWindow } from '../_givingDigest.js';
 import { waitUntil } from '@vercel/functions';
 import { loginLocked, recordLogin, LIMITS } from '../_loginGuard.js';
+import { pledgeCandidates, pledgeReviewPage, readPledgeForm, approvePledge } from '../_pledgeReview.js';
 import { SUPPORTED_TYPES, extractChecks, proposeEntry, signReview, verifyReview, slim, reviewEmail, enteredEmail, problemEmail, reviewPage, resultPage, readForm, approveEntry, senderAllowed, donorContact, checkThankYouEmail, acknowledgeGift, ackLine } from '../_checkIntake.js';
 import { MAILBOX, PROCESSED, NEEDS_ATTENTION, graphConfigured, ensureSubscription, inboxMessageIds, moveMessage, getMessage, getAttachment } from '../_graph.js';
 
@@ -738,6 +739,30 @@ async function thankDonor({ result, form, check }) {
   } catch (error) {
     console.error('Acknowledgment update failed:', error.message);
     return { sent: false, reason: `the thank-you email was sent, but Bloomerang could not be updated (${error.message}). Mark the acknowledgment as Yes in Bloomerang.` };
+  }
+}
+
+async function handlePledgeReview(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  const send = (status, html) => res.status(status).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+  const key = process.env.BLOOMERANG_API_KEY;
+  if (!reviewSecret() || !key) return send(503, resultPage('Not Available', '<p>Pledge review is not configured.</p>'));
+  const token = req.method === 'POST' ? req.body?.t : new URL(req.url || '', 'https://x').searchParams.get('t');
+  const payload = verifyReview(token, reviewSecret(), Date.now(), 'pledge');
+  if (!payload || payload.kind !== 'pledge') return send(400, resultPage('Link Expired', '<p>This review link has expired or is not valid. Nothing was logged. Enter the pledge in Bloomerang by hand if it is real.</p>'));
+  try {
+    // Looked up fresh each time, so the page always shows Bloomerang as it is now.
+    const candidates = await pledgeCandidates({ bloomerangKey: key, pledge: payload.pledge });
+    if (req.method !== 'POST') return send(200, pledgeReviewPage(token, { ...payload, candidates }));
+    const { form, errors } = readPledgeForm(req.body || {}, { candidates });
+    if (errors.length) return send(400, pledgeReviewPage(token, { ...payload, candidates }, errors));
+    const r = await approvePledge({ bloomerangKey: key, payload: { ...payload, candidates }, form });
+    if (r.refused) return send(409, resultPage('Already Logged', `<p>This pledge is already in Bloomerang (transaction #${escHtml(r.refused.number)}, ID ${escHtml(r.refused.id)}). Nothing new was logged.</p>`));
+    return send(200, resultPage('Pledge Logged', `<p><b>Done.</b> The ${escHtml(Number(payload.pledge.approxValue).toLocaleString('en-US', { style: 'currency', currency: 'USD' }))} stock pledge is in Bloomerang on ${escHtml(r.accountName)} (ID ${escHtml(r.accountId)})${r.created ? ', a new constituent' : ''}, transaction ID ${escHtml(r.transactionId)}.</p><p class="muted">When the shares arrive, record their value as a pledge payment against it.</p>`));
+  } catch (error) {
+    console.error('Pledge review error:', error.message);
+    return send(500, resultPage('Not Logged', `<p>Bloomerang returned an error, so nothing was logged: ${escHtml(error.message)}. Try again, or enter the pledge by hand.</p>`));
   }
 }
 
@@ -1590,6 +1615,9 @@ export default async function handler(req, res) {
   if (method === 'GET' && path === 'check-intake/sweep') return handleCheckIntakeSweep(req, res);
   if ((method === 'GET' || method === 'POST') && path === 'check-intake/review') return handleCheckIntakeReview(req, res);
   if (method === 'GET' && path === 'check-intake/scan') return handleCheckIntakeScan(req, res);
+  // Stock pledge review: signed link from the staff email; nothing is
+  // written to Bloomerang until staff approve here.
+  if ((method === 'GET' || method === 'POST') && path === 'pledge-review') return handlePledgeReview(req, res);
 
   // POST /api/admin/everyorg-webhook?token=... — Every.org donation webhook;
   // authenticated by the secret token in its URL, not an admin session.

@@ -2,6 +2,7 @@
 import Stripe from 'stripe';
 import { setCorsHeaders } from './_cors.js';
 import { checkRateLimit } from './_rateLimit.js';
+import { verifyHuman } from './_turnstile.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
@@ -26,6 +27,11 @@ export default async function handler(req, res) {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
   if (!checkRateLimit(ip, 'create-payment-intent', 20)) {
     return res.status(429).json({ error: 'Too many requests. Please try again tomorrow.' });
+  }
+
+  // Bot check before any card can be tried (card testing).
+  if (!(await verifyHuman(req.body?.turnstileToken, ip)).ok) {
+    return res.status(400).json({ error: 'Please complete the "I am human" check and try again.' });
   }
 
   try {

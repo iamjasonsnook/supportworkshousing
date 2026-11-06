@@ -2,7 +2,10 @@ import { setCorsHeaders } from './_cors.js';
 import { sendEmail } from './_email.js';
 import { checkRateLimit } from './_rateLimit.js';
 import Stripe from 'stripe';
-import { findOrCreateConstituent, createPledge, findConstituentIdByEmail, chargingSchedulesFor } from './_bloomerang.js';
+import { findConstituentIdByEmail, chargingSchedulesFor } from './_bloomerang.js';
+import { verifyHuman } from './_turnstile.js';
+import { signReview } from './_checkIntake.js';
+import { newPledgeRef } from './_pledgeReview.js';
 import { emailLayout } from './_emailLayout.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jsnook@supportworkshousing.org';
@@ -141,18 +144,17 @@ const fmtDate = (iso) => { const [y, m, dd] = iso.split('-').map(Number); return
 
 const usd = v => Number(v).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-// bloomerang: { ok, transactionId, matched } or { ok: false }.
-export function stockPledgeStaffEmail(d, bloomerang = { ok: false }) {
-  const logged = bloomerang.ok
-    ? `Logged in Bloomerang as a pledge of ${usd(d.approxValue)} due ${fmtDate(d.transferDate)} (transaction ${bloomerang.transactionId}; donor ${bloomerang.matched === 'created' ? 'added as a new constituent' : `matched by ${bloomerang.matched}`}). When the shares arrive, record their value as a pledge payment against it.`
-    : 'This pledge could NOT be logged in Bloomerang automatically. Please enter it by hand.';
+// reviewUrl: the signed link to the review page that logs it in Bloomerang.
+export function stockPledgeStaffEmail(d, reviewUrl) {
   return {
     subject: `Stock gift pledged: about ${usd(d.approxValue)} from ${d.name}`,
     html: shell('Stock Gift Pledged', `
 <div class="box">A donor has pledged a gift of stock to our Merrill Lynch account. Watch for the transfer around the date below, match it to this donor, and follow up to confirm and collect anything else we need.</div>
 ${row('Approximate value', usd(d.approxValue))}${row('Expected transfer', fmtDate(d.transferDate))}
 ${row('Name', d.name)}${row('Email', d.email)}
-<p style="margin-top:20px;">${esc(logged)}</p>`),
+<p style="margin-top:20px;"><b>Nothing is in Bloomerang yet.</b> The stock gift form is open to anyone, so check this is a real pledge, then choose the donor's record and log it:</p>
+${reviewUrl ? `<p style="margin:16px 0"><a href="${esc(reviewUrl)}" style="display:inline-block;background:#9B1B5D;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:8px">Review and log in Bloomerang</a></p>` : '<p>Enter the pledge in Bloomerang by hand.</p>'}
+<p style="font-size:13px;color:#6B7280;">When the shares arrive, record their value as a pledge payment against it. The link works for 14 days.</p>`),
   };
 }
 
@@ -173,21 +175,6 @@ ${row('Approximate value', usd(d.approxValue))}${row('Expected transfer', fmtDat
 
 // Logs the pledge in Bloomerang. Never throws: the donor's thank-you and the
 // staff notification go out regardless, and the staff email says if this failed.
-export async function logPledgeInBloomerang(d) {
-  const key = process.env.BLOOMERANG_API_KEY;
-  if (!key) return { ok: false };
-  try {
-    const [firstName, ...rest] = d.name.split(/\s+/);
-    const who = await findOrCreateConstituent(key, { firstName, lastName: rest.join(' '), email: d.email });
-    const note = `Stock pledge via website: approximately ${usd(d.approxValue)}, transfer expected ${d.transferDate} to Merrill Lynch (DTC 8862).`;
-    const { transactionId } = await createPledge(key, { accountId: who.id, amount: d.approxValue, dueDate: d.transferDate, note });
-    return { ok: true, transactionId, matched: who.matched };
-  } catch (error) {
-    console.error('Bloomerang pledge error:', error.message);
-    return { ok: false };
-  }
-}
-
 // ─── Card donation thank-you ─────────────────────────────────────────────────
 //
 // Sent to the donor after a card donation, alongside Stripe's own receipt.
@@ -242,12 +229,16 @@ async function handleStockPledge(req, res) {
   if (!checkRateLimit(ip, 'stock-pledge', 5)) {
     return res.status(429).json({ error: 'Too many submissions today' });
   }
+  if (!(await verifyHuman(req.body?.turnstileToken, ip)).ok) {
+    return res.status(400).json({ error: 'Please complete the "I am human" check and try again.' });
+  }
   const { data, errors } = cleanStockPledge(req.body || {});
   if (errors.length) return res.status(400).json({ error: `Please check: ${errors.join(', ')}` });
 
-  // Bloomerang first, so the staff email can say whether it worked.
-  const bloomerang = await logPledgeInBloomerang(data);
-  const staff = stockPledgeStaffEmail(data, bloomerang);
+  // Nothing goes into Bloomerang from this public form: staff review it first.
+  const secret = process.env.ADMIN_TOKEN_SECRET;
+  const t = secret ? signReview({ v: 1, kind: 'pledge', pledge: data, ref: newPledgeRef() }, secret, Date.now(), 'pledge') : null;
+  const staff = stockPledgeStaffEmail(data, t ? `https://supportworkshousing.org/api/admin/pledge-review?t=${t}` : null);
   const donor = stockPledgeDonorEmail(data);
   try {
     await Promise.all([

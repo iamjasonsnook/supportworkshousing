@@ -211,17 +211,19 @@ export async function proposeEntry({ bloomerangKey: key, check, fetchImpl = fetc
 
 // ─── 3. The review link ──────────────────────────────────────────────────────
 
-const PURPOSE = 'swh-check-intake-v1:';
-export function signReview(payload, secret, now = Date.now()) {
+// The purpose is part of what is signed, so a check-review link can never be
+// used as a pledge-review link, or the other way round.
+export const PURPOSES = { check: 'swh-check-intake-v1:', pledge: 'swh-stock-pledge-v1:' };
+export function signReview(payload, secret, now = Date.now(), purpose = 'check') {
   const body = Buffer.from(JSON.stringify({ ...payload, exp: now + REVIEW_DAYS * 864e5 })).toString('base64url');
-  const sig = crypto.createHmac('sha256', secret).update(PURPOSE + body).digest('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(PURPOSES[purpose] + body).digest('base64url');
   return `${body}.${sig}`;
 }
 
-export function verifyReview(token, secret, now = Date.now()) {
+export function verifyReview(token, secret, now = Date.now(), purpose = 'check') {
   const [body, sig] = String(token || '').split('.');
-  if (!body || !sig) return null;
-  const want = crypto.createHmac('sha256', secret).update(PURPOSE + body).digest('base64url');
+  if (!body || !sig || !PURPOSES[purpose]) return null;
+  const want = crypto.createHmac('sha256', secret).update(PURPOSES[purpose] + body).digest('base64url');
   if (sig.length !== want.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return null;
   try { const p = JSON.parse(Buffer.from(body, 'base64url').toString()); return p.exp && now <= p.exp ? p : null; } catch { return null; }
 }
@@ -368,7 +370,7 @@ export function problemEmail({ subject, message }) {
 
 // ─── 5. Review page and approval ─────────────────────────────────────────────
 
-const page = (title, inner, wide = false) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+export const page = (title, inner, wide = false) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 <style>body{margin:0;font:15px/1.55 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;color:#4A4A4A;background:#F6F2F4}
 header{background:#9B1B5D;background-image:linear-gradient(120deg,#7D1649,#9B1B5D 60%,#B4246C);color:#fff;padding:26px 20px}
 header div,main{max-width:640px;margin:0 auto}header h1{margin:18px 0 0;font:800 26px/1.2 Montserrat,Inter,sans-serif}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Turnstile, { turnstileEnabled } from './Turnstile';
 import { Copy, Check, CheckCircle } from 'lucide-react';
 import './StockGift.css';
 
@@ -38,6 +39,9 @@ export default function StockGift() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [submitError, setSubmitError] = useState('');
+  // Bot check (Cloudflare Turnstile); a new key gets a fresh one-use token.
+  const [humanToken, setHumanToken] = useState('');
+  const [humanKey, setHumanKey] = useState(0);
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })); };
 
@@ -55,14 +59,21 @@ export default function StockGift() {
   const submit = async (ev) => {
     ev.preventDefault();
     if (!validate()) return;
+    if (turnstileEnabled && !humanToken) {
+      setSubmitError('Please complete the security check below');
+      setStatus('error');
+      return;
+    }
     setStatus('sending');
     setSubmitError('');
     try {
       const res = await fetch('/api/send-donation-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'stock-pledge', ...form }),
+        body: JSON.stringify({ kind: 'stock-pledge', ...form, turnstileToken: humanToken }),
       });
+      setHumanToken('');
+      setHumanKey(k => k + 1);
       if (!res.ok) throw new Error(res.status === 429 ? 'limit' : 'failed');
       setStatus('sent');
       if (window.gtag) window.gtag('event', 'stock_pledge_submitted');
@@ -139,6 +150,7 @@ export default function StockGift() {
             {errors.transferDate && <span className="stock-err">{errors.transferDate}</span>}</label>
         </div>
 
+        <Turnstile key={humanKey} onToken={setHumanToken} />
         {status === 'error' && <p className="stock-err" role="alert">{submitError}. Please try again,
           or email <a href="mailto:jsnook@supportworkshousing.org">jsnook@supportworkshousing.org</a>.</p>}
         <button type="submit" className="donate-btn" disabled={status === 'sending'}>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Turnstile, { turnstileEnabled } from './Turnstile';
 import { Heart, Lock, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import StockGift from './StockGift';
@@ -44,6 +45,9 @@ function DonateForm() {
   const elements = useElements();
 
   const [currentStep, setCurrentStep] = useState(0); // 0 = amount, 1 = personal info, 2 = payment, 3 = review
+  // Bot check (Cloudflare Turnstile); a new key gets a fresh one-use token.
+  const [humanToken, setHumanToken] = useState('');
+  const [humanKey, setHumanKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -205,6 +209,10 @@ function DonateForm() {
         return;
       }
 
+      if (turnstileEnabled && !humanToken) {
+        setSubmitError('Please complete the security check below, then continue.');
+        return;
+      }
       try {
         setIsSubmitting(true);
         setSubmitError(null);
@@ -222,8 +230,12 @@ function DonateForm() {
             city: formData.city,
             state: formData.state,
             zip: formData.zip,
+            turnstileToken: humanToken,
           }),
         });
+        // The token is spent either way; get a fresh one for any retry.
+        setHumanToken('');
+        setHumanKey(k => k + 1);
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to initialize payment');
@@ -763,6 +775,7 @@ function DonateForm() {
                   </div>
                 </div>
 
+                <Turnstile key={humanKey} onToken={setHumanToken} />
                 {submitError && <div className="donate-submit-error">{submitError}</div>}
               </div>
             )}
