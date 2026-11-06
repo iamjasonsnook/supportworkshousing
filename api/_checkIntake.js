@@ -305,7 +305,7 @@ const page = (title, inner, wide = false) => `<!DOCTYPE html><html lang="en"><he
 header{background:#9B1B5D;background-image:linear-gradient(120deg,#7D1649,#9B1B5D 60%,#B4246C);color:#fff;padding:26px 20px}
 header div,main{max-width:640px;margin:0 auto}header h1{margin:18px 0 0;font:800 26px/1.2 Montserrat,Inter,sans-serif}
 main{background:#fff;padding:26px 24px 32px}main.wide,header.wide div{max-width:1080px}
-.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}.scan{position:sticky;top:16px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}.scan{position:sticky;top:16px}.split>div>:first-child{margin-top:0}
 .scan iframe,.scan img{width:100%;border:1px solid #E9DEE5;border-radius:8px;background:#F6F2F4;display:block}.scan iframe{height:78vh;min-height:420px}
 @media(max-width:900px){.split{grid-template-columns:1fr}.scan{position:static}.scan iframe{height:46vh;min-height:300px}}h2{color:#9B1B5D;font-size:16px;margin:24px 0 8px}
 label{display:block;font-size:13px;color:#76666F;margin:12px 0 4px}input,select,textarea{width:100%;box-sizing:border-box;font:inherit;padding:9px 11px;border:1px solid #D5C6CF;border-radius:8px}
@@ -323,7 +323,7 @@ export function reviewPage(token, p, { scanUrl = null } = {}) {
   const opts = prop.candidates.map((cand, i) => `<label class="opt"><input type="radio" name="account" value="${cand.id}"${(prop.decision === 'existing' && i === 0) ? ' checked' : ''}><span><b>${esc(cand.name)}</b> (ID ${cand.id})<br><span class="muted">${esc([cand.street, cand.city].filter(Boolean).join(', ') || 'No address on file')}. ${cand.lastGift ? `Last gift ${usd(cand.lastGift.amount)} on ${fmtDate(cand.lastGift.date)}.` : 'No gifts yet.'} Match: ${esc(cand.why.join(', '))}.</span></span></label>`).join('');
   const via = c.vehicle && c.vehicle !== 'Personal check' ? `${c.vehicle}${c.payer_name && c.donor_type !== 'Organization' ? ` via ${c.payer_name}` : ''}` : '';
   const note = [via, c.memo ? `Memo: ${c.memo}` : ''].filter(Boolean).join('. ');
-  const scan = scanUrl ? `<div class="scan"><h2 style="margin-top:0">The check</h2>${/pdf/.test(p.scan?.type || '') ? `<iframe src="${esc(scanUrl)}#toolbar=0&navpanes=0&view=FitH" title="Check scan"></iframe>` : `<img src="${esc(scanUrl)}" alt="Check scan">`}
+  const scan = scanUrl ? `<div class="scan">${/pdf/.test(p.scan?.type || '') ? `<iframe src="${esc(scanUrl)}#toolbar=0&navpanes=0&view=FitH" title="Check scan"></iframe>` : `<img src="${esc(scanUrl)}" alt="Check scan">`}
 <p class="muted"><a href="${esc(scanUrl)}" target="_blank" rel="noopener" style="color:#9B1B5D">Open the scan full size</a></p></div>` : '';
   const form = `
 ${prop.duplicate ? `<div class="warn bad"><b>Already in Bloomerang?</b> Transaction #${prop.duplicate.number} (ID ${prop.duplicate.id}) has the same check number and amount. Approval will be refused while it exists.</div>` : ''}

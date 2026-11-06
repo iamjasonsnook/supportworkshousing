@@ -261,12 +261,12 @@ describe('the routes', () => {
 
       const page = await run(handler, { url: `/api/admin/check-intake/review?t=${withScan}` });
       expect(page.body).toContain('<iframe src="/api/admin/check-intake/scan?t=');
-      expect(page.body).toContain('The check');
+      expect(page.body).toContain('<div class="scan">');
 
       expect((await run(handler, { url: '/api/admin/check-intake/scan?t=forged.sig' })).statusCode).toBe(400);
       const noScan = signReview({ v: 1, sender: 's', check: slim(hofheimer), proposal: { decision: 'new', candidates: [] } }, 'test-secret');
       expect((await run(handler, { url: `/api/admin/check-intake/scan?t=${noScan}` })).statusCode).toBe(404);
-      expect((await run(handler, { url: `/api/admin/check-intake/review?t=${noScan}` })).body).not.toContain('The check');
+      expect((await run(handler, { url: `/api/admin/check-intake/review?t=${noScan}` })).body).not.toContain('<div class="scan">');
     } finally {
       globalThis.fetch = realFetch;
       for (const k of ['MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET']) delete process.env[k];
