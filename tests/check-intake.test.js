@@ -250,7 +250,7 @@ describe('the routes', () => {
       expect(thanked.statusCode).toBe(200);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'donor@example.org', bcc: 'jsnook@supportworkshousing.org', subject: 'Thank you for your gift to SupportWorks Housing' }));
       expect(sendEmail.mock.calls.find(c => c[0].to === 'donor@example.org')[0].html).toContain('Dear Barry and Karen,');
-      expect(thanked.body).toContain('marked acknowledged');
+      expect(thanked.body).toContain('An acknowledgment email has been sent to the donor, and it shows as "Yes" in Bloomerang');
       expect(globalThis.fetch.calls.find(c => c.method === 'PUT').body.Designations[0]).toMatchObject({ AcknowledgementStatus: 'Yes', AcknowledgementInteractionIds: [901] });
     } finally { globalThis.fetch = realFetch; }
 

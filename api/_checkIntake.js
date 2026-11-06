@@ -281,7 +281,7 @@ ${box('#FBEFF5', '#9B1B5D', matchHtml(p))}
 
 // ack: { sent: true, date } | { sent: false, reason }
 export const ackLine = ack => ack?.sent
-  ? `The donor was emailed a thank-you and the gift is marked acknowledged in Bloomerang (${fmtDate(ack.date)}).`
+  ? `An acknowledgment email has been sent to the donor, and it shows as "Yes" in Bloomerang (${fmtDate(ack.date)}).`
   : `<b>The donor has not been thanked yet:</b> ${esc(ack?.reason || 'no thank-you was sent.')}`;
 
 export function enteredEmail({ check, accountId, accountName, created, transaction, approvedAt, ack }) {

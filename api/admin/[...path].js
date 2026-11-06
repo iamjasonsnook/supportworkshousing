@@ -699,7 +699,7 @@ async function handleCheckIntakeReview(req, res) {
     const approvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'long', timeStyle: 'short' });
     const { subject, html } = enteredEmail({ check: { ...payload.check, ...form }, ...result, approvedAt, ack });
     await sendEmail({ to: intakeRecipients(payload.sender), subject, html }).catch(e => console.error('Entered email failed:', e.message));
-    return send(200, resultPage('Gift Entered', `<p><b>Done.</b> $${form.amount.toFixed(2)} from ${escHtml(result.accountName)} is in Bloomerang as transaction #${escHtml(result.transaction.number)} (ID ${escHtml(result.transaction.id)})${result.created ? ', on a new constituent record' : ''}. A confirmation email is on its way.</p><p>${ackLine(ack)}</p>`));
+    return send(200, resultPage('Gift Entered', `<p><b>Done.</b> $${form.amount.toFixed(2)} from ${escHtml(result.accountName)} is in Bloomerang as transaction #${escHtml(result.transaction.number)} (ID ${escHtml(result.transaction.id)})${result.created ? ', on a new constituent record' : ''}. A confirmation email is on its way.</p><p class="muted">${ackLine(ack)}</p>`));
   } catch (error) {
     console.error('Check approval error:', error.message);
     return send(500, resultPage('Not Entered', `<p>Bloomerang returned an error, so nothing was entered: ${escHtml(error.message)}. Try again, or enter the gift by hand.</p>`));
